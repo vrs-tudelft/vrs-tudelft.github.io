@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animations · Virtual Radiosonde</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="figures.html">Figures</a>
+      <a href="animations.html" aria-current="page">Animations</a>
+      <a href="https://github.com/vrs-tudelft">GitHub</a>
+    </nav>
+  </header>
+
+  <h1>Animations</h1>
+  <p class="lead">Two players, 36 frames each, one frame per eighth satellite pass. Use the buttons under each one to play, pause, step, or change the speed.</p>
+
+  <h2>The scene, pass by pass</h2>
+  <p>Every point coloured by how much it moved since the previous pass, 11 days earlier. The colour scale is fixed for all frames and symmetric around zero, so a calm pass looks calm. Ten years of slow sinking are differenced away; what remains is air and noise.</p>
+  <div class="player"><iframe src="animations/scene.html" title="The scene, pass by pass" loading="lazy"></iframe></div>
+
+  <h2>The height regression, pass by pass</h2>
+  <p>Top: displacement against height above ground for 2 500 points, with the fitted line for that pass. Bottom: the slope of that line over the full ten years, with a marker following the frame. The tilt above and the curve below are the same thing.</p>
+  <div class="player"><iframe src="animations/regression.html" title="The height regression, pass by pass" loading="lazy"></iframe></div>
+
+  <p>Both animations are made with matplotlib from the team code and saved as self-contained pages, so they need no server and no plugins.</p>
+
+  <footer>
+    TerraSAR-X point set provided for the course by R.F. Hanssen. Virtual Radiosonde, TU Delft, 2026.
+  </footer>
+</div>
+</body>
+</html>

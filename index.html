@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Radiosonde</title>
+<meta name="description" content="A virtual radiosonde for cities: reading the lowest few hundred metres of the atmosphere from satellite radar. TU Delft team project, 2026.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <nav>
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="figures.html">Figures</a>
+      <a href="animations.html">Animations</a>
+      <a href="https://github.com/vrs-tudelft">GitHub</a>
+    </nav>
+  </header>
+
+  <h1>A weather balloon that never launches</h1>
+  <p class="lead">We are trying to read the lowest few hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
+
+  <p>A radiosonde is the instrument on a weather balloon. It measures pressure, temperature and humidity all the way up. It is the reference measurement, and it is rare: the Netherlands launches from one place, De Bilt, once a day, and never over a city. Cities are where the air near the ground is most disturbed and where knowing it matters most.</p>
+
+  <p>Radar satellites see thousands of fixed points on building facades. A point high on a tower and a point near the street see slightly different amounts of air between them and the satellite. The difference depends on how humid and how warm that layer of air is. If we can separate that small effect from everything else that moves a building, we get a reading of the air between the two heights, every time the satellite passes.</p>
+
+  <div class="note">
+    This is a student team project for the course <b>Applied Space Geodesy</b> at TU Delft (September to October 2026), supervised by Prof. Ramon Hanssen. Everything here is work in progress. Nothing on this site is a validated result unless it says so.
+  </div>
+
+  <h2>What we have so far</h2>
+  <p>Our first dataset covers Kop van Zuid in Rotterdam: 20 594 radar points on buildings, observed 288 times over ten years by the TerraSAR-X satellite. These are the numbers everything else builds on.</p>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Number</th><th>Value</th><th>What it means, and the catch</th></tr></thead>
+    <tbody>
+      <tr><td>Time between satellite passes</td><td class="num">11 days</td><td>Verified from the 288 dates. So this can never be an hourly or real-time product; it is a long-term record.</td></tr>
+      <tr><td>Typical height of a radar point</td><td class="num">14.7 m above ground</td><td>Half the points are within 31 m of each other in height. Nothing sits above 83 m, even though there are 150 m towers in the scene. We do not know why yet.</td></tr>
+      <tr><td>How much buildings move with the seasons</td><td class="num">0.032 mm per m of height</td><td>Buildings expand in summer. That signal is three times larger than the air signal we are after, so it has to be modelled, not ignored.</td></tr>
+      <tr><td>Can we tell buildings and air apart?</td><td class="num">yes, at 11-day timescales</td><td>A joint fit on temperature and on De Bilt humidity separates the two (VIF 1.12). The air term comes out at about 60 % of the size physics predicts.</td></tr>
+      <tr><td>Where the ground truth comes from</td><td class="num">De Bilt, 50 km away</td><td>The balloon launches around midnight, and its first reading above ground is at about 650 m. Everything we compare against below 100 m is an interpolation.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Kop van Zuid was chosen because it has high-rise. It is a best case, not a city average.</p>
+
+  <h2>Look around</h2>
+  <div class="cards">
+    <div class="card"><h3><a href="figures.html">Figures</a></h3><p>Nineteen plots from the first look at the data, in the order we made them, each with a plain-language caption.</p></div>
+    <div class="card"><h3><a href="animations.html">Animations</a></h3><p>Watch the scene change pass by pass, and watch the height regression tilt with it.</p></div>
+    <div class="card"><h3><a href="https://github.com/vrs-tudelft">GitHub</a></h3><p>Our code, notes and paper mirror live in the vrs-tudelft organisation. Team members can open the private repositories from there.</p></div>
+  </div>
+
+  <h2>Who</h2>
+  <p>Ten MSc students from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science, with Ramon Hanssen and Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo).</p>
+
+  <footer>
+    Virtual Radiosonde, TU Delft, 2026. Satellite data: TerraSAR-X point set provided for the course by R.F. Hanssen. Weather data: KNMI (CC-BY-4.0) and NOAA IGRA2. Map tiles in some figures: Esri.
+  </footer>
+</div>
+</body>
+</html>

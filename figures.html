@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figures · Virtual Radiosonde</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="figures.html" aria-current="page">Figures</a>
+      <a href="animations.html">Animations</a>
+      <a href="https://github.com/vrs-tudelft">GitHub</a>
+    </nav>
+  </header>
+
+  <h1>Figures</h1>
+  <p class="lead">The first look at the TerraSAR-X data over Kop van Zuid, Rotterdam, in the order we made the plots. Every one is produced by a script in the team repository, so it can be regenerated.</p>
+  <p>Heights are metres above ground unless a plot says otherwise. "LOS" means line of sight: the direction from the satellite to the point. "s(t)" is the height gradient: how much the displacement changes per 100 m of height, on one satellite pass.</p>
+
+  <div class="gallery">
+    <figure><img src="figures/01-maps.png" alt="Six maps of the radar points" loading="lazy"><figcaption><b>01. Six maps of the 20 594 points.</b> Height above ground, coherence (how stable the point is), a quality number, the long-term rate of movement, the acceleration, and the size of the yearly up-and-down.</figcaption></figure>
+    <figure><img src="figures/02-timeseries.png" alt="Three displacement time series" loading="lazy"><figcaption><b>02. Three points, ten years.</b> Displacement over time for a point near the ground, one mid-height and one high up. The wiggles are what we work with.</figcaption></figure>
+    <figure><img src="figures/03-height-vs-params.png" alt="Fitted parameters against height" loading="lazy"><figcaption><b>03. The thermal signature.</b> The yearly up-and-down grows with height: about 0.032 mm per metre. Buildings expand in summer, and that is the biggest competitor to the air signal.</figcaption></figure>
+    <figure><img src="figures/04-height-diversity.png" alt="Histogram of point heights" loading="lazy"><figcaption><b>04. How much height we have to work with.</b> Half the points lie within 31 m of each other. Nothing above 83 m, although 150 m towers stand in the scene.</figcaption></figure>
+    <figure><img src="figures/05-sampling.png" alt="Sampling of the satellite passes" loading="lazy"><figcaption><b>05. When the satellite passed.</b> Every 11 days, about 31 times a year, in every season. The largest gap is 44 days.</figcaption></figure>
+    <figure><img src="figures/06-stratification-probe.png" alt="Height bands and the height gradient over time" loading="lazy"><figcaption><b>06. Is there a height-dependent signal at all?</b> Top: the average movement of points in four height bands. Middle: the height gradient s(t) per pass. Bottom: how strongly displacement and height are related on each pass.</figcaption></figure>
+    <figure><img src="figures/07-stratification-annual.png" alt="Annual cycle of the height gradient" loading="lazy"><figcaption><b>07. The yearly cycle of the height gradient.</b> High in summer, low in winter: buildings expanding, mostly.</figcaption></figure>
+    <figure><img src="figures/08-stratification-decomposition.png" alt="Decomposition of the height gradient" loading="lazy"><figcaption><b>08. Taking the gradient apart.</b> A slow trend and a yearly cycle are removed. What is left, about 1.7 mm per 100 m from pass to pass, is the candidate air signal. Three times above the noise of the fit.</figcaption></figure>
+    <figure><img src="figures/09-annual-two-ways.png" alt="The annual height gradient computed two ways" loading="lazy"><figcaption><b>09. Two ways to the same number.</b> The yearly height gradient computed from single points and from the whole scene agree to within 7 %, once the timing of the cycle is kept.</figcaption></figure>
+    <figure><img src="figures/10-split-scene-along.png" alt="Height gradient on two halves of the scene, split along the long axis" loading="lazy"><figcaption><b>10a. Two halves, split along the scene.</b> The pass-to-pass changes agree between independent halves (correlation 0.92), so the fast signal covers the whole scene. The slow sinking sits in one half only.</figcaption></figure>
+    <figure><img src="figures/10-split-scene-x.png" alt="Height gradient on two halves of the scene, split east-west" loading="lazy"><figcaption><b>10b. Two halves, split east to west.</b> Same test, different cut, same answer.</figcaption></figure>
+    <figure><img src="figures/11-basemap-height.png" alt="Points on aerial imagery coloured by height" loading="lazy"><figcaption><b>11. The points on the city.</b> Every radar point on aerial imagery, coloured by height above ground. You can see the facades.</figcaption></figure>
+    <figure><img src="figures/12-basemaps.png" alt="Four fields on a map" loading="lazy"><figcaption><b>12. Four fields on the map.</b> Height, long-term rate, yearly amplitude and coherence, on the same map.</figcaption></figure>
+    <figure><img src="figures/13-basemap-split-along.png" alt="Where the two halves of the scene are" loading="lazy"><figcaption><b>13. Where the halves are.</b> The split used for figure 10, next to the long-term rate. The sinking is on the north-east side.</figcaption></figure>
+    <figure><img src="figures/14-joint-proxies.png" alt="Temperature and refractivity next to the height gradient" loading="lazy"><figcaption><b>14. The two suspects.</b> The height gradient (top), Rotterdam air temperature with a lag (middle), and the humidity-related refractivity from the De Bilt balloon (bottom).</figcaption></figure>
+    <figure><img src="figures/15-joint-regression.png" alt="Joint fit on temperature and refractivity" loading="lazy"><figcaption><b>15. Telling buildings and air apart.</b> Fitting both at once, on 11-day changes, separates them cleanly. Both come out at 60 to 70 % of what physics predicts.</figcaption></figure>
+    <figure><img src="figures/16-noon-soundings.png" alt="Midnight versus noon soundings" loading="lazy"><figcaption><b>16. Midnight or noon?</b> On days with both balloon launches, the noon one explains the signal no better than the midnight one. Time of day is not the gap; distance probably is.</figcaption></figure>
+    <figure><img src="figures/17-height-profile-bins.png" alt="Binned height-difference profiles" loading="lazy"><figcaption><b>17. Line or curve?</b> Points grouped by height. A straight line explains the height differences; there is not yet a visible curve, so the retrieval is a mean layer value, not a profile.</figcaption></figure>
+    <figure><img src="figures/18-local-pairs.png" alt="Height gradient from local pairs" loading="lazy"><figcaption><b>18. Neighbours only.</b> The same gradient from pairs of points a few tens of metres apart gives 82 % of the scene-wide value. The signal is really about height, not about location.</figcaption></figure>
+    <figure><img src="figures/19-debilt-reference.png" alt="What the De Bilt balloon says about the lowest 83 m" loading="lazy"><figcaption><b>19. What the balloon says.</b> The De Bilt sounding usually has its first reading about 650 m up, so everything below 83 m is interpolated. The pressure part of the layer is predictable; the humidity part is the signal.</figcaption></figure>
+  </div>
+
+  <footer>
+    Figures produced from the TerraSAR-X point set provided for the course by R.F. Hanssen, KNMI daily observations (CC-BY-4.0), and NOAA IGRA2 soundings. Map tiles: Esri.
+  </footer>
+</div>
+</body>
+</html>
