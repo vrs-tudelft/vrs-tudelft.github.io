@@ -395,6 +395,7 @@ function stepBalloon(dt) {
 function pick(ev) {
   const rect = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+  camera.updateMatrixWorld(true);   /* render-on-demand: the world matrix may be stale between frames */
   const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, camera);
   const targets = [buildings, cellsMesh].filter((o) => o && o.visible);
   const hits = rc.intersectObjects(targets, false);
@@ -515,6 +516,7 @@ async function main() {
     setEpoch(0);
     $("loading").remove();
     $("hud").textContent = "Overview from the south-east · drag to orbit, scroll to zoom, click a building";
+    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, D, setPreset, setEpoch };
     requestAnimationFrame(loop);
   } catch (err) {
     console.error(err);
