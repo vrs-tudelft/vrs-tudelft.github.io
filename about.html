@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Virtual Radiosonde</title>
+<meta name="description" content="The course, the twelve students and the staff, who did what on this site, how to reproduce every figure, the aggregate-only data rule, licences, and the statement on the use of an AI assistant.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <noscript><nav><a href="index.html">Home</a> <a href="idea.html">The idea</a> <a href="data.html">The data</a> <a href="findings.html">Findings</a> <a href="buildings.html">Buildings and ground</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a> <a href="paper.html">Method and paper</a> <a href="questions.html">Open questions</a> <a href="glossary.html">Glossary</a> <a href="about.html">About</a></nav></noscript>
+  </header>
+
+  <h1>About</h1>
+  <p class="lead">A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026.</p>
+
+  <h2 id="course">The course</h2>
+  <p>The course takes an idea through research to a scientific publication and towards a minimum viable product. The 2026 idea is the supervisor's: create a virtual radiosonde for the urban environment using satellite radar interferometry. The team meets three times a week, writes one paper together, and presents it on 22 October 2026, with a midterm in the week of 21 September.</p>
+
+  <h2 id="team">Who</h2>
+  <p>Twelve MSc students from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science, in alphabetical order as on the paper: Sander da Costa, Jaap de Ruiter, Dirk van Dale, Alejandro Giner Gil, Phoebe Smirk, Quinten Uivel, Lars van Dijk, Rosalyn van Hemert, Shaquille Huiswoud, Akhil Veeranki, Jihun Yoo and Oula Zhu. Supervised by Prof. Ramon Hanssen, with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo).</p>
+
+  <h2 id="who-did-what">Who did what on this site</h2>
+  <ul>
+    <li><b>Analysis code, figures 01 to 31, the dated notes, this site, the animations and the 3D view:</b> Quinten Uivel.</li>
+    <li><b>The ground-minus-roof check against surface weather</b> (Findings E): Jaap de Ruiter; reproduced and extended in the team notes.</li>
+    <li><b>The radiosonde work</b> (De Bilt and Beauvechain soundings, the high-resolution files): Sander da Costa.</li>
+    <li><b>The paper</b>: the whole team, section by section, in Overleaf; the manuscript is not on this site.</li>
+    <li><b>The data set, the idea and the questions that shaped the buildings-and-ground page</b>: Ramon Hanssen.</li>
+  </ul>
+
+  <h2 id="reproduce">Reproducibility</h2>
+  <p>Every figure is made by a script in the team repository (<code>mvp/src/</code> of <a href="https://github.com/vrs-tudelft/virtual-radiosonde">virtual-radiosonde</a>) and has a dated note in <code>research/notes/</code> there that names the script, the data and every number with its caveat. The captions here are the plain-language version of those notes. The aggregate files behind the animations and the 3D view are written by <code>site_export.py</code> and <code>site_3d_export.py</code> in the same folder, and checked by <code>tools/check_data.py</code> in the <a href="https://github.com/vrs-tudelft/vrs-tudelft.github.io">site repository</a>. The site is plain HTML with no build step.</p>
+
+  <h2 id="rule">The data rule</h2>
+  <p>The TerraSAR-X point set was provided for the course and may not be passed on. No radar point, position or single time series is on this site. Everything drawn from the radar data is a mean over at least 20 points: a 25 m cell on a fixed grid, a building, a 10 m slab of a building, a height band or the whole scene. The positions that appear are those of public things: building outlines and grid cells. <a href="data.html#rule">How it works</a>.</p>
+
+  <h2 id="licences">Licences</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Source</th><th>Licence</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td>TerraSAR-X persistent-scatterer point set, Kop van Zuid, provided for the course by R.F. Hanssen</td><td>course use only, not redistributable</td><td>all radar results, as aggregates</td></tr>
+      <tr><td>KNMI daily observations, station 344 Rotterdam</td><td>CC BY 4.0</td><td>air temperature and humidity</td></tr>
+      <tr><td>NOAA IGRA2 radiosonde archive, De Bilt</td><td>public domain</td><td>the reference soundings</td></tr>
+      <tr><td>BAG building register via PDOK (Kadaster)</td><td>CC0</td><td>outlines and construction years</td></tr>
+      <tr><td>3DBAG (TU Delft 3D geoinformation group)</td><td>CC BY 4.0</td><td>roof heights and the 3D building models</td></tr>
+      <tr><td>Aerial image and grey-canvas tiles in the static figures</td><td>Esri, with attribution</td><td>basemaps of figures 11 to 13 and 20 to 27</td></tr>
+      <tr><td>PDOK aerial image in the 3D view</td><td>as recorded in the 3D data manifest</td><td>ground texture</td></tr>
+      <tr><td>three.js</td><td>MIT</td><td>the 3D view</td></tr>
+      <tr><td>Text, drawings and figures of this site</td><td>CC BY 4.0, Virtual Radiosonde team, TU Delft, 2026</td><td></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="ai">The use of an AI assistant</h2>
+  <p>An AI coding assistant (Claude Code) was used to build this site, its animations and its 3D view, to set up the team's repositories, to choose and wire the Python libraries behind the figures, and to draft captions and notes from the numbers the scripts produced. The inputs were the point set, the KNMI and IGRA2 records and the open building registers named above. No number was invented: every figure regenerates from the scripts, and the notes record what was computed, how, and what it does not show. The analyses were directed and checked by the team member named above; the interpretations on this site are hypotheses and say so. The paper carries its own statement.</p>
+
+  <h2 id="contact">Contact</h2>
+  <p>Through the <a href="https://github.com/vrs-tudelft">vrs-tudelft organisation</a> on GitHub, where the code, the notes and the public repositories live.</p>
+
+  <footer data-shared></footer>
+</div>
+<script defer src="js/nav.js"></script>
+</body>
+</html>

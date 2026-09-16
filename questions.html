@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open questions · Virtual Radiosonde</title>
+<meta name="description" content="What the team does not know yet about the radar data set, the ground truth, the physics and the usefulness of a virtual radiosonde, with what has been checked and what would settle each question.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <noscript><nav><a href="index.html">Home</a> <a href="idea.html">The idea</a> <a href="data.html">The data</a> <a href="findings.html">Findings</a> <a href="buildings.html">Buildings and ground</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a> <a href="paper.html">Method and paper</a> <a href="questions.html">Open questions</a> <a href="glossary.html">Glossary</a> <a href="about.html">About</a></nav></noscript>
+  </header>
+
+  <h1>Open questions</h1>
+  <p class="lead">What we do not know, why it matters, what has been checked, and what would settle it. Status as of 16 September 2026.</p>
+  <p class="small"><span class="status open">open</span> nothing settled &nbsp; <span class="status partly">partly</span> checked from our side, waiting on a fact we cannot produce &nbsp; <span class="status answered">answered</span> settled, kept here for the record</p>
+  <div class="toc">On this page: <a href="#dataset">About the data set</a> <a href="#truth">About the ground truth</a> <a href="#physics">About the physics</a> <a href="#use">About usefulness</a></div>
+
+  <h2 id="dataset">About the data set</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Question</th><th>Why it matters</th><th>What we checked</th><th>What would settle it</th></tr></thead>
+    <tbody>
+      <tr><td><b>Why does no radar point sit above 83 m?</b> <span class="status open">open</span></td><td>It decides whether the method's ceiling in this city is 83 m or 150 m, and how the towers' upper halves could be used.</td><td>Roof heights from the 3D building register reach 158 m inside the scene; every tower above 83 m stops at 57 to 69 m of radar points (figure 30). Candidates: a processing window, layover, facade orientation.</td><td>A word from the producer of the point set on the height search window.</td></tr>
+      <tr><td><b>Which height datum do the point heights use?</b> <span class="status partly">partly</span></td><td>Everything called "above ground" rests on it.</td><td>The ground model minus the geoid gives 3.0 to 3.5 m above sea level for every point, tower or pavement, so it is a terrain model and heights above it are safe.</td><td>Confirmation from the producer.</td></tr>
+      <tr><td><b>What is the sign convention of the displacements?</b> <span class="status open">open</span></td><td>Whether "positive" is towards or away from the satellite decides the sign of every rate and of the retrieved refractivity change.</td><td>The site reads positive as towards the satellite; sinking towers then have negative rates, which is physically sensible. The seasonal phases (buildings peak in summer) fit the same reading.</td><td>Confirmation from the producer; the physics would also be self-consistent the other way round.</td></tr>
+      <tr><td><b>Where is the reference point, how high, and on what does it stand?</b> <span class="status open">open</span></td><td>All displacements are relative to it. If it sits on a structure that expands in summer, every point inherits the mirror image; its height sets how much near-surface refractivity cycle the ground points see.</td><td>The open ground peaks on day 45, a pure mirror of the buildings would peak on day 28, the towers' feet show nothing; the scene mean drifts, so no per-pass mean was removed.</td><td>The producer's record of the reference point.</td></tr>
+      <tr><td><b>Is 10 January 2014 the master image of the processing as well as the zero of the series?</b> <span class="status partly">partly</span></td><td>The atmospheric state of the master enters every pass; whether it was a winter or a summer day matters for the stratification signal.</td><td>All 20 594 series are exactly zero on that date.</td><td>The processing record.</td></tr>
+      <tr><td><b>What is the local hour of the pass, and does the ascending track exist for this scene?</b> <span class="status open">open</span></td><td>The hour decides which weather data can be compared, and whether the night-time heat island is still there. A second track would flip the horizontal terms and separate several of the puzzles below.</td><td>From the dawn-dusk orbit the descending pass should be around 06:40 solar time and the ascending one around 17:20; the file carries dates only.</td><td>The acquisition metadata.</td></tr>
+      <tr><td><b>What does the quality column mean?</b> <span class="status open">open</span></td><td>It may carry information the coherence does not.</td><td>Mapped in figure 01; not used elsewhere.</td><td>Its definition from the producer.</td></tr>
+      <tr><td><b>Was an atmospheric filter applied in the processing?</b> <span class="status open">open</span></td><td>A standard step removes a smooth atmospheric phase screen from every point. If it was applied, part of our signal may already be gone, which could be why both fitted coefficients are 60 to 70 % of prediction.</td><td>Nothing in the file says.</td><td>The processing record.</td></tr>
+      <tr><td><b>Do the "450 profiles, 2014 to 2024" of the manuscript's abstract mean the ascending stack is coming?</b> <span class="status open">open</span></td><td>We have 288 passes from one track.</td><td>288 descending passes 2014 to 2023, verified from the file.</td><td>The supervisor's plan for the second track.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="truth">About the ground truth</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Question</th><th>Why it matters</th><th>What we checked</th><th>What would settle it</th></tr></thead>
+    <tbody>
+      <tr><td><b>Can the high-resolution De Bilt soundings be obtained?</b> <span class="status open">open</span></td><td>The public archive has about one level in our layer; only the original files, with a reading every few metres, can validate a profile shape rather than a mean gradient.</td><td>The archive's first level above the ground is 650 m up in the median; only 1 % of soundings have any level inside 0 to 100 m. The raw files are known to exist with about 3 500 records per ascent.</td><td>Access to the KNMI raw sounding files.</td></tr>
+      <tr><td><b>Is distance or time of day the gap between the balloon and the radar?</b> <span class="status answered">answered</span></td><td>Decides whether a closer station or a different hour would help more.</td><td>On the 49 pass days with both a midnight and a noon sounding, the noon one explains the radar no better (figure 16). Time of day is not the gap; distance probably is.</td><td>A sounding or tower profile over the city itself.</td></tr>
+      <tr><td><b>What does a weather model say over Rotterdam at the pass hour?</b> <span class="status open">open</span></td><td>The Dutch forecast model at 2.5 km would give a profile at the right place and hour, the balloon gives neither.</td><td>Not yet requested; the pass hour is needed first.</td><td>Model output for the 288 pass times.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="physics">About the physics</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Question</th><th>Why it matters</th><th>What we checked</th><th>What would settle it</th></tr></thead>
+    <tbody>
+      <tr><td><b>Why are both fitted coefficients 60 to 70 % of what physics predicts?</b> <span class="status open">open</span></td><td>Either the buildings are not free to expand and the balloon is not representative, or part of the signal was removed in processing, or the model is incomplete.</td><td>Temperature 0.62 of 0.92, refractivity 0.064 of 0.109, consistently across the whole scene and the south-west half. The sideways-expansion test gives 70 % of free expansion for the buildings, which fits the first reading for the temperature term.</td><td>The atmospheric-filter question above, and a sounding over the city.</td></tr>
+      <tr><td><b>Why does the open ground move in winter?</b> <span class="status open">open</span></td><td>A 0.5 to 0.8 mm yearly term at the ground is the size of the stratification signal; the lowest bin is not a clean zero.</td><td>Three candidates (reference point, near-surface refractivity cycle, real motion of the fill); the spatial pattern argues against a simple mirror image. <a href="buildings.html#ground-cycle">Details</a>.</td><td>The reference point's location and height; the ascending track.</td></tr>
+      <tr><td><b>What is the kink at 20 to 30 m in the binned profile?</b> <span class="status open">open</span></td><td>If it is air, the retrieval can be a profile; if it is the buildings, it is a nuisance to model.</td><td>A line explains 65 % of the binned variance and a parabola 78 %; the departure has a fixed shape on every pass. Building podiums and setbacks cluster at those heights.</td><td>A second track, or a per-building model that removes the structure first.</td></tr>
+      <tr><td><b>Which temperature does a building feel?</b> <span class="status partly">partly</span></td><td>The expansion term depends on the temperature of the structure, not of the air.</td><td>A five-day lag of the daily mean air temperature fits best; the buildings follow about half to two thirds of the air's yearly swing (4 K against 7 K).</td><td>A building with a known thermal history, or wall temperatures from a thermal satellite over the same blocks.</td></tr>
+      <tr><td><b>Do the newest towers shrink or settle?</b> <span class="status partly">partly</span></td><td>The tilt (rate against height within a building) enters the height gradient directly.</td><td>Tilt −0.7 to −4.9 mm per 100 m per year, largest for the youngest concrete; a height error leaking into velocity in the processing is the alternative. <a href="buildings.html#per-building">Details</a>.</td><td>The producer's estimate of the height-velocity coupling for this stack.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="use">About usefulness</h2>
+  <p>Three questions we would put to a boundary-layer meteorologist, and have not yet:</p>
+  <ol>
+    <li>Which questions about temperature and moisture in the lowest hundred metres above a city matter most to you, and which of them does a street-level measurement fail to answer?</li>
+    <li>What height range, vertical spacing, repeat frequency and accuracy would a profile need to be useful: is one layer mean every 11 days for ten years, at one fixed hour, worth anything, or is the profile shape indispensable?</li>
+    <li>What independent observation would you want next to a layer-average refractivity change to trust it as temperature or humidity?</li>
+  </ol>
+  <p>The same three questions, answered by a forecaster, would tell us whether the product is an evaluation data set for urban boundary-layer schemes or a new observation type for assimilation. Nobody has asked a paying customer yet either.</p>
+
+  <footer data-shared></footer>
+</div>
+<script defer src="js/nav.js"></script>
+</body>
+</html>

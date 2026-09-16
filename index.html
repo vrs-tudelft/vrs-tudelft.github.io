@@ -4,60 +4,144 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Virtual Radiosonde</title>
-<meta name="description" content="A virtual radiosonde for cities: reading the lowest few hundred metres of the atmosphere from satellite radar. TU Delft team project, 2026.">
+<meta name="description" content="A virtual radiosonde for cities: reading the lowest hundred metres of the air above Rotterdam from satellite radar, using the buildings as the measuring stick. TU Delft team project, 2026.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <a class="brand" href="index.html">Virtual Radiosonde</a>
-    <nav>
-      <a href="index.html" aria-current="page">Home</a>
-      <a href="figures.html">Figures</a>
-      <a href="animations.html">Animations</a>
-      <a href="https://github.com/vrs-tudelft">GitHub</a>
-    </nav>
+    <noscript><nav><a href="index.html">Home</a> <a href="idea.html">The idea</a> <a href="data.html">The data</a> <a href="findings.html">Findings</a> <a href="buildings.html">Buildings and ground</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a> <a href="paper.html">Method and paper</a> <a href="questions.html">Open questions</a> <a href="glossary.html">Glossary</a> <a href="about.html">About</a></nav></noscript>
   </header>
 
   <h1>A weather balloon that never launches</h1>
-  <p class="lead">We are trying to read the lowest few hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
+  <p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
 
-  <p>A radiosonde is the instrument on a weather balloon. It measures pressure, temperature and humidity all the way up. It is the reference measurement, and it is rare: the Netherlands launches from one place, De Bilt, once a day, and never over a city. Cities are where the air near the ground is most disturbed and where knowing it matters most.</p>
+  <p>A radiosonde is the instrument on a weather balloon. It measures pressure, temperature and humidity all the way up. It is the reference measurement of the atmosphere, and it is rare: the Netherlands launches from one place, De Bilt, once a day, and never over a city. Cities are where the air near the ground is most disturbed and where knowing it matters most.</p>
 
-  <p>Radar satellites see thousands of fixed points on building facades. A point high on a tower and a point near the street see slightly different amounts of air between them and the satellite. The difference depends on how humid and how warm that layer of air is. If we can separate that small effect from everything else that moves a building, we get a reading of the air between the two heights, every time the satellite passes.</p>
+  <p>Radar satellites see thousands of fixed points on building facades. A point high on a tower and a point near the street look through different amounts of air on the way to the satellite. The difference depends on how humid and how warm that layer of air is. If we can separate that small effect from everything else that moves a building, we get a reading of the air between the two heights, every time the satellite passes.</p>
+
+  <figure class="diagram">
+    <svg data-svg="d7" viewBox="0 0 760 400" width="100%" role="img" aria-labelledby="d7t d7d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d7t">Two radar points at different heights, and the layer of air between them</title>
+  <desc id="d7d">A tall building with radar point A at about 50 m and a low building with point B near 5 m. The satellite, to the upper right, sends two parallel rays. The layer of air between the two heights is shaded: the difference of the two delays measures that layer, plus whatever the buildings did.</desc>
+  <defs><marker id="d7arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- ground -->
+  <rect x="40" y="300" width="560" height="14" class="svg-ground"/>
+  <text x="44" y="330" class="svg-small">quay, about 3 m above sea level (NAP)</text>
+  <!-- the layer -->
+  <rect x="40" y="120" width="560" height="160" class="svg-layer"/>
+  <text x="330" y="150" class="svg-text" text-anchor="middle" font-weight="600">the layer of air we measure</text>
+  <text x="330" y="168" class="svg-small" text-anchor="middle">between the heights of A and B: about 45 m here, at most 83 m in this data set</text>
+  <!-- tall building -->
+  <rect x="120" y="60" width="90" height="240" class="svg-building"/>
+  <line x1="120" y1="100" x2="210" y2="100" class="svg-line"/><line x1="120" y1="140" x2="210" y2="140" class="svg-line"/>
+  <line x1="120" y1="180" x2="210" y2="180" class="svg-line"/><line x1="120" y1="220" x2="210" y2="220" class="svg-line"/><line x1="120" y1="260" x2="210" y2="260" class="svg-line"/>
+  <circle cx="210" cy="120" r="5" class="svg-dot"/>
+  <text x="222" y="116" class="svg-text" font-weight="600">A</text>
+  <text x="222" y="131" class="svg-small">radar point, 50 m up</text>
+  <!-- low building -->
+  <rect x="380" y="240" width="110" height="60" class="svg-building"/>
+  <circle cx="490" cy="280" r="5" class="svg-dot"/>
+  <text x="500" y="276" class="svg-text" font-weight="600">B</text>
+  <text x="500" y="291" class="svg-small">radar point, 5 m up</text>
+  <!-- satellite -->
+  <g transform="translate(660,40)">
+    <rect x="-14" y="-8" width="28" height="16" class="svg-box" rx="2"/>
+    <rect x="-46" y="-4" width="28" height="8" class="svg-box-fill"/><rect x="18" y="-4" width="28" height="8" class="svg-box-fill"/>
+  </g>
+  <text x="660" y="72" class="svg-small" text-anchor="middle">TerraSAR-X, from the east-south-east,</text>
+  <text x="660" y="86" class="svg-small" text-anchor="middle">every 11 days, 23° from vertical</text>
+  <!-- rays: parallel, slope ~ tan(23 deg) horizontal per vertical... drawn steeper for clarity -->
+  <line x1="640" y1="56" x2="214" y2="118" class="svg-ray" marker-end="url(#d7arr)"/>
+  <line x1="676" y1="104" x2="494" y2="278" class="svg-ray" marker-end="url(#d7arr)"/>
+  <!-- extra path highlight on ray B inside the layer -->
+  <line x1="640" y1="140" x2="494" y2="278" stroke="var(--accent)" stroke-width="4" opacity=".55"/>
+  <text x="600" y="215" class="svg-small" text-anchor="start">the extra path of ray B</text>
+  <text x="600" y="229" class="svg-small" text-anchor="start">through the layer</text>
+  <!-- formula -->
+  <rect x="40" y="348" width="680" height="40" rx="6" class="svg-box"/>
+  <text x="380" y="366" class="svg-eq" text-anchor="middle">delay(B) − delay(A)  =  the shaded air  +  what the buildings did (sinking, expanding, shrinking)</text>
+  <text x="380" y="382" class="svg-small" text-anchor="middle">everything above both points, and everything common to the whole scene, cancels in the difference</text>
+</svg>
+    <figcaption>The idea in one drawing. Two radar points, one high and one low; the difference between their delays measures the layer of air between them, together with whatever the buildings did in the meantime. Typical height difference in our data: about 30 m. Nothing sits above 83 m. <a href="idea.html">The idea, explained</a>.</figcaption>
+  </figure>
 
   <div class="note">
-    This is a student team project for the course <b>Applied Space Geodesy</b> at TU Delft (September to October 2026), supervised by Prof. Ramon Hanssen. Everything here is work in progress. Nothing on this site is a validated result unless it says so.
+    This is a student team project for the course <b>Applied Space Geodesy</b> at TU Delft (September to October 2026), supervised by Prof. Ramon Hanssen. Everything here is work in progress. Nothing on this site is a validated result unless it says so, and every number comes with its catch.
   </div>
 
-  <h2>What we have so far</h2>
-  <p>Our first dataset covers Kop van Zuid in Rotterdam: 20 594 radar points on buildings, observed 288 times over ten years by the TerraSAR-X satellite. These are the numbers everything else builds on.</p>
-
+  <h2 id="numbers">Five numbers</h2>
+  <p>Our first data set covers Kop van Zuid in Rotterdam: 20 594 radar points, observed 288 times over ten years by the TerraSAR-X satellite. These are the numbers everything else builds on.</p>
   <div class="tbl"><table>
     <thead><tr><th>Number</th><th>Value</th><th>What it means, and the catch</th></tr></thead>
     <tbody>
-      <tr><td>Time between satellite passes</td><td class="num">11 days</td><td>Verified from the 288 dates. So this can never be an hourly or real-time product; it is a long-term record.</td></tr>
-      <tr><td>Typical height of a radar point</td><td class="num">14.7 m above ground</td><td>Half the points are within 31 m of each other in height. Nothing sits above 83 m, even though there are 150 m towers in the scene. We do not know why yet.</td></tr>
-      <tr><td>How much buildings move with the seasons</td><td class="num">0.032 mm per m of height</td><td>Buildings expand in summer. That signal is three times larger than the air signal we are after, so it has to be modelled, not ignored.</td></tr>
-      <tr><td>Can we tell buildings and air apart?</td><td class="num">yes, at 11-day timescales</td><td>A joint fit on temperature and on De Bilt humidity separates the two (VIF 1.12). The air term comes out at about 60 % of the size physics predicts.</td></tr>
-      <tr><td>Where the ground truth comes from</td><td class="num">De Bilt, 50 km away</td><td>The balloon launches around midnight, and its first reading above ground is at about 650 m. Everything we compare against below 100 m is an interpolation.</td></tr>
+      <tr><td>Time between passes</td><td class="num">11 days</td><td>Verified from the 288 dates. A long-term record, never an hourly or real-time product. The hour of the pass is not in the file; from the orbit it is probably early morning.</td></tr>
+      <tr><td>Height to work with</td><td class="num">median 14.7 m, half the points within 31 m of each other</td><td>Nothing sits above 83 m, although 150 m towers stand in the scene. We do not know why yet. Kop van Zuid was chosen for its high-rise: a best case, not a city average.</td></tr>
+      <tr><td>How much buildings move with the seasons</td><td class="num">0.032 mm per m of height</td><td>Buildings expand in summer. That signal is three times larger than the air signal we are after, so it has to be modelled together with the air, not ignored.</td></tr>
+      <tr><td>The candidate air signal</td><td class="num">1.69 mm per 100 m, pass to pass</td><td>What changes in the height gradient from one pass to the next, three times the noise of the fit; about 16 N-units of refractivity if it is all air. Any building motion that varies with height and is not a trend or a yearly wave would give the same number.</td></tr>
+      <tr><td>Can we tell buildings and air apart?</td><td class="num">yes, at 11-day timescales</td><td>A joint fit on temperature and on De Bilt humidity separates the two (variance inflation 1.12). Both come out at 60 to 70 % of the size physics predicts, and why is open.</td></tr>
     </tbody>
   </table></div>
-  <p>Kop van Zuid was chosen because it has high-rise. It is a best case, not a city average.</p>
 
-  <h2>Look around</h2>
+  <h2 id="found">What we have found so far</h2>
+  <ul>
+    <li><b>There is a height-dependent signal on almost every pass</b> (97 % of them), and most of it is the buildings: a slow tilt from the north-east towers sinking, and a yearly wave from thermal expansion. <a href="findings.html#signal">Findings A</a>.</li>
+    <li><b>What is left after those two is scene-wide and truly about height.</b> Two independent halves of the scene agree on it (correlation 0.92), and pairs of points 16 m apart give 82 % of the scene-wide value. <a href="findings.html#scenewide">Findings B</a>.</li>
+    <li><b>Buildings and air can be told apart, and each explains part of it.</b> Temperature at 0.62 and refractivity at 0.064 mm per 100 m, against 0.92 and 0.109 predicted. <a href="findings.html#air">Findings C</a>.</li>
+    <li><b>The balloon 50 km away agrees on size and, pass by pass, on timing.</b> De Bilt predicts 1.18 mm per 100 m of 11-day change, we measure 1.69, and the two correlate at 0.56 across 287 steps. <a href="findings.html#air">Findings C</a>, <a href="animations.html#balloon">the virtual balloon</a>.</li>
+    <li><b>The retrieval is one number per pass, not yet a profile.</b> A straight line explains two thirds of the binned height differences; a curve adds little. <a href="findings.html#profile">Findings D</a>.</li>
+    <li><b>The ground is not a clean zero.</b> The open quays breathe with the seasons in the opposite phase to the buildings, 0.5 to 0.8 mm peaking in February, and the newest towers still sink at 4 mm per year. <a href="buildings.html">Buildings and ground</a>.</li>
+  </ul>
+
+  <figure class="diagram">
+    <svg data-svg="d5" viewBox="0 0 760 230" width="100%" role="img" aria-labelledby="d5t d5d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d5t">The success ladder of the paper</title>
+  <desc id="d5d">Three steps rising to the right. Step one, refractivity per layer, is the success criterion. Step two splits it into a dry part predictable from pressure and a wet part that carries the signal. Step three, pressure, temperature and humidity separately, is the stretch goal. A marker on the first riser shows where the project stands: one layer mean per pass.</desc>
+  <defs><marker id="d5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- risers and treads -->
+  <path d="M20 200 h200 v-60 h240 v-60 h280" class="svg-arrow-accent"/>
+  <!-- step 1 -->
+  <rect x="30" y="150" width="180" height="44" rx="6" class="svg-box-good"/>
+  <text x="120" y="168" class="svg-text" text-anchor="middle" font-weight="600">1. N(z): refractivity per layer</text>
+  <text x="120" y="185" class="svg-small" text-anchor="middle">the success criterion of the paper</text>
+  <!-- step 2 -->
+  <rect x="230" y="90" width="220" height="44" rx="6" class="svg-box-fill"/>
+  <text x="340" y="108" class="svg-text" text-anchor="middle" font-weight="600">2. dry part and wet part</text>
+  <text x="340" y="125" class="svg-small" text-anchor="middle">dry from pressure, predictable; wet is the signal</text>
+  <text x="340" y="150" class="svg-small" text-anchor="middle">over 0 to 83 m at De Bilt: dry −2.3 ± 0.4, wet −1.2 ± 1.0 N-units</text>
+  <!-- step 3 -->
+  <rect x="470" y="30" width="270" height="44" rx="6" class="svg-box"/>
+  <text x="605" y="48" class="svg-text" text-anchor="middle" font-weight="600">3. P, T and e separately</text>
+  <text x="605" y="65" class="svg-small" text-anchor="middle">the stretch goal; needs one more constraint</text>
+  <text x="605" y="90" class="svg-small" text-anchor="middle">for example a surface temperature from a weather station</text>
+  <!-- marker -->
+  <circle cx="220" cy="172" r="7" fill="var(--warn)"/>
+  <line x1="220" y1="172" x2="220" y2="205" class="svg-arrow-warn"/>
+  <text x="228" y="218" class="svg-small" fill="var(--warn)">we are here: one layer mean per pass, about 16 N-units of pass-to-pass change, size and pass-by-pass timing matching De Bilt</text>
+</svg>
+    <figcaption>Where this stands against the paper's own ladder: refractivity per layer is the success criterion, its dry and wet parts the second step, pressure, temperature and humidity separately the stretch goal. <a href="paper.html">Method and paper</a>.</figcaption>
+  </figure>
+
+  <h2 id="around">Look around</h2>
   <div class="cards">
-    <div class="card"><h3><a href="figures.html">Figures</a></h3><p>Twenty-three plots, in the order we made them, each with a plain-language caption. Figures 20 to 23 follow Ramon's comments on the first nineteen.</p></div>
-    <div class="card"><h3><a href="animations.html">Animations</a></h3><p>Watch the scene change pass by pass, and watch the height regression tilt with it.</p></div>
-    <div class="card"><h3><a href="https://github.com/vrs-tudelft">GitHub</a></h3><p>Our code, notes and paper mirror live in the vrs-tudelft organisation. Team members can open the private repositories from there.</p></div>
+    <div class="card"><h3><a href="idea.html">The idea</a></h3><p>What a radiosonde measures, what radar measures, how the two are related, and why the height-dependent delay that geodesists remove is the thing we sell.</p></div>
+    <div class="card"><h3><a href="data.html">The data</a></h3><p>Kop van Zuid, 288 passes, three kinds of height kept apart, the 83 m ceiling, and the rule that keeps the radar points off this site.</p></div>
+    <div class="card"><h3><a href="findings.html">Findings</a></h3><p>Thirty plots grouped by the question they answer, each with what you see, what it tells us, and why it matters.</p></div>
+    <div class="card"><h3><a href="buildings.html">Buildings and ground</a></h3><p>The supervisor's four questions of 8 September and their answers: where the ground sinks, why it breathes in winter, building by building, and sideways expansion.</p></div>
+    <div class="card"><h3><a href="animations.html">Animations</a></h3><p>Six players drawn from averages: the scene pass by pass, the height gradient, its decomposition, buildings against air, the year clock, and a virtual balloon.</p></div>
+    <div class="card"><h3><a href="3d/index.html">3D <span class="tag">experimental</span></a></h3><p>Kop van Zuid in three dimensions from open building models, coloured by what the radar saw, with a time slider over the ten years.</p></div>
+    <div class="card"><h3><a href="paper.html">Method and paper</a></h3><p>The chain from weather to radar phase and back, the double difference, the inversion, and what the manuscript will contain.</p></div>
+    <div class="card"><h3><a href="questions.html">Open questions</a></h3><p>The honest list: what we do not know about the data set, the ground truth and the physics, and what would settle each one.</p></div>
+    <div class="card"><h3><a href="glossary.html">Glossary</a></h3><p>Thirty terms in one line each, from InSAR to the reference point.</p></div>
+    <div class="card"><h3><a href="about.html">About</a></h3><p>The twelve students and the staff, who did what, licences, and the statement on the use of an AI assistant.</p></div>
   </div>
 
-  <h2>Who</h2>
-  <p>Ten MSc students from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science, with Ramon Hanssen and Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo).</p>
+  <h2 id="who">Who</h2>
+  <p>Twelve MSc students from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science, with Ramon Hanssen and Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). Our code, notes and paper mirror live in the <a href="https://github.com/vrs-tudelft">vrs-tudelft organisation</a> on GitHub.</p>
 
-  <footer>
-    Virtual Radiosonde, TU Delft, 2026. Satellite data: TerraSAR-X point set provided for the course by R.F. Hanssen. Weather data: KNMI (CC-BY-4.0) and NOAA IGRA2. Map tiles in some figures: Esri.
-  </footer>
+  <footer data-shared></footer>
 </div>
+<script defer src="js/nav.js"></script>
 </body>
 </html>

@@ -1,0 +1,44 @@
+<svg viewBox="0 0 760 370" width="100%" role="img" aria-labelledby="d3t d3d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d3t">The reference point and the double difference</title>
+  <desc id="d3d">Left: a cross-section with a high point A, a low point B and the unknown reference point RP on a third building; rays come in at 23 degrees from vertical. Right: a two-by-two table of the four phases, point A and B on two passes, with the formula of the double difference and a note on what cancels.</desc>
+  <defs><marker id="d3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- left: section -->
+  <rect x="20" y="270" width="340" height="12" class="svg-ground"/>
+  <rect x="60" y="90" width="60" height="180" class="svg-building"/>
+  <rect x="170" y="210" width="70" height="60" class="svg-building"/>
+  <rect x="280" y="150" width="60" height="120" class="svg-building"/>
+  <circle cx="120" cy="120" r="5" class="svg-dot"/><text x="128" y="116" class="svg-text" font-weight="600">A</text>
+  <circle cx="240" cy="240" r="5" class="svg-dot"/><text x="248" y="236" class="svg-text" font-weight="600">B</text>
+  <circle cx="340" cy="180" r="5" fill="var(--warn)"/><text x="300" y="140" class="svg-text" font-weight="600" fill="var(--warn)">RP ?</text>
+  <text x="240" y="300" class="svg-small" text-anchor="middle">every displacement in the file is relative to one reference point:</text>
+  <text x="240" y="314" class="svg-small" text-anchor="middle">where it is, how high, and what it sits on, we do not yet know</text>
+  <!-- rays at ~23 deg from vertical -->
+  <line x1="170" y1="10" x2="123" y2="115" class="svg-ray" marker-end="url(#d3a)"/>
+  <line x1="290" y1="130" x2="243" y2="235" class="svg-ray" marker-end="url(#d3a)"/>
+  <line x1="390" y1="70" x2="343" y2="175" class="svg-ray" marker-end="url(#d3a)"/>
+  <text x="200" y="30" class="svg-small">to the satellite, 23° from vertical</text>
+  <!-- bracket: layer -->
+  <line x1="40" y1="120" x2="40" y2="240" class="svg-arrow-accent" marker-start="url(#d3a)" marker-end="url(#d3a)"/>
+  <text x="46" y="184" class="svg-small" fill="var(--accent)">the layer</text>
+  <!-- right: table -->
+  <g transform="translate(400,40)">
+    <text x="170" y="0" class="svg-text" text-anchor="middle" font-weight="600">four phases, one double difference</text>
+    <rect x="60" y="14" width="140" height="28" class="svg-box"/><text x="130" y="33" class="svg-small" text-anchor="middle">pass t₁ (the first, January 2014)</text>
+    <rect x="200" y="14" width="140" height="28" class="svg-box"/><text x="270" y="33" class="svg-small" text-anchor="middle">pass t₂ (any later pass)</text>
+    <rect x="0" y="42" width="60" height="50" class="svg-box"/><text x="30" y="72" class="svg-text" text-anchor="middle" font-weight="600">A</text>
+    <rect x="0" y="92" width="60" height="50" class="svg-box"/><text x="30" y="122" class="svg-text" text-anchor="middle" font-weight="600">B</text>
+    <rect x="60" y="42" width="140" height="50" class="svg-box-fill"/><text x="130" y="72" class="svg-eq" text-anchor="middle">φ_A(t₁)</text>
+    <rect x="200" y="42" width="140" height="50" class="svg-box-fill"/><text x="270" y="72" class="svg-eq" text-anchor="middle">φ_A(t₂)</text>
+    <rect x="60" y="92" width="140" height="50" class="svg-box-fill"/><text x="130" y="122" class="svg-eq" text-anchor="middle">φ_B(t₁)</text>
+    <rect x="200" y="92" width="140" height="50" class="svg-box-fill"/><text x="270" y="122" class="svg-eq" text-anchor="middle">φ_B(t₂)</text>
+    <text x="170" y="172" class="svg-eq" text-anchor="middle">[φ_A(t₂) − φ_B(t₂)] − [φ_A(t₁) − φ_B(t₁)]</text>
+    <text x="170" y="196" class="svg-small" text-anchor="middle">A minus B cancels everything the two points share:</text>
+    <text x="170" y="210" class="svg-small" text-anchor="middle">the reference point, the orbit, the air above both of them</text>
+    <text x="170" y="228" class="svg-small" text-anchor="middle">t₂ minus t₁ cancels everything that does not change:</text>
+    <text x="170" y="242" class="svg-small" text-anchor="middle">the topography, the height of each point, any constant offset</text>
+    <rect x="0" y="258" width="340" height="52" rx="6" class="svg-box-warn"/>
+    <text x="170" y="277" class="svg-small" text-anchor="middle">but: if the reference point sits on a building that expands in summer,</text>
+    <text x="170" y="291" class="svg-small" text-anchor="middle">every other point inherits its mirror image, peaking near day 28.</text>
+    <text x="170" y="305" class="svg-small" text-anchor="middle">The open ground peaks on day 45. Close, not equal: an open question.</text>
+  </g>
+</svg>

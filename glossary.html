@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary · Virtual Radiosonde</title>
+<meta name="description" content="Thirty terms used on the Virtual Radiosonde site, one line each: InSAR, scatterer, line of sight, refractivity, height gradient, double difference, reference point, layover and more.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <noscript><nav><a href="index.html">Home</a> <a href="idea.html">The idea</a> <a href="data.html">The data</a> <a href="findings.html">Findings</a> <a href="buildings.html">Buildings and ground</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a> <a href="paper.html">Method and paper</a> <a href="questions.html">Open questions</a> <a href="glossary.html">Glossary</a> <a href="about.html">About</a></nav></noscript>
+  </header>
+
+  <h1>Glossary</h1>
+  <p class="lead">The words that keep tripping people up, one line each, with a pointer to where they are used.</p>
+
+  <dl class="glossary">
+    <dt>InSAR</dt><dd>Interferometric synthetic aperture radar. A satellite radar images the same place on many passes; comparing the phase of the echoes gives distance changes to a fraction of the wavelength. <a href="idea.html#insar">The idea</a>.</dd>
+    <dt>TerraSAR-X</dt><dd>The German radar satellite whose data we use. Wavelength 3.1 cm (X-band), 11-day repeat, dawn-dusk orbit. <a href="data.html#passes">The data</a>.</dd>
+    <dt>Scatterer, radar point</dt><dd>A piece of a building or pavement that returned a stable echo on every pass: a window ledge, a roof edge, a kerb. 20 594 of them in our set.</dd>
+    <dt>Pass, epoch</dt><dd>One satellite acquisition. 288 of them, 10 January 2014 to 30 December 2023.</dd>
+    <dt>LOS, line of sight</dt><dd>The direction from the satellite to the point, 23° from vertical here, looking west-north-west. All displacements are measured along it.</dd>
+    <dt>Displacement</dt><dd>How far a point moved along the line of sight since the first pass, in millimetres. Positive is read as towards the satellite; unconfirmed. <a href="data.html#sign">Signs and zeros</a>.</dd>
+    <dt>m AGL and m NAP</dt><dd>Two height systems. AGL is metres above the local ground; NAP is the Dutch sea-level datum. The plots use AGL unless stated. Mixing them up is the classic error. <a href="data.html#heights">Three heights</a>.</dd>
+    <dt>Coherence</dt><dd>How well a point's echoes fit a stable-point model, 0 to 1. Most analyses use points above 0.6, 11 818 of them.</dd>
+    <dt>Refractivity, N</dt><dd>The refractive index of air minus one, times a million: about 300 near the ground. One number combining pressure, temperature and humidity; humidity dominates the changes. <a href="paper.html#chain">Equations</a>.</dd>
+    <dt>Hydrostatic (dry) and wet delay</dt><dd>The two parts of the radar delay in air: the dry part from pressure, about 2.3 m through the whole atmosphere and predictable; the wet part from water vapour, less than 0.3 m and variable.</dd>
+    <dt>Magnus formula</dt><dd>The saturation vapour pressure as a function of temperature; with relative humidity it gives the vapour pressure e that enters N.</dd>
+    <dt>Smith and Weintraub</dt><dd>The 1953 formula for N from pressure, temperature and vapour pressure, used throughout: N = 77.6 p<sub>d</sub>/T + 72 e/T + 3.75·10<sup>5</sup> e/T².</dd>
+    <dt>Height gradient, s(t)</dt><dd>For one pass, fit a straight line of displacement against height across all points. The slope, in mm per 100 m of height, is s(t). The central quantity of the project. <a href="findings.html#signal">Findings A</a>.</dd>
+    <dt>Trend and yearly wave</dt><dd>The two slow parts of s(t): a tilt from the north-east towers sinking (−2.6 mm per 100 m per year) and a yearly wave from thermal expansion (5.3 mm per 100 m). Both removed before looking for air.</dd>
+    <dt>Residual, fast signal</dt><dd>What is left of s(t) after trend and wave, differenced from pass to pass: 1.7 mm per 100 m, the candidate air signal.</dd>
+    <dt>Thermal expansion</dt><dd>Buildings get taller when warm and shorter when cold. A tall building moves more, so this looks exactly like a height-dependent air signal. The main confounder. <a href="idea.html#competitor">The competitor</a>.</dd>
+    <dt>Increment</dt><dd>The change of a quantity since the previous pass, 11 days earlier. The animations' default view.</dd>
+    <dt>Double difference</dt><dd>Two points minus each other, then two passes minus each other. Everything the points share and everything constant in time cancels. <a href="paper.html#dd">Method</a>.</dd>
+    <dt>Reference point</dt><dd>The one reflector against which every displacement in the file is measured. Its location, height and structure are unknown to us, and matter. <a href="questions.html#dataset">Open questions</a>.</dd>
+    <dt>Master image</dt><dd>The pass every other pass is compared with in the radar processing. The file is zero on 10 January 2014; whether that is the master is unconfirmed.</dd>
+    <dt>Cross-range position</dt><dd>Where exactly on a facade a reflector sits across the radar's look direction; an error in it leaks into the estimated height and motion. A nuisance parameter of the paper's method.</dd>
+    <dt>De Bilt, IGRA2, KNMI</dt><dd>De Bilt is the only Dutch radiosonde station, 50 km from Rotterdam. IGRA2 is the public archive of its soundings. KNMI is the Dutch weather service, whose Rotterdam station gives our daily temperatures.</dd>
+    <dt>Joint regression, VIF</dt><dd>Fitting s(t) on temperature and refractivity at once. The variance inflation factor says how tangled the two explanations are: 1 is untangled, ours is 1.12. <a href="findings.html#air">Findings C</a>.</dd>
+    <dt>R²</dt><dd>The share of the variance a fit explains, 0 to 1.</dd>
+    <dt>Ascending and descending</dt><dd>The satellite's two directions of travel, northbound and southbound, looking from opposite sides. We have the descending track, from the east. The ascending one would flip the horizontal terms.</dd>
+    <dt>Layover</dt><dd>A radar effect where the top of a tall building is imaged at the same range as ground far in front of it. One candidate reason nothing shows above 83 m.</dd>
+    <dt>APS filter</dt><dd>Atmospheric phase screen filter: a processing step that removes a smooth atmospheric term from every point. Unknown whether it was applied to our data; if so, part of our signal may already be gone.</dd>
+    <dt>HARMONIE, ERA5</dt><dd>Weather models: the Dutch forecast model at 2.5 km, and the European reanalysis at 30 km. Candidate ground truth at the pass hour.</dd>
+    <dt>BAG, 3DBAG, AHN</dt><dd>The Dutch building register (outlines and construction years, open), its 3D version (roof heights, open), and the national height model. The site's 3D view uses the second.</dd>
+    <dt>RD coordinates</dt><dd>The Dutch national grid (EPSG 28992), in metres. The site's cells are on a fixed RD grid.</dd>
+    <dt>Grid cell</dt><dd>A 25 m square on that grid. Every animated map is made of cells with at least 20 radar points, never of points.</dd>
+    <dt>Kill criteria</dt><dd>Four tests agreed at the start under which the idea is worth pursuing: a signal above the fit noise, scene-wide, separable from thermal expansion, and of the size a sounding predicts. <a href="paper.html#residuals">Method</a>.</dd>
+  </dl>
+
+  <footer data-shared></footer>
+</div>
+<script defer src="js/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<svg viewBox="0 0 760 200" width="100%" role="img" aria-labelledby="d8t d8d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d8t">How the numbers get to this site without the points</title>
+  <desc id="d8d">Four boxes left to right: the TerraSAR-X point file, which never leaves the team; the export script, which averages over groups of at least 20 points; the small data files of the site; and the players and 3D view. A checker box below asserts the minimum group size. A side branch produces the PNG figures.</desc>
+  <defs><marker id="d8a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <rect x="20" y="30" width="170" height="70" rx="6" class="svg-box-warn"/>
+  <text x="105" y="52" class="svg-text" text-anchor="middle" font-weight="600">the point file</text>
+  <text x="105" y="70" class="svg-small" text-anchor="middle">20 594 points × 288 passes</text>
+  <text x="105" y="86" class="svg-small" text-anchor="middle">course only, never public</text>
+  <line x1="190" y1="65" x2="215" y2="65" class="svg-arrow" marker-end="url(#d8a)"/>
+  <rect x="215" y="30" width="190" height="70" rx="6" class="svg-box"/>
+  <text x="310" y="52" class="svg-text" text-anchor="middle" font-weight="600">site_export.py</text>
+  <text x="310" y="70" class="svg-small" text-anchor="middle">means over 25 m cells, buildings,</text>
+  <text x="310" y="86" class="svg-small" text-anchor="middle">height bands, the whole scene</text>
+  <line x1="405" y1="65" x2="430" y2="65" class="svg-arrow" marker-end="url(#d8a)"/>
+  <rect x="430" y="30" width="150" height="70" rx="6" class="svg-box-fill"/>
+  <text x="505" y="52" class="svg-text" text-anchor="middle" font-weight="600">data/*.json, *.bin</text>
+  <text x="505" y="70" class="svg-small" text-anchor="middle">about 0.5 MB in total,</text>
+  <text x="505" y="86" class="svg-small" text-anchor="middle">every record at least 20 points</text>
+  <line x1="580" y1="65" x2="605" y2="65" class="svg-arrow" marker-end="url(#d8a)"/>
+  <rect x="605" y="30" width="135" height="70" rx="6" class="svg-box-good"/>
+  <text x="672" y="52" class="svg-text" text-anchor="middle" font-weight="600">this site</text>
+  <text x="672" y="70" class="svg-small" text-anchor="middle">animations, 3D view,</text>
+  <text x="672" y="86" class="svg-small" text-anchor="middle">tables</text>
+  <!-- side branch: figures -->
+  <path d="M310 100 v30 h120" class="svg-arrow" marker-end="url(#d8a)"/>
+  <rect x="430" y="115" width="150" height="30" rx="6" class="svg-box"/>
+  <text x="505" y="135" class="svg-small" text-anchor="middle">figures/*.png (matplotlib)</text>
+  <!-- checker -->
+  <rect x="215" y="150" width="365" height="40" rx="6" class="svg-box-warn"/>
+  <text x="397" y="167" class="svg-text" text-anchor="middle" font-weight="600">tools/check_data.py</text>
+  <text x="397" y="183" class="svg-small" text-anchor="middle">refuses a group under 20 points, a point attribute, or an array as long as the point set</text>
+  <path d="M505 100 v50" class="svg-arrow" stroke-dasharray="3 3"/>
+</svg>

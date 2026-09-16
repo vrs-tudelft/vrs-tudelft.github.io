@@ -1,0 +1,91 @@
+<svg viewBox="0 0 760 330" width="100%" role="img" aria-labelledby="d1t d1d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d1t">From the weather to the radar phase and back: the chain of the method</title>
+  <desc id="d1d">Ten boxes in two rows. Forward: pressure, temperature and humidity at each height give the vapour pressure, then the refractivity N, then the delay along the ray, referenced to the reference point, then the phase, then the line-of-sight projection. Retrieval: the double difference between two points and two passes, the triangular inversion, and the refractivity per layer.</desc>
+  <defs><marker id="d1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- brackets -->
+  <path d="M30 22 v-8 h420 v8" class="svg-arrow"/>
+  <text x="240" y="10" class="svg-small" text-anchor="middle">forward model: what a known atmosphere does to the radar (section 3.1 of the paper, the end-to-end simulation)</text>
+  <path d="M30 318 v8 h700 v-8" class="svg-arrow"/>
+  <text x="380" y="316" class="svg-small" text-anchor="middle">retrieval: from radar phases back to the air (sections 3.2 to 3.4)</text>
+  <!-- row 1 -->
+  <g>
+    <rect x="30" y="40" width="130" height="60" rx="6" class="svg-box"/>
+    <text x="95" y="62" class="svg-text" text-anchor="middle" font-weight="600">P, T, RH at height z</text>
+    <text x="95" y="80" class="svg-small" text-anchor="middle">what a balloon measures</text>
+    <text x="95" y="93" class="svg-small" text-anchor="middle">(De Bilt, once a day)</text>
+  </g>
+  <line x1="160" y1="70" x2="180" y2="70" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="180" y="40" width="120" height="60" rx="6" class="svg-box"/>
+    <text x="240" y="62" class="svg-text" text-anchor="middle" font-weight="600">vapour pressure e</text>
+    <text x="240" y="80" class="svg-small" text-anchor="middle">e = RH/100 · e_s(T)</text>
+    <text x="240" y="93" class="svg-small" text-anchor="middle">Magnus formula</text>
+  </g>
+  <line x1="300" y1="70" x2="320" y2="70" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="320" y="40" width="180" height="60" rx="6" class="svg-box-fill"/>
+    <text x="410" y="60" class="svg-text" text-anchor="middle" font-weight="600">refractivity N</text>
+    <text x="410" y="78" class="svg-eq" text-anchor="middle">N = 77.6 p_d/T + 72 e/T + 3.75·10⁵ e/T²</text>
+    <text x="410" y="93" class="svg-small" text-anchor="middle">one number for the air, about 300 near the ground</text>
+  </g>
+  <line x1="500" y1="70" x2="520" y2="70" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="520" y="40" width="210" height="60" rx="6" class="svg-box"/>
+    <text x="625" y="60" class="svg-text" text-anchor="middle" font-weight="600">delay along the ray</text>
+    <text x="625" y="78" class="svg-eq" text-anchor="middle">d(z) = 10⁻⁶ ∫ N ds</text>
+    <text x="625" y="93" class="svg-small" text-anchor="middle">31 mm per 100 m of air near the ground</text>
+  </g>
+  <!-- connector down -->
+  <path d="M625 100 v20 h-590 v20" class="svg-arrow" marker-end="url(#d1a)"/>
+  <!-- row 2 -->
+  <g>
+    <rect x="30" y="140" width="150" height="60" rx="6" class="svg-box"/>
+    <text x="105" y="160" class="svg-text" text-anchor="middle" font-weight="600">a zero: the reference point</text>
+    <text x="105" y="178" class="svg-small" text-anchor="middle">d(RP) = 0 for every pass</text>
+    <text x="105" y="192" class="svg-small" text-anchor="middle">its location and height are unknown to us</text>
+  </g>
+  <line x1="180" y1="170" x2="200" y2="170" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="200" y="140" width="130" height="60" rx="6" class="svg-box"/>
+    <text x="265" y="160" class="svg-text" text-anchor="middle" font-weight="600">phase</text>
+    <text x="265" y="178" class="svg-eq" text-anchor="middle">ψ = 4π d / λ</text>
+    <text x="265" y="192" class="svg-small" text-anchor="middle">λ = 3.1 cm: one cycle per 1.55 cm</text>
+  </g>
+  <line x1="330" y1="170" x2="350" y2="170" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="350" y="140" width="150" height="60" rx="6" class="svg-box"/>
+    <text x="425" y="160" class="svg-text" text-anchor="middle" font-weight="600">line of sight</text>
+    <text x="425" y="178" class="svg-eq" text-anchor="middle">slant = zenith / cos 23°</text>
+    <text x="425" y="192" class="svg-small" text-anchor="middle">what the satellite measures</text>
+  </g>
+  <line x1="500" y1="170" x2="520" y2="170" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="520" y="140" width="210" height="60" rx="6" class="svg-box-warn"/>
+    <text x="625" y="160" class="svg-text" text-anchor="middle" font-weight="600">double difference</text>
+    <text x="625" y="178" class="svg-small" text-anchor="middle">two points (A minus B), two passes (now minus the first)</text>
+    <text x="625" y="192" class="svg-small" text-anchor="middle">plus building motion, plus noise</text>
+  </g>
+  <!-- connector down -->
+  <path d="M625 200 v20 h-590 v20" class="svg-arrow" marker-end="url(#d1a)"/>
+  <!-- row 3 -->
+  <g>
+    <rect x="30" y="240" width="230" height="60" rx="6" class="svg-box"/>
+    <text x="145" y="260" class="svg-text" text-anchor="middle" font-weight="600">remove the building motion</text>
+    <text x="145" y="278" class="svg-small" text-anchor="middle">trend, yearly wave, curvature per point;</text>
+    <text x="145" y="292" class="svg-small" text-anchor="middle">what is left changes from pass to pass</text>
+  </g>
+  <line x1="260" y1="270" x2="280" y2="270" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="280" y="240" width="220" height="60" rx="6" class="svg-box"/>
+    <text x="390" y="260" class="svg-text" text-anchor="middle" font-weight="600">the height-difference inversion</text>
+    <text x="390" y="278" class="svg-eq" text-anchor="middle">Δd = 10⁻⁶ · L · N / cos 23°</text>
+    <text x="390" y="292" class="svg-small" text-anchor="middle">L: layer thicknesses, lower triangular</text>
+  </g>
+  <line x1="500" y1="270" x2="520" y2="270" class="svg-arrow" marker-end="url(#d1a)"/>
+  <g>
+    <rect x="520" y="240" width="210" height="60" rx="6" class="svg-box-good"/>
+    <text x="625" y="260" class="svg-text" text-anchor="middle" font-weight="600">N per layer, per pass</text>
+    <text x="625" y="278" class="svg-small" text-anchor="middle">today: one layer mean, 0 to 83 m;</text>
+    <text x="625" y="292" class="svg-small" text-anchor="middle">1.69 mm per 100 m ≈ 16 N-units of change</text>
+  </g>
+</svg>

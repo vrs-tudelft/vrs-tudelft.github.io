@@ -1,0 +1,32 @@
+<svg viewBox="0 0 760 210" width="100%" role="img" aria-labelledby="d6t d6d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d6t">What was measured when, 2013 to 2026</title>
+  <desc id="d6d">A time axis from 2013 to 2026. TerraSAR-X passes form a dense band from January 2014 to December 2023, 288 passes every 11 days. De Bilt balloon launches run daily through the whole period. KNMI Rotterdam daily weather runs through the whole period too. In 2026 the course markers: data received on 2 September, first results on 6 September, midterm in the week of 21 September, paper submission on 22 October.</desc>
+  <!-- axis: 2013.0 -> x=40, 2027.0 -> x=740, so 50 px per year -->
+  <line x1="40" y1="150" x2="740" y2="150" class="svg-arrow"/>
+  <g class="svg-small">
+    <text x="90" y="168" text-anchor="middle">2014</text><text x="190" y="168" text-anchor="middle">2016</text><text x="290" y="168" text-anchor="middle">2018</text>
+    <text x="390" y="168" text-anchor="middle">2020</text><text x="490" y="168" text-anchor="middle">2022</text><text x="590" y="168" text-anchor="middle">2024</text><text x="690" y="168" text-anchor="middle">2026</text>
+  </g>
+  <!-- TSX band: 2014-01-10 (x=90.5) to 2023-12-30 (x=590) -->
+  <text x="40" y="44" class="svg-text" font-weight="600">TerraSAR-X passes</text>
+  <rect x="90" y="50" width="500" height="14" class="svg-layer" style="opacity:.9"/>
+  <g stroke="var(--accent)" stroke-width="1">
+    <line x1="92" y1="50" x2="92" y2="64"/><line x1="102" y1="50" x2="102" y2="64"/><line x1="112" y1="50" x2="112" y2="64"/><line x1="122" y1="50" x2="122" y2="64"/>
+    <line x1="132" y1="50" x2="132" y2="64"/><line x1="142" y1="50" x2="142" y2="64"/><line x1="152" y1="50" x2="152" y2="64"/><line x1="162" y1="50" x2="162" y2="64"/>
+  </g>
+  <text x="600" y="61" class="svg-small">288 passes, one every 11 days, 06:40 or so in the morning (hour not confirmed)</text>
+  <!-- De Bilt -->
+  <text x="40" y="86" class="svg-text" font-weight="600">De Bilt balloon</text>
+  <rect x="40" y="92" width="700" height="8" fill="var(--good)" opacity=".5"/>
+  <text x="40" y="114" class="svg-small">every day at midnight, 50 km away; first archived reading about 650 m up</text>
+  <!-- KNMI -->
+  <text x="40" y="132" class="svg-text" font-weight="600">KNMI Rotterdam daily weather</text>
+  <rect x="40" y="136" width="700" height="8" fill="var(--warn)" opacity=".5"/>
+  <!-- 2026 markers: 2026.67 -> x=723.5 ; use a magnified inset instead -->
+  <g transform="translate(560,180)">
+    <text x="0" y="0" class="svg-small" font-weight="600">2026, the course:</text>
+    <text x="0" y="14" class="svg-small">31 Aug start · 2 Sep data received · 6 Sep first results · 21 Sep midterm · 22 Oct paper and presentation</text>
+  </g>
+  <line x1="723" y1="150" x2="723" y2="144" class="svg-arrow-warn"/>
+  <circle cx="723" cy="150" r="4" fill="var(--warn)"/>
+</svg>
