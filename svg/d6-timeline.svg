@@ -14,11 +14,11 @@
     <line x1="92" y1="50" x2="92" y2="64"/><line x1="102" y1="50" x2="102" y2="64"/><line x1="112" y1="50" x2="112" y2="64"/><line x1="122" y1="50" x2="122" y2="64"/>
     <line x1="132" y1="50" x2="132" y2="64"/><line x1="142" y1="50" x2="142" y2="64"/><line x1="152" y1="50" x2="152" y2="64"/><line x1="162" y1="50" x2="162" y2="64"/>
   </g>
-  <text x="600" y="61" class="svg-small">288 passes, one every 11 days, 06:40 or so in the morning (hour not confirmed)</text>
+  <text x="90" y="76" class="svg-small">288 passes, one every 11 days, 2014 to 2023; early morning by the orbit, the hour is not confirmed</text>
   <!-- De Bilt -->
-  <text x="40" y="86" class="svg-text" font-weight="600">De Bilt balloon</text>
-  <rect x="40" y="92" width="700" height="8" fill="var(--good)" opacity=".5"/>
-  <text x="40" y="114" class="svg-small">every day at midnight, 50 km away; first archived reading about 650 m up</text>
+  <text x="40" y="96" class="svg-text" font-weight="600">De Bilt balloon</text>
+  <rect x="40" y="100" width="700" height="8" fill="var(--good)" opacity=".5"/>
+  <text x="40" y="120" class="svg-small">every day at midnight, 50 km away; first archived reading about 650 m up</text>
   <!-- KNMI -->
   <text x="40" y="132" class="svg-text" font-weight="600">KNMI Rotterdam daily weather</text>
   <rect x="40" y="136" width="700" height="8" fill="var(--warn)" opacity=".5"/>
