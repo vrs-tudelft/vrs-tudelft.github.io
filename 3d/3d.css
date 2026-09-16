@@ -1,38 +1,38 @@
 /* The 3D view: layout on top of the site tokens in ../style.css */
-.viewer { display: grid; grid-template-columns: 1fr 300px; gap: 12px; margin: 12px 0 8px; }
+.viewer { display: grid; grid-template-columns: 1fr 280px; gap: 16px; margin: 8px 0; }
 @media (max-width: 800px) { .viewer { grid-template-columns: 1fr; } }
-.stage { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-height: 360px; aspect-ratio: 16 / 10; }
+.stage { position: relative; background: var(--panel); border: 1px solid var(--line); overflow: hidden; min-height: 360px; aspect-ratio: 16 / 10; }
 .stage canvas.gl { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
-.stage .hud { position: absolute; left: 10px; top: 10px; font-size: .8rem; color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 4px 8px; border-radius: 6px; pointer-events: none; max-width: 70%; }
-.stage .overlay { position: absolute; right: 10px; bottom: 10px; font-size: .85rem; color: var(--ink); background: color-mix(in srgb, var(--panel) 88%, transparent); padding: 8px 10px; border-radius: 6px; max-width: 320px; display: none; }
+.stage .hud { position: absolute; left: 10px; top: 8px; font-size: .8rem; color: var(--muted); pointer-events: none; max-width: 70%; }
+.stage .overlay { position: absolute; right: 10px; bottom: 10px; font-size: .85rem; color: var(--ink); background: color-mix(in srgb, var(--panel) 90%, transparent); padding: 8px 10px; max-width: 320px; display: none; border: 1px solid var(--line); }
 .stage .overlay.on { display: block; }
 .stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .95rem; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: .9rem; }
-.panel h3 { margin: 0 0 8px; font-size: 1rem; }
-.panel label { display: block; margin: 4px 0; }
-.panel select, .panel button, .panel input[type="range"] { font: inherit; font-size: .9rem; }
-.panel select { width: 100%; min-height: 36px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
-.panel .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
-.panel button { min-height: 36px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
-.panel button:hover { border-color: var(--accent); }
-.panel button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.panel { font-size: .9rem; }
+.panel h3 { margin: 0 0 6px; font-size: .95rem; }
+.panel h3 + select, .panel .row { margin-bottom: 10px; }
+.panel select, .panel button, .panel input[type="range"] { font: inherit; font-size: .88rem; }
+.panel select { width: 100%; min-height: 34px; padding: 4px 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 4px; }
+.panel .row { display: flex; flex-wrap: wrap; gap: 6px; }
+.panel button { min-height: 34px; padding: 4px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; border-radius: 4px; }
+.panel button:hover { border-color: var(--muted); }
+.panel button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.panel .checks { margin: 4px 0 14px; }
 .panel .checks label { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--muted); }
-.legend { margin: 8px 0 0; }
+.legend { margin: 6px 0 16px; }
 .legend canvas { width: 100%; height: 44px; display: block; }
-.legend .lt { font-size: .82rem; color: var(--muted); margin: 2px 0 0; }
-.card { font-size: .88rem; }
-.card h4 { margin: 8px 0 4px; text-transform: none; letter-spacing: 0; color: var(--ink); font-size: .95rem; }
-.card table { font-size: .82rem; }
-.card td { padding: 3px 6px; }
+.legend .lt { font-size: .8rem; color: var(--muted); }
+.card { font-size: .86rem; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+.card h4 { margin: 0 0 4px; font-size: .95rem; font-weight: 600; }
+.card table { font-size: .8rem; margin: 0; }
+.card td { padding: 3px 6px 3px 0; }
 .card canvas { width: 100%; height: 70px; display: block; margin-top: 6px; }
-.timepanel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 8px 0 16px; }
+.timepanel { margin: 14px 0 8px; }
 .timepanel .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.timepanel input[type="range"] { flex: 1 1 260px; accent-color: var(--accent); height: 40px; margin: 0; }
-.timepanel button, .timepanel select { font: inherit; font-size: .9rem; min-height: 40px; min-width: 40px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
-.timepanel button.play { background: var(--accent); color: #fff; border-color: var(--accent); }
+.timepanel input[type="range"] { flex: 1 1 260px; accent-color: var(--accent); height: 38px; margin: 0; }
+.timepanel button, .timepanel select { font: inherit; font-size: .9rem; min-height: 38px; min-width: 38px; padding: 4px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; border-radius: 4px; }
+.timepanel button.play { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .timepanel .epoch { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; margin: 6px 0 0; min-height: 1.3em; }
-.timepanel .modes label { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; color: var(--muted); font-size: .88rem; }
+.timepanel .modes label { display: inline-flex; align-items: center; gap: 4px; margin: 6px 12px 0 0; color: var(--muted); font-size: .88rem; }
 .strip { width: 100%; height: 110px; display: block; margin-top: 8px; cursor: crosshair; }
-.checks { font-size: .88rem; }
 @media (max-width: 480px) { .timepanel input[type="range"] { flex-basis: 100%; } }
 @media print { .viewer, .timepanel { display: none; } }

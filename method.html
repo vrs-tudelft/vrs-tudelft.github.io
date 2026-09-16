@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data and method · Virtual Radiosonde</title>
+<meta name="description" content="The TerraSAR-X record over Kop van Zuid, the three kinds of height, the ground truth, how the method works from refractivity to radar phase and back, what the paper will contain, and what is still open.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="index.html">Virtual Radiosonde</a>
+    <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
+  </header>
+
+  <h1>Data and method</h1>
+  <p class="lead">One radar record, two weather records, one building register, and the chain of reasoning that turns a radar phase into a reading of the air.</p>
+  <p class="contents">On this page: <a href="#data">The data</a> <a href="#heights">Three heights</a> <a href="#truth">The ground truth</a> <a href="#chain">The method</a> <a href="#paper">The paper</a> <a href="#open">What is still open</a> <a href="#words">Words</a> <a href="#rule">What is on this site</a></p>
+
+  <h2 id="data">The data</h2>
+  <p>The test set covers the Wilhelminapier on the south bank of the Nieuwe Maas in Rotterdam: about 530 by 450 m of quays, a few old warehouses, and a row of towers built between 2000 and 2017, among them De Rotterdam (149 m) and the Maastoren (165 m). It was chosen because it has high-rise. It is a best case for the method, not a city average.</p>
+  <p>TerraSAR-X passed over it 288 times between 10 January 2014 and 30 December 2023, on a descending track, looking to the west-north-west at 23° from vertical. The interval is 11 days for 89 % of the steps, the largest gap is 44 days, and every season is covered about equally. The hour of the pass is not in the file; from the dawn-dusk orbit it should be early morning, but that is our arithmetic, not a confirmed value.</p>
+  <p>The file holds 20 594 persistent scatterers, reflectors that returned a stable echo on every pass. For each it gives the position, several heights, a coherence (how well the echo fits a stable-point model), a quality number whose definition we do not have, the fitted rate, curvature and yearly wave of its motion, and the 288 displacements themselves in millimetres along the line of sight, all zero on the first pass. Most of the analysis uses the 11 818 points with coherence above 0.6. Two conventions run through the site and neither is confirmed by the data's producer: a positive displacement is read as towards the satellite, so a sinking building has a negative rate; and 10 January 2014 is the zero of every series, whether or not it is also the master image of the processing. There is also a reference point, one reflector against which every displacement is measured, and we do not know where it is, how high, or what it stands on.</p>
+  <figure>
+    <img src="figures/31-pass-calendar.png" width="1734" height="601" alt="Calendar of the 288 passes, one row per year, coloured by the daily mean air temperature on that day." loading="lazy">
+    <figcaption><b>Figure 31.</b> The 288 passes on a calendar, coloured by the day's mean air temperature at Rotterdam airport. Every 11 days, in every season.</figcaption>
+  </figure>
+
+  <h2 id="heights">Three heights</h2>
+  <p>Three different things get called height, and mixing them is the classic error. The terrain: the file's ground model minus the geoid comes out at 3.0 to 3.5 m above sea level for every point, under the towers as much as on the quays, so it is a terrain model and heights above it are safe. The roofs: the national 3D building register gives one height per building, 46 buildings inside the scene box, the tallest 158 m. The radar points: median 14.7 m above ground, half of them within 31 m of each other, five times more spread than the roofs because a facade returns echoes at many levels. The last one is the height the method depends on.</p>
+  <p>No radar point is higher than 83 m, although the register confirms four buildings above 100 m in the scene. Three candidate causes, none confirmed: a height search window in the processing; layover, where the top of a tall building is imaged at the same range as ground far in front of it; or upper facades with no surface facing the satellite steadily. The answer decides whether the ceiling of the method in this city is 83 m or 150 m.</p>
+  <figure>
+    <img src="figures/30-roof-vs-scatterer-heights.png" width="2073" height="813" alt="Per building, the roof height from the register against the highest radar points; and histograms of roof and radar-point heights." loading="lazy">
+    <figcaption><b>Figure 30.</b> Roofs against radar points. Low buildings sit on the one-to-one line; every tower above 83 m stops at 57 to 69 m of radar points, whatever its roof height. This is also the height input for the paper's simulation.</figcaption>
+  </figure>
+
+  <h2 id="truth">The ground truth</h2>
+  <p>Two weather records check the radar against the air. The De Bilt soundings (4 318 in the public archive, 2014 to 2023): launched at midnight 50 km away, with a first archived reading typically 650 m above the ground, so their value for our lowest 83 m is an interpolation. Over that layer they say the refractivity falls by 3.4 N-units on average, 2.3 of which is the predictable pressure part and 1.2 the wet part that varies. Their 11-day change of the layer delay, 1.18 mm per 100 m, is the reference size for what the radar should see. And KNMI Rotterdam, daily temperature and humidity, the stand-in for the temperature of the buildings, lagged by five days. The one fixed alternative to the balloon, the Cabauw tower with instruments at seven levels up to 200 m, also stands in the countryside. The KNMI high-resolution sounding files, with a reading every few metres, exist and are the next thing to get.</p>
+  <figure>
+    <img src="figures/19-debilt-reference.png" width="2098" height="690" alt="Where the first sounding level sits, the dry and wet refractivity change over the lowest 83 m, and the layer's delay over the decade." loading="lazy">
+    <figcaption><b>Figure 19.</b> What the balloon says: where its first level sits, the dry and wet change of refractivity across the lowest 83 m, and the layer's delay over the decade. The sonde has about one level in our layer.</figcaption>
+  </figure>
+
+  <h2 id="chain">The method</h2>
+  <p>A radar signal is delayed by the air it crosses, and the delay is set by the refractivity of that air: the refractive index minus one, times a million, a number around 300 near the ground. Refractivity follows from what a balloon measures, with pressure and vapour pressure in hectopascal and temperature in kelvin:</p>
+  <span class="eq">N = 77.6 p<sub>d</sub>/T + 72 e/T + 3.75·10<sup>5</sup> e/T<sup>2</sup></span>
+  <p>The first term is the dry part, predictable from pressure; the last two are the wet part, where the variation is. The delay along the ray is the integral of N, the phase follows from the wavelength, and the slant path from the incidence angle:</p>
+  <span class="eq">d = 10<sup>−6</sup> ∫ N ds &nbsp;&nbsp; ψ = 4π d / λ &nbsp;&nbsp; slant = zenith / cos 23°</span>
+  <p>A hundred metres of ordinary air near the ground delays the signal by 31 mm; the whole atmosphere, straight up, by about 2.3 m of which less than 0.3 m is water vapour. Interferometry sees none of those totals, only how they differ between two points and between two passes.</p>
+  <figure class="diagram">
+    <svg data-svg="d1" viewBox="0 0 760 340" width="100%" role="img" aria-labelledby="d1t d1d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d1t">From the weather to the radar phase and back: the chain of the method</title>
+  <desc id="d1d">Ten boxes in three rows. Forward: pressure, temperature and humidity at each height give the vapour pressure, then the refractivity N, then the delay along the ray, referenced to the reference point, then the phase, then the line-of-sight projection. Retrieval: the double difference between two points and two passes, the removal of building motion, the triangular inversion, and the refractivity per layer.</desc>
+  <defs><marker id="d1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- brackets -->
+  <path d="M30 26 v-6 h700 v6" class="svg-arrow"/>
+  <text x="380" y="14" class="svg-small" text-anchor="middle">forward model: what a known atmosphere does to the radar (the end-to-end simulation, section 3.1 of the paper)</text>
+  <path d="M30 326 v6 h700 v-6" class="svg-arrow"/>
+  <text x="380" y="326" class="svg-small" text-anchor="middle">retrieval: from radar phases back to the air (sections 3.2 to 3.4)</text>
+  <!-- row 1 -->
+  <rect x="30" y="40" width="130" height="62" rx="6" class="svg-box"/>
+  <text x="95" y="60" class="svg-text" text-anchor="middle" font-weight="600">P, T, RH at height z</text>
+  <text x="95" y="78" class="svg-small" text-anchor="middle">what a balloon measures</text>
+  <text x="95" y="92" class="svg-small" text-anchor="middle">(De Bilt, once a day)</text>
+  <line x1="160" y1="71" x2="176" y2="71" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="176" y="40" width="118" height="62" rx="6" class="svg-box"/>
+  <text x="235" y="60" class="svg-text" text-anchor="middle" font-weight="600">vapour pressure e</text>
+  <text x="235" y="78" class="svg-small" text-anchor="middle">e = RH/100 · e_s(T)</text>
+  <text x="235" y="92" class="svg-small" text-anchor="middle">Magnus formula</text>
+  <line x1="294" y1="71" x2="310" y2="71" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="310" y="40" width="230" height="62" rx="6" class="svg-box-fill"/>
+  <text x="425" y="58" class="svg-text" text-anchor="middle" font-weight="600">refractivity N</text>
+  <text x="425" y="76" class="svg-eq" text-anchor="middle" font-size="11">N = 77.6 p_d/T + 72 e/T + 3.75·10⁵ e/T²</text>
+  <text x="425" y="92" class="svg-small" text-anchor="middle" font-size="10">one number for the air, about 300 near the ground</text>
+  <line x1="540" y1="71" x2="556" y2="71" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="556" y="40" width="174" height="62" rx="6" class="svg-box"/>
+  <text x="643" y="58" class="svg-text" text-anchor="middle" font-weight="600">delay along the ray</text>
+  <text x="643" y="76" class="svg-eq" text-anchor="middle">d(z) = 10⁻⁶ ∫ N ds</text>
+  <text x="643" y="92" class="svg-small" text-anchor="middle">31 mm per 100 m of air</text>
+  <!-- connector down -->
+  <path d="M643 102 v18 h-548 v18" class="svg-arrow" marker-end="url(#d1a)"/>
+  <!-- row 2 -->
+  <rect x="30" y="140" width="176" height="62" rx="6" class="svg-box"/>
+  <text x="118" y="158" class="svg-text" text-anchor="middle" font-weight="600">a zero: the reference point</text>
+  <text x="118" y="176" class="svg-small" text-anchor="middle">d(RP) = 0 on every pass;</text>
+  <text x="118" y="190" class="svg-small" text-anchor="middle" font-size="10">where and how high we do not know</text>
+  <line x1="206" y1="171" x2="222" y2="171" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="222" y="140" width="140" height="62" rx="6" class="svg-box"/>
+  <text x="292" y="158" class="svg-text" text-anchor="middle" font-weight="600">phase</text>
+  <text x="292" y="176" class="svg-eq" text-anchor="middle">ψ = 4π d / λ</text>
+  <text x="292" y="190" class="svg-small" text-anchor="middle">λ = 3.1 cm: a cycle per 1.55 cm</text>
+  <line x1="362" y1="171" x2="378" y2="171" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="378" y="140" width="150" height="62" rx="6" class="svg-box"/>
+  <text x="453" y="158" class="svg-text" text-anchor="middle" font-weight="600">line of sight</text>
+  <text x="453" y="176" class="svg-eq" text-anchor="middle">slant = zenith / cos 23°</text>
+  <text x="453" y="190" class="svg-small" text-anchor="middle">what the satellite measures</text>
+  <line x1="528" y1="171" x2="544" y2="171" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="544" y="140" width="186" height="62" rx="6" class="svg-box-warn"/>
+  <text x="637" y="158" class="svg-text" text-anchor="middle" font-weight="600">double difference</text>
+  <text x="637" y="176" class="svg-small" text-anchor="middle" font-size="10">A minus B, this pass minus the first;</text>
+  <text x="637" y="190" class="svg-small" text-anchor="middle">plus building motion, plus noise</text>
+  <!-- connector down -->
+  <path d="M637 202 v18 h-517 v18" class="svg-arrow" marker-end="url(#d1a)"/>
+  <!-- row 3 -->
+  <rect x="30" y="240" width="220" height="62" rx="6" class="svg-box"/>
+  <text x="140" y="258" class="svg-text" text-anchor="middle" font-weight="600">remove the building motion</text>
+  <text x="140" y="276" class="svg-small" text-anchor="middle">trend, yearly wave, curvature per point;</text>
+  <text x="140" y="290" class="svg-small" text-anchor="middle">what is left changes from pass to pass</text>
+  <line x1="250" y1="271" x2="266" y2="271" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="266" y="240" width="250" height="62" rx="6" class="svg-box"/>
+  <text x="391" y="258" class="svg-text" text-anchor="middle" font-weight="600">the height-difference inversion</text>
+  <text x="391" y="276" class="svg-eq" text-anchor="middle">Δd = 10⁻⁶ · L · N / cos 23°</text>
+  <text x="391" y="290" class="svg-small" text-anchor="middle">L: the layer thicknesses, lower triangular</text>
+  <line x1="516" y1="271" x2="532" y2="271" class="svg-arrow" marker-end="url(#d1a)"/>
+  <rect x="532" y="240" width="198" height="62" rx="6" class="svg-box-good"/>
+  <text x="631" y="258" class="svg-text" text-anchor="middle" font-weight="600">N per layer, per pass</text>
+  <text x="631" y="276" class="svg-small" text-anchor="middle">today: one layer mean, 0 to 83 m;</text>
+  <text x="631" y="290" class="svg-small" text-anchor="middle">1.69 mm/100 m ≈ 16 N-units of change</text>
+</svg>
+    <figcaption>The chain, forward and back. The top row turns a known atmosphere into a radar delay, which is what the paper's simulation will do with real building heights; the lower rows go the other way, from measured phases to a refractivity per layer.</figcaption>
+  </figure>
+  <p>Nothing in interferometry is absolute. Every phase is relative to a reference point in space and to a reference pass in time. Taking a high point minus a low point removes the reference point, the orbit and the air above both; taking this pass minus the first removes the topography and any constant. What survives is the change of the delay through the layer between the two heights, plus the change of the buildings themselves. The state of the first pass can be recovered from the stack afterwards, because the sum of all interferograms equals the sum of the true states minus the first state taken as many times, and the true states average to a known climatology.</p>
+  <figure class="diagram">
+    <svg data-svg="d3" viewBox="0 0 760 370" width="100%" role="img" aria-labelledby="d3t d3d" xmlns="http://www.w3.org/2000/svg">
+  <title id="d3t">The reference point and the double difference</title>
+  <desc id="d3d">Left: a cross-section with a high point A, a low point B and the unknown reference point RP on a third building; rays come in at 23 degrees from vertical. Right: a two-by-two table of the four phases, point A and B on two passes, with the formula of the double difference and a note on what cancels.</desc>
+  <defs><marker id="d3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
+  <!-- left: section -->
+  <rect x="20" y="270" width="340" height="12" class="svg-ground"/>
+  <rect x="60" y="90" width="60" height="180" class="svg-building"/>
+  <rect x="170" y="210" width="70" height="60" class="svg-building"/>
+  <rect x="280" y="150" width="60" height="120" class="svg-building"/>
+  <circle cx="120" cy="120" r="5" class="svg-dot"/><text x="128" y="116" class="svg-text" font-weight="600">A</text>
+  <circle cx="240" cy="240" r="5" class="svg-dot"/><text x="248" y="236" class="svg-text" font-weight="600">B</text>
+  <circle cx="340" cy="180" r="5" fill="var(--warn)"/><text x="300" y="140" class="svg-text" font-weight="600" fill="var(--warn)">RP ?</text>
+  <text x="240" y="300" class="svg-small" text-anchor="middle">every displacement in the file is relative to one reference point:</text>
+  <text x="240" y="314" class="svg-small" text-anchor="middle">where it is, how high, and what it sits on, we do not yet know</text>
+  <!-- rays at ~23 deg from vertical -->
+  <line x1="170" y1="10" x2="123" y2="115" class="svg-ray" marker-end="url(#d3a)"/>
+  <line x1="290" y1="130" x2="243" y2="235" class="svg-ray" marker-end="url(#d3a)"/>
+  <line x1="390" y1="70" x2="343" y2="175" class="svg-ray" marker-end="url(#d3a)"/>
+  <text x="200" y="30" class="svg-small">to the satellite, 23° from vertical</text>
+  <!-- bracket: layer -->
+  <line x1="40" y1="120" x2="40" y2="240" class="svg-arrow-accent" marker-start="url(#d3a)" marker-end="url(#d3a)"/>
+  <text x="46" y="184" class="svg-small" fill="var(--accent)">the layer</text>
+  <!-- right: table -->
+  <g transform="translate(400,40)">
+    <text x="170" y="0" class="svg-text" text-anchor="middle" font-weight="600">four phases, one double difference</text>
+    <rect x="60" y="14" width="140" height="28" class="svg-box"/><text x="130" y="33" class="svg-small" text-anchor="middle">pass t₁ (the first, January 2014)</text>
+    <rect x="200" y="14" width="140" height="28" class="svg-box"/><text x="270" y="33" class="svg-small" text-anchor="middle">pass t₂ (any later pass)</text>
+    <rect x="0" y="42" width="60" height="50" class="svg-box"/><text x="30" y="72" class="svg-text" text-anchor="middle" font-weight="600">A</text>
+    <rect x="0" y="92" width="60" height="50" class="svg-box"/><text x="30" y="122" class="svg-text" text-anchor="middle" font-weight="600">B</text>
+    <rect x="60" y="42" width="140" height="50" class="svg-box-fill"/><text x="130" y="72" class="svg-eq" text-anchor="middle">φ_A(t₁)</text>
+    <rect x="200" y="42" width="140" height="50" class="svg-box-fill"/><text x="270" y="72" class="svg-eq" text-anchor="middle">φ_A(t₂)</text>
+    <rect x="60" y="92" width="140" height="50" class="svg-box-fill"/><text x="130" y="122" class="svg-eq" text-anchor="middle">φ_B(t₁)</text>
+    <rect x="200" y="92" width="140" height="50" class="svg-box-fill"/><text x="270" y="122" class="svg-eq" text-anchor="middle">φ_B(t₂)</text>
+    <text x="170" y="172" class="svg-eq" text-anchor="middle">[φ_A(t₂) − φ_B(t₂)] − [φ_A(t₁) − φ_B(t₁)]</text>
+    <text x="170" y="196" class="svg-small" text-anchor="middle">A minus B cancels everything the two points share:</text>
+    <text x="170" y="210" class="svg-small" text-anchor="middle">the reference point, the orbit, the air above both of them</text>
+    <text x="170" y="228" class="svg-small" text-anchor="middle">t₂ minus t₁ cancels everything that does not change:</text>
+    <text x="170" y="242" class="svg-small" text-anchor="middle">the topography, the height of each point, any constant offset</text>
+    <rect x="0" y="258" width="340" height="52" rx="6" class="svg-box-warn"/>
+    <text x="170" y="277" class="svg-small" text-anchor="middle">but: if the reference point sits on a building that expands in summer,</text>
+    <text x="170" y="291" class="svg-small" text-anchor="middle">every other point inherits its mirror image, peaking near day 28.</text>
+    <text x="170" y="305" class="svg-small" text-anchor="middle">The open ground peaks on day 45. Close, not equal: an open question.</text>
+  </g>
+</svg>
+    <figcaption>The reference point and the double difference. Left, a cross-section with a high point, a low point and the unknown reference point; right, the four phases and what cancels.</figcaption>
+  </figure>
+  <p>With height levels at fixed steps and one refractivity per layer, the delay difference between a level and the reference level is the sum of the layers the ray crosses, so the system is lower triangular and solves from the bottom up, one new unknown per row. In the data so far the profile is a straight line with a fixed kink, so the honest product today is one layer mean per pass. Refractivity per layer is the paper's success criterion; splitting it into a dry and a wet part is the second step; pressure, temperature and humidity separately is the stretch goal and needs one more constraint, for example a surface temperature.</p>
+  <p>The residuals are made in the simplest defensible way: an offset, a trend and a yearly wave are fitted to every point's own ten-year series and what is left is kept. The trend absorbs the sinking and the wave most of the thermal expansion; neither is assumed, both are estimated per point. Two things this does not yet do: model the buildings individually, with the sideways term the <a href="findings.html#buildings">findings</a> found, and account for a reference point whose own motion is unknown. Before the inverse is trusted, the forward model will be run on known inputs: the real heights of the scene, simulated profiles of pressure, temperature and humidity, and the nuisances the real data has, noise, displacement, the cross-range position of a reflector, thermal expansion. That simulation has not been run yet.</p>
+
+  <h2 id="paper">The paper</h2>
+  <p>The team writes one manuscript, <em>Reconstruction of the near-surface atmospheric refractivity profile from satellite InSAR: potential and limitations</em>, twelve student authors in alphabetical order with the supervisor and two co-supervisors, due 22 October 2026. Its draft is not on this site. Each section was set out as a question; where this site carries evidence for it, the table says where.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Section</th><th>Its question</th><th>Evidence so far</th></tr></thead>
+    <tbody>
+      <tr><td>1 Introduction</td><td>Why does a city need repeated profiles of its lowest few hundred metres; who measures them today and how finely; what do we not understand about the urban heat island; why would forecasters want this?</td><td><a href="index.html">Home</a></td></tr>
+      <tr><td>2 Theory</td><td>How does refractivity link to pressure, temperature and humidity and to the radar delay; which assumptions; how predictable is pressure with height?</td><td>this page</td></tr>
+      <tr><td>3.1 End-to-end simulation</td><td>With real heights and simulated profiles, how many points are needed, and how do noise, displacement and thermal expansion affect the estimate?</td><td>heights prepared, not run</td></tr>
+      <tr><td>3.2 Creating residuals</td><td>How to remove everything that is not the vertical stratification, and how to know it worked?</td><td>this page, <a href="findings.html#buildings">findings</a></td></tr>
+      <tr><td>3.3, 3.4 Disentangling</td><td>Is there an elevation-dependent signal in the residuals; can pressure be isolated first?</td><td><a href="findings.html">findings</a></td></tr>
+      <tr><td>4 Results</td><td>The data sets; what real soundings imply; do we see a signal; fog, frost, humid summer days</td><td><a href="findings.html">findings</a>; special cases not started</td></tr>
+      <tr><td>5 to 7</td><td>Does it make sense; impact and limitations; conclusions</td><td>not started</td></tr>
+    </tbody>
+  </table></div>
+  <p class="aside">The manuscript's abstract speaks of 450 profiles between 2014 and 2024. Our record is 288 passes between 2014 and 2023, on one track. Whether the difference is the ascending track still to come is one of the open questions.</p>
+
+  <h2 id="open">What is still open</h2>
+  <p>Status as of 16 September 2026. The first group can only be settled by the producer of the point set.</p>
+  <ul>
+    <li><b>Why does no radar point sit above 83 m?</b> Roof heights reach 158 m in the scene; every tower above 83 m stops at 57 to 69 m of points. Processing window, layover, or facade orientation.</li>
+    <li><b>Which height datum, and which sign convention?</b> The terrain check makes "above ground" safe; positive as towards the satellite is the site's reading and would be self-consistent the other way round.</li>
+    <li><b>Where is the reference point, how high, and on what does it stand?</b> It decides how much of the ground's winter cycle is a mirror image and how much near-surface refractivity the ground points see.</li>
+    <li><b>Is 10 January 2014 the master image?</b> All series are zero on that date; whether it was the master, and its weather, matters for the stratification signal.</li>
+    <li><b>What is the local hour of the pass, and does the ascending track exist for this scene?</b> The hour decides which weather data can be compared; a second track would flip the horizontal terms and separate several puzzles.</li>
+    <li><b>Was an atmospheric filter applied in the processing, and what does the quality column mean?</b> A filter would explain part of why both fitted coefficients are a third short of prediction.</li>
+    <li><b>Why are both coefficients 60 to 70 % of physics?</b> Buildings not free to expand fits the temperature term (sideways expansion gives 70 % of free); the balloon 50 km away, the pass hour, or a filter could explain the rest.</li>
+    <li><b>Why does the open ground move in winter?</b> Reference point, near-surface refractivity cycle, or real motion of the fill; the ascending track and the reference point would settle it.</li>
+    <li><b>What is the kink at 20 to 30 m in the binned profile?</b> Air, or the podiums and setbacks that cluster at those heights.</li>
+    <li><b>Which temperature does a building feel?</b> A five-day lag of the daily mean fits best, and the buildings follow about half of the air's yearly swing.</li>
+    <li><b>Can the KNMI high-resolution soundings be obtained?</b> Only they can validate a profile shape below 650 m.</li>
+    <li><b>What would a boundary-layer meteorologist want from this?</b> Which questions about the lowest hundred metres matter most; what height range, spacing, frequency and accuracy would help; what independent observation would make a layer-average refractivity change useful. Not yet asked.</li>
+  </ul>
+
+  <h2 id="words">Words</h2>
+  <dl>
+    <dt>InSAR</dt><dd>Interferometric synthetic aperture radar: comparing the phase of radar echoes from many passes gives distance changes to a fraction of the 3.1 cm wavelength.</dd>
+    <dt>Scatterer, radar point</dt><dd>A piece of a building or pavement that returned a stable echo on every pass.</dd>
+    <dt>Pass</dt><dd>One satellite acquisition; 288 of them, every 11 days.</dd>
+    <dt>Line of sight</dt><dd>The direction from the satellite to the point, 23° from vertical here. All displacements are measured along it; blue in the maps is away from the satellite.</dd>
+    <dt>Above ground, above NAP</dt><dd>Two height systems: metres above the local ground, and metres above the Dutch sea-level datum. The plots use the first unless stated.</dd>
+    <dt>Coherence</dt><dd>How well a point's echoes fit a stable-point model, 0 to 1.</dd>
+    <dt>Refractivity, N</dt><dd>The refractive index of air minus one, times a million. One number for pressure, temperature and humidity together; humidity dominates the changes.</dd>
+    <dt>Height gradient, s(t)</dt><dd>For one pass, the slope of displacement against height across all points, in mm per 100 m. The central quantity of the project.</dd>
+    <dt>Trend, yearly wave, fast signal</dt><dd>The three parts of s(t): the sinking of the north-east towers, the thermal expansion of the buildings, and what changes from pass to pass after both are removed.</dd>
+    <dt>Double difference</dt><dd>Two points minus each other, then two passes minus each other. What the points share and what does not change cancels.</dd>
+    <dt>Reference point, master image</dt><dd>The one reflector and the one pass everything else is measured against in the radar processing. Both unknown to us.</dd>
+    <dt>Layover</dt><dd>The top of a tall building imaged at the same range as ground far in front of it. One candidate reason nothing shows above 83 m.</dd>
+    <dt>Atmospheric filter</dt><dd>A processing step that removes a smooth atmospheric term from every point. Unknown whether it was applied to our data.</dd>
+    <dt>Ascending, descending</dt><dd>The satellite's two directions of travel, looking from opposite sides. We have the descending track, from the east.</dd>
+    <dt>BAG, 3DBAG</dt><dd>The Dutch building register with outlines and construction years, and its 3D version with roof heights. Both open data.</dd>
+  </dl>
+
+  <h2 id="rule">What is on this site, and what is not</h2>
+  <p>The radar point set was provided for the course and may not be passed on. Nothing on this site is a radar point. The animations and the 3D view are drawn from small tables of averages: 25 m cells on a fixed grid, buildings, 10 m slabs of buildings, height bands and the whole scene, each a mean over at least 20 points. The positions that appear are those of public things, building outlines from the register and cells on a fixed grid. The script that writes these tables refuses anything smaller, and a second script in the site repository checks every file before it is published. The figures are images; the paper's draft text is not here.</p>
+
+  <footer data-shared></footer>
+</div>
+<script defer src="js/nav.js"></script>
+</body>
+</html>

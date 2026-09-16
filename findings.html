@@ -4,219 +4,125 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Findings · Virtual Radiosonde</title>
-<meta name="description" content="The plots from the TerraSAR-X record over Kop van Zuid, grouped by the question they answer: is there a height-dependent signal, is it scene-wide and vertical, buildings or air, towards a profile, and the independent check.">
+<meta name="description" content="The plots from ten years of TerraSAR-X over Kop van Zuid, grouped by the question they answer: is there a height-dependent signal, is it scene-wide, buildings or air, towards a profile, and what the ground and the buildings do on their own.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <a class="brand" href="index.html">Virtual Radiosonde</a>
-    <noscript><nav><a href="index.html">Home</a> <a href="idea.html">The idea</a> <a href="data.html">The data</a> <a href="findings.html">Findings</a> <a href="buildings.html">Buildings and ground</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a> <a href="paper.html">Method and paper</a> <a href="questions.html">Open questions</a> <a href="glossary.html">Glossary</a> <a href="about.html">About</a></nav></noscript>
+    <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
   </header>
 
   <h1>Findings</h1>
-  <p class="lead">The plots, grouped by the question they answer rather than by the day we made them. Each one says what you see, what it tells us, and why it matters. Heights are metres above ground unless a plot says otherwise; "LOS" is the line of sight from the satellite; s(t) is the height gradient, how much the displacement changes per 100 m of height on one pass.</p>
-  <div class="toc">On this page:
-    <a href="#signal">A. Is there a height-dependent signal?</a> <a href="#scenewide">B. Scene-wide and vertical?</a> <a href="#air">C. Buildings or air?</a>
-    <a href="#profile">D. Towards a profile</a> <a href="#check">E. The independent check</a> <a href="#data">F. Getting to know the data</a>
-  </div>
-  <p class="small">Every figure is produced by a script in the team repository and can be regenerated; the numbers named here come from the dated notes there. The per-building and ground results, figures 20 to 27, have their own page: <a href="buildings.html">Buildings and ground</a>.</p>
+  <p class="lead">The plots, grouped by the question they answer. Heights are metres above ground; s(t) is the height gradient, how much the displacement changes per 100 m of height on one pass. Every figure comes from a script in the team repository and can be regenerated.</p>
+  <p class="contents">On this page: <a href="#signal">Is there a signal?</a> <a href="#scenewide">Is it scene-wide?</a> <a href="#air">Buildings or air?</a> <a href="#profile">Towards a profile</a> <a href="#ground">The ground</a> <a href="#buildings">The buildings</a> <a href="#data">The data itself</a></p>
 
-  <h2 id="signal">A. Is there a height-dependent signal at all?</h2>
-  <p><b>Yes, on 97 % of the passes, and most of it is the buildings.</b> Fit a straight line of displacement against height across all points on one pass; the slope is s(t). It has a slow trend, a large yearly wave, and a pass-to-pass remainder of 1.7 mm per 100 m that is three times the noise of the fit.</p>
-
-  <figure class="plot">
+  <h2 id="signal">Is there a height-dependent signal at all?</h2>
+  <p>Yes, on 97 % of the passes, and most of it is the buildings. Fit a straight line of displacement against height across all points on one pass; the slope is s(t). It has a slow trend of −2.56 mm per 100 m per year, the north-east towers sinking faster than the ground, and a yearly wave of 5.26 mm per 100 m, the buildings expanding in summer. What changes from one pass to the next after those two are removed is 1.69 mm per 100 m, three times the formal noise of the fit and about 16 N-units of refractivity if it were all air. That number is the candidate air signal, and any building motion that varies with height and is neither a trend nor a yearly wave would produce it too.</p>
+  <figure>
     <img src="figures/06-stratification-probe.png" width="1481" height="1281" alt="Three panels over ten years: the mean displacement of four height bands, the height gradient s(t) per pass with its uncertainty, and the correlation of displacement with height per pass." loading="lazy">
-    <figcaption class="three">
-      <span><b>06. The stratification probe.</b> Top: the average movement of points in four height bands. Middle: the height gradient s(t) per pass with its 2-sigma band. Bottom: how strongly displacement and height are related on each pass.</span>
-      <span><b>What it tells us.</b> The bands separate: the high points swing more, and drift down over the decade. Displacement and height are correlated on almost every pass.</span>
-      <span><b>Why it matters.</b> This is the signal the whole project is about, before anything is separated from it.</span>
-      <div class="caveat"><b>Catch.</b> s(t) is not atmosphere alone. Thermal expansion, height errors in the processing and real height-correlated sinking all project onto it.</div>
-    </figcaption>
+    <figcaption><b>Figure 6.</b> The average movement of four height bands, the height gradient s(t) per pass with its 2-sigma band, and the correlation of displacement with height on each pass. The bands separate, the high points swing more and drift down, and the correlation is there on almost every pass.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/24-height-band-means.png" width="1754" height="1063" alt="Mean displacement per height band with offset and trend removed, and the 11-day changes of the bands moving together." loading="lazy">
+    <figcaption><b>Figure 24.</b> The same bands with offset and trend removed per point. The yearly wave grows with height and peaks in late July; the lowest band moves slightly the other way. From pass to pass all bands move together, with a height-dependent part on top: the common part is the whole scene, the height-dependent part is what we try to read.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/08-stratification-decomposition.png" width="1775" height="880" alt="s(t) with the fitted trend plus yearly wave, and the residual with the formal noise band." loading="lazy">
+    <figcaption><b>Figure 8.</b> Taking s(t) apart: trend and yearly wave fitted and removed. The remainder still carries multi-year curvature from unmodelled deformation; its pass-to-pass part is 1.69 mm per 100 m against a fit noise of 0.56.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/03-height-vs-params.png" width="1588" height="616" alt="The per-point fitted parameters against height; the seasonal amplitude grows linearly with height." loading="lazy">
+    <figcaption><b>Figure 3.</b> The thermal signature: the yearly amplitude of each point grows at 0.032 mm per metre of height. With an expansion coefficient of 10 per million per kelvin that is a temperature swing of about 3.5 K in the structure, half of the air's. Figures 7 and 9, the monthly cycle of s(t) and the same yearly gradient computed two ways, agree with it to within 7 %.</figcaption>
   </figure>
 
-  <figure class="plot">
-    <img src="figures/24-height-band-means.png" width="1754" height="1063" alt="Two panels: mean displacement per height band with offset and trend removed, showing a yearly wave growing with height; and the 11-day changes of the bands moving together." loading="lazy">
-    <figcaption class="three">
-      <span><b>24. Mean displacement per height band.</b> Offset and trend removed per point, then the mean of four bands; below, their 11-day changes.</span>
-      <span><b>What it tells us.</b> The yearly wave grows with height and peaks in late July; the lowest band moves slightly the other way. From pass to pass all bands move together, with a height-dependent part on top.</span>
-      <span><b>Why it matters.</b> The common part is the atmosphere over the whole scene, the reference point, or both; the height-dependent part is what we try to read.</span>
-    </figcaption>
+  <h2 id="scenewide">Is the fast signal scene-wide, and truly about height?</h2>
+  <p>Both. Independent halves of the scene see the same pass-to-pass changes (correlation 0.92 split along the pier, 0.91 split east to west), while the slow sinking sits in the north-east half only. And pairs of points a few tens of metres apart give almost the same gradient as the whole scene: 82 % of it at 16 m separation, with a correlation of 0.95, rising to the full value at 250 m. A horizontal gradient is not masquerading as a vertical one.</p>
+  <figure>
+    <img src="figures/10-split-scene-along.png" width="1599" height="607" alt="s(t) computed on the south-west and north-east halves of the scene." loading="lazy">
+    <figcaption><b>Figure 10.</b> s(t) on the south-west and the north-east half, computed separately. The pass-to-pass changes agree; the trend is in one half only. Figure 13 shows where the halves are.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/18-local-pairs.png" width="1864" height="729" alt="The height gradient from pairs of points at increasing separation, compared with the scene-wide value." loading="lazy">
+    <figcaption><b>Figure 18.</b> The gradient from pairs of points by their horizontal separation. Neighbours 16 m apart already give most of the scene-wide value. This is the spatial double difference of the method, in first cut.</figcaption>
   </figure>
 
-  <figure class="plot">
-    <img src="figures/07-stratification-annual.png" width="855" height="516" alt="Monthly means of the height gradient s(t): high in summer, low in winter." loading="lazy">
-    <figcaption class="three">
-      <span><b>07. The yearly cycle of the height gradient.</b> s(t) averaged by month.</span>
-      <span><b>What it tells us.</b> High in summer, low in winter, peaking around day 205: buildings expanding, mostly.</span>
-      <span><b>Why it matters.</b> This wave, 5.3 mm per 100 m, is three times the pass-to-pass signal and has to come out first.</span>
-    </figcaption>
+  <h2 id="air">Buildings or air?</h2>
+  <p>Both, and they can be told apart. Fit the 11-day changes of s(t) on two things at once: the change of a lagged air temperature, standing in for the temperature of the buildings, and the change of the lowest 100 m of refractivity from the De Bilt balloon. Temperature comes out at 0.62 ± 0.04 mm per 100 m per kelvin against 0.92 predicted; refractivity at 0.064 ± 0.006 mm per 100 m per N-unit against 0.109. The two are barely tangled (variance inflation 1.12), the buildings want a lag of about five days, and both fall short of physics by the same third. Why is open: buildings that are not free to expand, a balloon 50 km away, the unknown pass hour, or an atmospheric filter in the radar processing.</p>
+  <figure>
+    <img src="figures/15-joint-regression.png" width="1650" height="645" alt="The 11-day change of s(t) against the change of temperature and against the change of refractivity, with fitted and predicted lines." loading="lazy">
+    <figcaption><b>Figure 15.</b> The joint fit on 11-day changes, and how it depends on the temperature lag. Figure 14 shows the three series side by side.</figcaption>
   </figure>
-
-  <figure class="plot">
-    <img src="figures/08-stratification-decomposition.png" width="1775" height="880" alt="Top: s(t) with the fitted trend plus yearly wave. Bottom: the residual with the formal noise band, and its pass-to-pass size." loading="lazy">
-    <figcaption class="three">
-      <span><b>08. Taking the gradient apart.</b> A trend of −2.56 mm per 100 m per year and a yearly wave of 5.26 mm per 100 m are fitted and removed.</span>
-      <span><b>What it tells us.</b> The remainder changes by 1.69 mm per 100 m from pass to pass, against a formal fit noise of 0.56. If it were all air, that is about 16 N-units.</span>
-      <span><b>Why it matters.</b> This is the candidate air signal and the number the rest of the site keeps coming back to.</span>
-      <div class="caveat"><b>Catch.</b> The remainder still carries multi-year curvature from unmodelled deformation; the 1.69 is the high-passed part. The sign convention is unconfirmed.</div>
-    </figcaption>
-  </figure>
-
-  <figure class="plot">
-    <img src="figures/03-height-vs-params.png" width="1588" height="616" alt="Scatter plots of the fitted per-point parameters against height above ground; the seasonal amplitude grows linearly with height." loading="lazy">
-    <figcaption class="three">
-      <span><b>03. The thermal signature.</b> The per-point fitted parameters against height; the yearly amplitude grows at 0.032 mm per metre.</span>
-      <span><b>What it tells us.</b> Buildings expand in summer, and a taller building expands more. With an expansion coefficient of 10 per million per kelvin, 3.2 mm at 100 m is a temperature swing of about 3.5 K in the structure, roughly half of the air's.</span>
-      <span><b>Why it matters.</b> This is the biggest competitor of the air signal, measured rather than assumed.</span>
-    </figcaption>
-  </figure>
-
-  <figure class="plot">
-    <img src="figures/09-annual-two-ways.png" width="1588" height="607" alt="The yearly height gradient computed from per-point cos and sin terms and from the scene-wide s(t), agreeing once the phase is kept." loading="lazy">
-    <figcaption class="three">
-      <span><b>09. Two ways to the same number.</b> The yearly height gradient from the single points' fitted cos and sin terms, and from the whole-scene s(t).</span>
-      <span><b>What it tells us.</b> They agree to within 7 % (4.9 against 5.3 mm per 100 m) once the timing of the cycle is kept; regressing amplitudes alone leaves a spurious 0.5 mm floor because an amplitude cannot be negative.</span>
-      <span><b>Why it matters.</b> It answers "why does the line not pass through the origin": noise, not physics.</span>
-    </figcaption>
-  </figure>
-
-  <div class="tbl"><table>
-    <thead><tr><th>Number from this chapter</th><th>Value</th><th>Source note</th></tr></thead>
-    <tbody>
-      <tr><td>Passes with a height-correlated signal</td><td class="num">97 %</td><td>2026-09-02 first look, section 3</td></tr>
-      <tr><td>Trend of s(t)</td><td class="num">−2.56 mm/100 m per year</td><td>same</td></tr>
-      <tr><td>Yearly wave of s(t)</td><td class="num">5.26 mm/100 m, peak day 205</td><td>same</td></tr>
-      <tr><td>Pass-to-pass remainder</td><td class="num">1.69 mm/100 m (noise 0.56)</td><td>same</td></tr>
-      <tr><td>Seasonal amplitude per metre of height</td><td class="num">0.032 mm/m</td><td>same</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2 id="scenewide">B. Is the fast signal scene-wide, and truly about height?</h2>
-  <p><b>Both.</b> Independent halves of the scene see the same pass-to-pass changes, and pairs of points a few tens of metres apart give almost the same gradient as the whole scene, so a horizontal gradient is not masquerading as a vertical one.</p>
-
-  <figure class="plot">
-    <img src="figures/10-split-scene-along.png" width="1599" height="607" alt="s(t) computed on the south-west and north-east halves of the scene; the pass-to-pass changes agree while the slow trend is in one half only." loading="lazy">
-    <figcaption class="three">
-      <span><b>10a. Two halves, split along the peninsula.</b> s(t) computed separately on the south-west and the north-east half.</span>
-      <span><b>What it tells us.</b> The pass-to-pass changes agree between the halves (correlation 0.92). The slow sinking sits in the north-east half only.</span>
-      <span><b>Why it matters.</b> Atmosphere is broadly the same across a 500 m scene; a settling building is not. The fast signal behaves like the first.</span>
-    </figcaption>
-  </figure>
-  <figure class="plot">
-    <img src="figures/10-split-scene-x.png" width="1599" height="607" alt="The same split-scene test with an east-west cut, giving the same agreement." loading="lazy">
-    <figcaption class="three">
-      <span><b>10b. Two halves, split east to west.</b> Same test, different cut.</span>
-      <span><b>What it tells us.</b> Same answer, correlation 0.91.</span>
-      <span><b>Why it matters.</b> The result does not depend on where the line is drawn.</span>
-    </figcaption>
-  </figure>
-  <figure class="plot">
-    <img src="figures/13-basemap-split-along.png" width="2023" height="929" alt="Map of the two halves next to a map of the long-term rate; the sinking is on the north-east side." loading="lazy">
-    <figcaption class="three">
-      <span><b>13. Where the halves are.</b> The split used for figure 10, next to the long-term rate.</span>
-      <span><b>What it tells us.</b> The sinking is on the north-east side, where the newest towers stand.</span>
-      <span><b>Why it matters.</b> It explains why the trend of s(t) is local while the fast signal is not.</span>
-    </figcaption>
-  </figure>
-  <figure class="plot">
-    <img src="figures/18-local-pairs.png" width="1864" height="729" alt="The height gradient built from pairs of points at increasing horizontal separation, compared with the scene-wide value." loading="lazy">
-    <figcaption class="three">
-      <span><b>18. Neighbours only.</b> The same gradient from pairs of points a few tens of metres apart, by separation.</span>
-      <span><b>What it tells us.</b> Pairs 16 m apart give 82 % of the scene-wide value with a correlation of 0.95; at 250 m the ratio is about one.</span>
-      <span><b>Why it matters.</b> The signal is really about height, not about location. This is the spatial double difference the paper's method asks for, in first cut.</span>
-    </figcaption>
-  </figure>
-
-  <h2 id="air">C. Buildings or air?</h2>
-  <p><b>Both, and they can be told apart.</b> Fit the 11-day changes of s(t) on two things at once: the change of a lagged air temperature, standing in for the temperature of the buildings, and the change of the lowest 100 m of refractivity from the De Bilt balloon. Each explains part of it, the two are barely tangled, and both come out at 60 to 70 % of what physics predicts.</p>
-
-  <figure class="plot">
-    <img src="figures/14-joint-proxies.png" width="1475" height="1154" alt="Three time series: the height gradient, Rotterdam air temperature with a five-day lag, and the De Bilt layer refractivity." loading="lazy">
-    <figcaption class="three">
-      <span><b>14. The two suspects.</b> The height gradient, the Rotterdam air temperature with a five-day lag, and the humidity-related refractivity of the lowest 100 m above De Bilt.</span>
-      <span><b>What it tells us.</b> The yearly wave of s(t) follows the temperature; the refractivity is noisier and has its own cycle.</span>
-      <span><b>Why it matters.</b> Two candidate explanations with predicted sizes: 0.92 mm per 100 m per kelvin for expansion, 0.109 mm per 100 m per N-unit for air.</span>
-    </figcaption>
-  </figure>
-  <figure class="plot">
-    <img src="figures/15-joint-regression.png" width="1650" height="645" alt="Scatter of the 11-day change of s(t) against the change of temperature and against the change of refractivity, with fitted and predicted lines, and the fit quality against the temperature lag." loading="lazy">
-    <figcaption class="three">
-      <span><b>15. Telling buildings and air apart.</b> The joint fit on 11-day changes, and how the fit depends on the temperature lag.</span>
-      <span><b>What it tells us.</b> Temperature 0.62 ± 0.04 against 0.92 predicted; refractivity 0.064 ± 0.006 against 0.109; variance inflation 1.12; the buildings want a lag of about five days.</span>
-      <span><b>Why it matters.</b> One geometry can separate the two at the 11-day scale. At the yearly scale they are far more tangled.</span>
-      <div class="caveat"><b>Catch.</b> Why both are 60 to 70 % of prediction is open: buildings not free to expand, the sonde 50 km away, the unknown pass hour, or an atmospheric filter in the processing.</div>
-    </figcaption>
-  </figure>
-  <figure class="plot">
+  <figure>
     <img src="figures/28-fast-vs-debilt.png" width="2522" height="749" alt="The measured 11-day change of the height gradient and the change the De Bilt sounding predicts, over ten years and against each other." loading="lazy">
-    <figcaption class="three">
-      <span><b>28. The fast gradient against De Bilt.</b> Pass by pass, what the radar height gradient did and what the balloon says the lowest 83 m should have done.</span>
-      <span><b>What it tells us.</b> The right size (1.18 predicted, 1.69 measured, rms) and a pass-by-pass correlation of 0.56 over 287 steps, with a regression slope of 0.85.</span>
-      <span><b>Why it matters.</b> The balloon at midnight, 50 km away and interpolated below 650 m, still tracks the radar over Rotterdam step by step. That is the strongest sign so far that the remainder is air.</span>
-    </figcaption>
+    <figcaption><b>Figure 28.</b> Pass by pass, what the radar height gradient did and what the balloon says the lowest 83 m should have done. The right size (1.18 predicted, 1.69 measured) and a correlation of 0.56 over 287 steps, from a balloon launched at midnight 50 km away and interpolated below 650 m. The strongest sign so far that the remainder is air.</figcaption>
   </figure>
-  <figure class="plot">
-    <img src="figures/16-noon-soundings.png" width="1646" height="645" alt="On days with both a midnight and a noon sounding, the residual of s(t) against each; the noon sounding explains no more." loading="lazy">
-    <figcaption class="three">
-      <span><b>16. Midnight or noon?</b> On the 49 pass days with both launches, the same residual against the midnight and the noon sounding.</span>
-      <span><b>What it tells us.</b> 0.071 against 0.076 mm per 100 m per N-unit: noon explains no better, and the two soundings differ by 10.7 N-units rms.</span>
-      <span><b>Why it matters.</b> Time of day is not the gap between balloon and radar; distance probably is.</span>
-    </figcaption>
+  <p>On the 49 pass days with both a midnight and a noon sounding, the noon one explains the radar no better (figure 16). Time of day is not the gap between balloon and radar; distance probably is.</p>
+
+  <h2 id="profile">Towards a profile</h2>
+  <p>Today the retrieval is one number per pass. Group the points into ten height bins and the 11-day changes fall on a straight line: a line explains 65 % of the binned variance, a parabola 78 %, and the departure from the line has a fixed shape, a kink around 20 to 30 m, the same on every pass. At this sensor's precision and this city's height range the product is a mean layer value. The balloon archive could not check a profile shape anyway: its first level is about 650 m up, so every De Bilt number for our layer is an interpolation. The pressure part of that layer is predictable (−2.3 ± 0.4 N-units over 0 to 83 m); the humidity part is the signal (−1.2 ± 1.0).</p>
+  <figure>
+    <img src="figures/17-height-profile-bins.png" width="1850" height="719" alt="The height-difference signal per height bin over the 11-day steps, composite profiles, and the binned slope against the scene-wide slope." loading="lazy">
+    <figcaption><b>Figure 17.</b> The 11-day changes per height bin relative to the lowest bin, composite profiles for the strongest passes, and the binned slope against the scene-wide one. Figure 19 shows what the De Bilt archive can and cannot say about the lowest 83 m.</figcaption>
+  </figure>
+  <p>An independent check took a different route: the mean of the ground points minus the mean of the roof points, 58 m apart, against the wet delay computed from surface weather. After trend and season are removed the two agree with a regression slope of 1.08 ± 0.11 against a predicted 1. The atmosphere is about 0.7 mm of the 3.0 mm yearly wave in that difference, the buildings about 2.1 mm, and the two peak eleven days apart, too close to separate by timing alone. The pass-to-pass band is where they separate.</p>
+
+  <h2 id="ground">The ground</h2>
+  <p>One ground point in figure 2 moves with the seasons, peaking in winter, opposite to the buildings. Is that one point? No. All 3 369 ground points below 5 m were grouped by their distance to the nearest tall building. The open ground as a whole moves towards the satellite in winter and away in summer, by 0.5 to 0.8 mm, peaking in mid-February; the 1 500 points within 30 m of a tower show almost no cycle (0.1 mm). Per point, 48 % peak between November and February and 30 % between May and September.</p>
+  <p>The cause is open, and three candidates remain. The reference point: every displacement is relative to one reflector, and if that sits on a building that expands in summer, every other point inherits the mirror image. Against it, a pure mirror would peak around day 28, the open ground peaks on day 45, and the towers' feet show nothing. The near-surface refractivity cycle: the lowest 100 m above De Bilt are 11 N-units more refractive in August than in February, which gives a ground point 1.2 mm of seasonal delay per 100 m of height difference to the reference point, in exactly this phase. Real motion of the fill: the pier is fill over clay and peat, it sinks at 2.5 to 4 mm a year next to buildings that do not, and groundwater peaks in February. The ascending track would separate the first two from the third; the location and height of the reference point would settle most of it.</p>
+  <p class="own"><!-- QUINTEN: your reading of the ground cycle; placeholder to edit. -->Our reading: the spatial pattern argues hardest against a reference point on an expanding building, because a mirror image would be the same everywhere and it is not. Whether the fill breathes or the air does is the question we most want to put to the ascending track.</p>
+  <figure>
+    <img src="figures/21-ground-seasonal.png" width="1800" height="1098" alt="Monthly means of ground groups and of building bands, the peak day per point, the seasonal term on the map, and the amplitude by distance to the towers." loading="lazy">
+    <figcaption><b>Figure 21.</b> Monthly means of the ground groups and of two building bands, the peak day per point, the seasonal term on the map, and its amplitude by distance to the towers. The ground is not a clean zero, and 0.5 mm at the ground is the size of the air signal we are after.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/27-seasonal-phase-map.png" width="1669" height="1273" alt="Map with the twelve buildings filled by the day of year of their seasonal maximum and the ground cells as coloured squares." loading="lazy">
+    <figcaption><b>Figure 27.</b> When the seasonal term peaks: the twelve buildings with at least 20 points, filled by the day of their maximum, and the ground cells as squares. Tall buildings peak on days 204 to 213 with the air; the open ground in February; the low old buildings with tiny amplitudes behave like the ground.</figcaption>
+  </figure>
+  <p>Where does the ground sink? In areas, not scattered. The quartiles of the ground rate are −3.6, −1.2 and −0.6 mm per year; the south-west tip around the 1900 hotel is stable, the middle of the pier sinks at 1 to 3.5 mm a year, the north-east end around the 2013 and 2017 towers at 6 to 7. In 50 m cells the spread between cells is twice the spread inside them. Next to every building the pavement sinks at 2.5 to 4 mm a year whatever the building's age. The cause is not in the data: the age of the fill, the loads of the new towers and their underground garages are all candidates.</p>
+  <p class="own"><!-- QUINTEN: your reading of why the north-east end sinks; placeholder to edit. -->Our reading: the north-east end is the newest fill carrying the newest and heaviest towers; that the pavement sinks faster than towers standing on piles is what one expects if the fill is still consolidating.</p>
+  <figure>
+    <img src="figures/20-ground-rate-map.png" width="1800" height="1101" alt="Ground points coloured by long-term rate on the aerial image, a histogram of the rates, and the median rate along the pier." loading="lazy">
+    <figcaption><b>Figure 20.</b> Ground points below 5 m coloured by their long-term rate, with the construction year of the eight buildings with most points. Figure 25 shows the same on a 25 m grid, one mean per cell, together with the month in which each cell's seasonal term peaks.</figcaption>
   </figure>
 
-  <div class="tbl"><table>
-    <thead><tr><th>Number from this chapter</th><th>Value</th><th>Source note</th></tr></thead>
-    <tbody>
-      <tr><td>Temperature coefficient</td><td class="num">0.62 ± 0.04 mm/100 m/K (predicted 0.92)</td><td>2026-09-02 first look, section 4</td></tr>
-      <tr><td>Refractivity coefficient</td><td class="num">0.064 ± 0.006 mm/100 m per N-unit (predicted 0.109)</td><td>same</td></tr>
-      <tr><td>Variance inflation, R²</td><td class="num">1.12, 0.68</td><td>same</td></tr>
-      <tr><td>De Bilt 11-day change of the layer delay</td><td class="num">1.18 mm/100 m against 1.69 measured</td><td>2026-09-03 height differences, section 4</td></tr>
-      <tr><td>Pass-by-pass correlation with De Bilt</td><td class="num">0.56 (slope 0.85, 287 steps)</td><td>2026-09-16 site export and figures</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2 id="profile">D. Towards a profile, and the ground-truth problem</h2>
-  <p><b>Today the retrieval is one number per pass.</b> Group the points by height and the 11-day changes fall on a straight line; a curve adds little. And the balloon archive cannot check a profile shape below 650 m anyway.</p>
-
-  <figure class="plot">
-    <img src="figures/17-height-profile-bins.png" width="1850" height="719" alt="The height-difference signal per height bin over the 11-day steps, composite profiles for the strongest passes, and the binned slope against the scene-wide slope." loading="lazy">
-    <figcaption class="three">
-      <span><b>17. Line or curve?</b> Points grouped into ten height bins; the 11-day changes per bin relative to the lowest bin.</span>
-      <span><b>What it tells us.</b> A straight line explains 65 % of the binned variance (median), a parabola 78 %. The departure from the line has a fixed shape, a kink around 20 to 30 m, the same on every pass.</span>
-      <span><b>Why it matters.</b> At this sensor's precision and this city's height range, the retrieval is a mean layer value. The second mode is of unknown origin until a second stack says otherwise.</span>
-    </figcaption>
+  <h2 id="buildings">The buildings</h2>
+  <p>Building by building, joined to the outlines of the national register with their construction year. The newer the tower, the faster it still sinks and the more it is slowing down: structure rates of −0.9, −1.2, −2.3, −3.8 and −3.7 mm per year for buildings from 2000, 2005, 2010, 2013 and 2017, with curvatures rising from +0.02 to +0.24 mm per year squared. Hotel New York, from 1900, has stopped: 196 points at −0.6 mm per year with no curvature, while the pavement around it sinks at −2.5. So it is the ground, not the roads: only the two newest towers sink about as fast as their surroundings. Within a building the rate changes with height, by −0.7 to −4.9 mm per 100 m per year, largest for the youngest concrete; shrinkage is the plausible reading, and a height error leaking into the velocity in the radar processing the alternative only its producer can weigh.</p>
+  <p class="own"><!-- QUINTEN: shrinking or settling piles for the newest towers; placeholder to edit. -->Our reading: the two newest towers sinking with their surroundings and slowing down looks like consolidation under load; the tilt on top of it, largest for the youngest concrete, fits shrinkage. Names other than De Rotterdam and Hotel New York are our guess from the aerial image.</p>
+  <figure>
+    <img src="figures/22-buildings-rate-age.png" width="1800" height="1165" alt="Rate against height per building, the eight buildings on the map with construction year and rate, and rate against construction year." loading="lazy">
+    <figcaption><b>Figure 22.</b> Rate against height with one colour per building, the eight buildings with most points on the map, and rate against construction year for every building with 60 or more points.</figcaption>
   </figure>
-  <p>Figure 19, the De Bilt reference, is on the <a href="data.html#truth">data page</a>: the sonde's first level is about 650 m up, the pressure part of the layer is predictable (−2.3 ± 0.4 N-units over 0 to 83 m) and the wet part is the signal (−1.2 ± 1.0).</p>
+  <figure>
+    <img src="figures/26-building-small-multiples.png" width="2228" height="1031" alt="Eight panels, one per building ordered by construction year, each with the structure's mean series, its fitted model, and the pavement within 15 m." loading="lazy">
+    <figcaption><b>Figure 26.</b> Eight buildings one by one, ordered by construction year: the structure's mean series with its fitted trend, curvature and yearly wave, and the pavement within 15 m. Old buildings barely move while the pavement beside them drops 25 to 40 mm over the decade.</figcaption>
+  </figure>
+  <p>Do the buildings expand sideways too? Seen from the east-south-east, the satellite sees 0.385 of any eastward motion, so a structure that expands about a fixed point should show a seasonal term that grows with easting, at +0.015 mm per metre for a 4 K swing. Inside buildings it does, at +0.011 mm per metre, positive in 74 % of the 25 m windows and for all eight buildings with most points: about 70 % of free expansion. The vertical term inside buildings is +0.037 mm per metre, a 4 K swing against 7 K in the air. On the open ground the slopes have both signs. The ascending track would flip this term and nothing else, which makes it a clean test.</p>
+  <p class="own"><!-- QUINTEN: do you accept 70 % of free expansion; propose the ascending stack now? placeholder to edit. -->Our reading: seventy per cent of free expansion is what one expects of a structure tied to its foundation and its neighbours, and it explains part of why two points seven metres apart on one facade swing less differently than pure vertical expansion predicts. The ascending stack is worth asking for now.</p>
+  <figure>
+    <img src="figures/23-sideways-expansion.png" width="2505" height="717" alt="The east-west slope of the seasonal term in 25 m windows on buildings and on the ground, per building, and per ground group." loading="lazy">
+    <figcaption><b>Figure 23.</b> The east-west gradient of the seasonal term in 25 m windows, per building, and per connected ground group.</figcaption>
+  </figure>
+  <p>For the retrieval this means a nuisance model per building, rate = a + b·height and seasonal term = c + d·height + e·easting, and a lowest bin that carries an unknown seasonal term until the reference point is known.</p>
 
-  <h2 id="check">E. An independent check from the ground up</h2>
-  <p>A teammate took a different route: the mean of the ground points (below 5 m) minus the mean of the roof points (55 to 70 m above sea level), 58 m apart, against the wet delay computed from the KNMI surface weather. After trend and season are removed, the two agree with a regression slope of 1.08 ± 0.11 against a predicted 1: the surface-weather forward model is unbiased in amplitude, not merely correlated. The same analysis puts the atmosphere at about 0.7 mm of the 3.0 mm yearly wave in that difference, the buildings at about 2.1 mm, peaking eleven days apart, too close to separate by timing alone. The pass-to-pass band is where they separate.</p>
-
-  <h2 id="data">F. Getting to know the data</h2>
-  <p>The first-look plots, for reference. The maps (01, 11) and the height and sampling distributions (04, 05) are on the <a href="data.html">data page</a>.</p>
-  <figure class="plot">
+  <h2 id="data">The data itself</h2>
+  <p>The first-look plots, for reference.</p>
+  <figure>
+    <img src="figures/11-basemap-height.png" width="1297" height="1045" alt="Every radar point on the aerial image, coloured by height above ground." loading="lazy">
+    <figcaption><b>Figure 11.</b> Every radar point on the aerial image, coloured by height above ground. The points sit on the facades that face the satellite, in columns up the towers, and on the pavements between them.</figcaption>
+  </figure>
+  <figure>
+    <img src="figures/01-maps.png" width="1542" height="1049" alt="Six maps of the points: height, coherence, quality, linear rate, quadratic term, seasonal amplitude." loading="lazy">
+    <figcaption><b>Figure 1.</b> Six maps of the 20 594 points: height, coherence, the quality number, the long-term rate, the acceleration, and the size of the yearly swing. The tall, fast-sinking, strongly breathing points are the same points, the towers at the north-east end.</figcaption>
+  </figure>
+  <figure>
     <img src="figures/02-timeseries.png" width="1351" height="989" alt="Ten-year displacement time series of three points: near the ground, mid-height and high on a tower." loading="lazy">
-    <figcaption class="three">
-      <span><b>02. Three points, ten years.</b> Displacement over time for a point near the ground, one mid-height and one 68 m up.</span>
-      <span><b>What it tells us.</b> The high points swing by several millimetres a year and drift down; the ground point has a small wave of its own, peaking in winter.</span>
-      <span><b>Why it matters.</b> The wiggles are what we work with; the winter wave of the ground became a question of its own.</span>
-    </figcaption>
+    <figcaption><b>Figure 2.</b> Three points, ten years: near the ground, mid-height, and 68 m up. The wiggles are what we work with; the small winter wave of the ground point became a question of its own.</figcaption>
   </figure>
-  <figure class="plot">
-    <img src="figures/05-sampling.png" width="1595" height="558" alt="The intervals between passes and the number of passes per year and per month." loading="lazy">
-    <figcaption class="three">
-      <span><b>05. When the satellite passed.</b> The intervals between passes, and the passes per year and per month.</span>
-      <span><b>What it tells us.</b> Every 11 days, about 31 times a year, in every season; largest gap 44 days.</span>
-      <span><b>Why it matters.</b> It fixes what the product can be: a long-term record, never a nowcast.</span>
-    </figcaption>
-  </figure>
-  <figure class="plot">
-    <img src="figures/12-basemaps.png" width="1800" height="1514" alt="Four maps on the same aerial basemap: height, long-term rate, seasonal amplitude and coherence." loading="lazy">
-    <figcaption class="three">
-      <span><b>12. Four fields on the map.</b> Height, long-term rate, yearly amplitude and coherence, same basemap.</span>
-      <span><b>What it tells us.</b> The tall, fast-sinking, strongly breathing points are the same points: the towers at the north-east end.</span>
-      <span><b>Why it matters.</b> Height, sinking and expansion are correlated by geography, which is why the per-building work on the next page was needed.</span>
-    </figcaption>
+  <figure>
+    <img src="figures/04-height-diversity.png" width="1606" height="587" alt="Histogram and cumulative distribution of the point heights above ground, with the 83 m ceiling marked." loading="lazy">
+    <figcaption><b>Figure 4.</b> How much height there is to work with. Half the points lie within 31 m of each other; 2 369 are above 50 m; none above 83 m. Figure 5 shows the sampling in time, figure 12 four fields on one basemap.</figcaption>
   </figure>
 
   <footer data-shared></footer>
