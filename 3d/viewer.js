@@ -507,7 +507,7 @@ function wire() {
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { scene.background = new THREE.Color(css("--canvas")); fillTable(); drawStrip(); S.needsRender = true; });
 }
 
-/* the easter egg: loaded only when someone finds the plane */
+/* the easter egg: loaded only when someone finds the bird */
 async function takeOff() {
   if (flight && flight.active) return;
   S.playing = false; $("tPlay").textContent = "▶";

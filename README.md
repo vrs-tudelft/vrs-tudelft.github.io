@@ -18,7 +18,7 @@ site updates within a minute or two.
 | `svg/` | The drawings; `tools/inline_svg.py` pastes them into the pages |
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below); `data/3d/` holds the building models, the ground image and the manifest |
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
-| `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated), `flight.js` (the small plane in the corner of the view: a flight model over the same scene, loaded only when someone clicks it) |
+| `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated), `flight.js` (the small bird in the corner of the view: a gull with a flight model over the same scene, loaded only when someone clicks it) |
 | `tools/` | `check_data.py` (the aggregation check), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
 | `style.css` | The look: one light theme, the shell grid, the tooltips |
 
