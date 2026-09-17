@@ -14,24 +14,28 @@
 
   /* ================================================================ (a) scene */
   function scene(mount) {
-    Promise.all([L.json(DATA + "cells.json"), L.int16(DATA + "cells.bin"), L.json(DATA + "outlines.json"), L.json(DATA + "epochs.json")])
+    Promise.all([L.json(DATA + "cells.json"), L.int16(DATA + "cells.bin"), L.json(DATA + "outlines.json"),
+                 L.json(DATA + "epochs.json"), L.int16(DATA + "cells-sd.bin")])
       .then(function (r) {
-        var cells = r[0], bin = r[1], outlines = r[2], ep = r[3];
+        var cells = r[0], bin = r[1], outlines = r[2], ep = r[3], sdBin = r[4];
         var mode = "increment", gridName = "all";
         var grids = {};
         ["all", "ground"].forEach(function (g) {
           var G = cells.grids[g];
-          grids[g] = { cells: G.cells, cm: G.cell_m, S: L.grid(bin, G.offset_bytes, G.n_cells, cells.series.epochs) };
+          grids[g] = { cells: G.cells, cm: G.cell_m, S: L.grid(bin, G.offset_bytes, G.n_cells, cells.series.epochs),
+                       SD: L.grid(sdBin, G.offset_bytes, G.n_cells, cells.series.epochs) };
         });
         var ox = cells.origin_local[0], oy = cells.origin_local[1];
         /* map extent: the cells plus a margin, not the whole outline box */
         var gA = grids.all, ci = gA.cells.map(function (c) { return c.i; }), cj = gA.cells.map(function (c) { return c.j; });
         var e0 = ox + gA.cm * Math.min.apply(null, ci) - 60, e1 = ox + gA.cm * (Math.max.apply(null, ci) + 1) + 60;
         var n0 = oy + gA.cm * Math.min.apply(null, cj) - 40, n1 = oy + gA.cm * (Math.max.apply(null, cj) + 1) + 40;
-        var lim = { increment: cells.scales.increment_mm, cumulative: cells.scales.cumulative_mm, detrended: cells.scales.detrended_mm };
+        var lim = { increment: cells.scales.increment_mm, cumulative: cells.scales.cumulative_mm,
+                    detrended: cells.scales.detrended_mm, spread: cells.scales.spread_mm };
         var tYears = ep.days_since_ref.map(function (d) { return d / 365.25; });
         function value(G, c, k, i) {
           var S = G.S;
+          if (mode === "spread") return G.SD.get(k, i);
           if (mode === "increment") return i === 0 ? 0 : S.get(k, i) - S.get(k, i - 1);
           if (mode === "cumulative") return S.get(k, i);
           var tr = c.trend; return S.get(k, i) - (tr[0] + tr[1] * tYears[i] + tr[2] * tYears[i] * tYears[i]);
@@ -47,7 +51,8 @@
             function px(e) { return mx0 + (e - e0) * sc; }
             function py(n) { return my0 + (n1 - n) * sc; }
             /* water and land hint: nothing; cells first, outlines on top */
-            var G = grids[gridName], colour = V.scales.diverging(lim[mode]), cm = G.cm;
+            var G = grids[gridName], cm = G.cm;
+            var colour = mode === "spread" ? V.scales.sequential(0, lim.spread, "magma") : V.scales.diverging(lim[mode]);
             G.cells.forEach(function (c, k) {
               var v = value(G, c, k, i);
               ctx.fillStyle = colour(v);
@@ -68,11 +73,20 @@
             ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px(e0) + 10, py(n0) - 10); ctx.lineTo(px(e0) + 10 + sb, py(n0) - 10); ctx.stroke(); ctx.lineWidth = 1;
             D.text(ctx, "200 m", px(e0) + 10, py(n0) - 14, { font: size.font + "px system-ui", colour: css("--muted") });
             var lw = Math.min(180, w * 0.3), f1 = (size.font - 1) + "px system-ui";
-            var title = mode === "increment" ? "change since the previous pass [mm]" : mode === "cumulative" ? "displacement since January 2014 [mm]" : "displacement minus the cell's trend [mm]";
+            var title = mode === "increment" ? "change since the previous pass [mm]"
+              : mode === "cumulative" ? "displacement since January 2014 [mm]"
+              : mode === "spread" ? "spread of the points inside the cell, this pass [mm]"
+              : "displacement minus the cell's trend [mm]";
             D.text(ctx, title, w - 12, 14, { font: f1, colour: css("--muted"), align: "right" });
-            V.legend(ctx, w - lw - 12, 20, lw, 9, V.scales.ramp("RdBu_r"),
-              ["-" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1), "0", "+" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1)], f1);
-            D.text(ctx, "blue = away from the satellite, red = towards it", w - 12, 56, { font: f1, colour: css("--muted"), align: "right" });
+            if (mode === "spread") {
+              V.legend(ctx, w - lw - 12, 20, lw, 9, V.scales.ramp("magma"),
+                ["0", (lim.spread / 2).toFixed(1), "+" + lim.spread.toFixed(1)], f1);
+              D.text(ctx, "dark = the points agree, bright = the mean hides a spread", w - 12, 56, { font: f1, colour: css("--muted"), align: "right" });
+            } else {
+              V.legend(ctx, w - lw - 12, 20, lw, 9, V.scales.ramp("RdBu_r"),
+                ["-" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1), "0", "+" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1)], f1);
+              D.text(ctx, "blue = away from the satellite, red = towards it", w - 12, 56, { font: f1, colour: css("--muted"), align: "right" });
+            }
             D.text(ctx, "north up · " + cm + " m cells, each a mean over at least 20 radar points", 12, 16, { font: f1, colour: css("--muted") });
             D.text(ctx, "outlines: BAG buildings", 12, 30, { font: f1, colour: css("--muted") });
             /* strip: s_resid */
@@ -89,7 +103,8 @@
         player.addToggle("Show:", "mode", [
           { value: "increment", label: "change since the previous pass", checked: true },
           { value: "cumulative", label: "displacement since 2014" },
-          { value: "detrended", label: "minus each cell's trend" }], function (v) { mode = v; });
+          { value: "detrended", label: "minus each cell's trend" },
+          { value: "spread", label: "spread inside each cell" }], function (v) { mode = v; });
         player.addToggle("Cells:", "grid", [
           { value: "all", label: "all points", checked: true },
           { value: "ground", label: "ground points only (below 5 m)" }], function (v) { gridName = v; });
@@ -103,9 +118,10 @@
       var allv = []; B.forEach(function (b) { b.mean_rel.forEach(function (v) { allv.push(Math.abs(v)); }); });
       var lim = Math.ceil(U.pct(allv, 99));
       var hmax = 90, sLim = Math.ceil(U.pct(ep.s.slope.map(Math.abs), 99.5));
+      var spread = true;
       var nTot = B.reduce(function (a, b) { return a + b.n; }, 0);
       var hbar = B.reduce(function (a, b) { return a + b.h_mean * b.n; }, 0) / nTot;
-      V.Player.create({
+      var player = V.Player.create({
         mount: mount, frames: ep.n_epochs, fps: 6, aspect: function (w) { return w < 600 ? 0.9 : 1.5; },
         label: function (i) { return passLabel(ep, i) + " · slope " + (ep.s.slope[i] >= 0 ? "+" : "") + ep.s.slope[i].toFixed(1) + " mm/100 m, r = " + (ep.s.r[i] === null ? "n/a" : ep.s.r[i].toFixed(2)); },
         draw: function (i, ctx, size) {
@@ -118,11 +134,27 @@
           var s = ep.s.slope[i] / 100;
           ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(s * (0 - hbar)), Y(0)); ctx.lineTo(X(s * (hmax - hbar)), Y(hmax)); ctx.stroke(); ctx.lineWidth = 1;
           B.forEach(function (b) {
-            var v = b.mean_rel[i], rr = 3 + Math.log10(b.n) * 1.6;
-            ctx.fillStyle = css("--accent"); ctx.beginPath(); ctx.arc(X(Math.max(-lim, Math.min(lim, v))), Y(b.h_mean), rr, 0, 2 * Math.PI); ctx.fill();
-            D.text(ctx, "n=" + b.n, w - p.r - 2, Y(b.h_mean), { font: (size.font - 2) + "px system-ui", colour: css("--muted"), align: "right", baseline: "middle" });
+            var v = b.mean_rel[i], rr = 3 + Math.log10(b.n) * 1.6, y = Y(b.h_mean);
+            var cl = function (x) { return X(Math.max(-lim, Math.min(lim, x))); };
+            if (spread && b.sd) {           /* the points themselves, not only their mean */
+              ctx.strokeStyle = css("--line-2"); ctx.lineWidth = 1;
+              ctx.beginPath(); ctx.moveTo(cl(v - b.sd[i]), y); ctx.lineTo(cl(v + b.sd[i]), y); ctx.stroke();
+              [v - b.sd[i], v + b.sd[i]].forEach(function (e) {
+                ctx.beginPath(); ctx.moveTo(cl(e), y - 4); ctx.lineTo(cl(e), y + 4); ctx.stroke();
+              });
+            }
+            if (b.se) {                     /* how well the band mean itself is known */
+              ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2.4;
+              ctx.beginPath(); ctx.moveTo(cl(v - 2 * b.se[i]), y); ctx.lineTo(cl(v + 2 * b.se[i]), y); ctx.stroke();
+              ctx.lineWidth = 1;
+            }
+            ctx.fillStyle = css("--accent"); ctx.beginPath(); ctx.arc(cl(v), y, rr, 0, 2 * Math.PI); ctx.fill();
+            D.text(ctx, "n=" + b.n, w - p.r - 2, y, { font: (size.font - 2) + "px system-ui", colour: css("--muted"), align: "right", baseline: "middle" });
           });
           D.text(ctx, "ten height bands, each a mean over 119 to 3 273 points; red line: the weighted fit, slope s(t)", p.l + 4, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, spread ? "thick bar: twice the standard error of the band mean · thin bar: one standard deviation of the points in the band"
+                             : "thick bar: twice the standard error of the band mean",
+            p.l + 4, p.t + 14 + size.font, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
           /* bottom: s(t) */
           var X2 = A.linear(0, ep.n_epochs - 1, p.l, w - p.r), Y2 = A.linear(-sLim, sLim, h - p.b, topH + 8);
           ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(X2(0), Y2(0)); ctx.lineTo(X2(ep.n_epochs - 1), Y2(0)); ctx.stroke();
@@ -133,6 +165,9 @@
           A.xAxis(ctx, X2, h - p.b, A.yearTicks(ep.dates), "", p.f);
         }
       });
+      player.addToggle("Bars:", "spread", [
+        { value: "both", label: "spread of the points and error of the mean", checked: true },
+        { value: "se", label: "error of the mean only" }], function (v) { spread = v === "both"; });
     }).catch(function (e) { V.Player.fallback(mount, "The height-band animation could not load its data (" + e.message + ")."); });
   }
 

@@ -274,9 +274,11 @@ window.VRS = (function () {
       addToggle: function (labelText, name, options, onChange) {
         var wrap = document.createElement("span");
         wrap.appendChild(document.createTextNode(labelText + " "));
+        /* one name for the whole group, or the browser treats each option as its own radio */
+        var group = name + "-" + Math.random().toString(36).slice(2, 7);
         options.forEach(function (o) {
           var l = document.createElement("label");
-          var r = document.createElement("input"); r.type = "radio"; r.name = name + "-" + Math.random().toString(36).slice(2, 7); r.value = o.value; r.checked = !!o.checked;
+          var r = document.createElement("input"); r.type = "radio"; r.name = group; r.value = o.value; r.checked = !!o.checked;
           r.addEventListener("change", function () { onChange(o.value); draw(); });
           l.appendChild(r); l.appendChild(document.createTextNode(o.label)); wrap.appendChild(l);
         });

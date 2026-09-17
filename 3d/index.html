@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3D · Virtual Radiosonde</title>
 <meta name="description" content="Kop van Zuid in three dimensions from the open 3DBAG building models, coloured by what the radar saw: sinking, tilt, seasonal swing, and a time slider over the 288 passes. Every colour is a mean over at least 20 radar points.">
-<link rel="stylesheet" href="../style.css?v=20260917d">
-<link rel="stylesheet" href="3d.css?v=20260917d">
+<link rel="stylesheet" href="../style.css?v=20260917g">
+<link rel="stylesheet" href="3d.css?v=20260917g">
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"}}
 </script>
@@ -52,6 +52,8 @@
             <option value="bx">sideways expansion [mm/m]</option>
             <option value="ground_rate">pavement rate next to it [mm/yr]</option>
             <option value="n">number of radar points</option>
+            <option value="rate_sd">spread of the rate between its points [mm/yr]</option>
+            <option value="scatter">spread about the building mean, one pass [mm]</option>
           </optgroup>
           <optgroup label="Per 10 m slab">
             <option value="band_rate">rate per slab [mm/yr]</option>
@@ -73,6 +75,9 @@
           <option value="peak_doy">when the swing peaks</option>
           <option value="h_agl_mean">mean point height [m]</option>
           <option value="n">number of points</option>
+          <option value="rate_sd">spread of the rate inside the cell [mm/yr]</option>
+          <option value="scatter_mm">spread about the cell mean, typical pass [mm]</option>
+          <option value="spread_now">spread inside the cell, the pass on the slider [mm]</option>
           <option value="none">hidden</option>
         </select>
         <div class="checks">
@@ -119,6 +124,7 @@
         <li>The satellite view with radar lighting: the bright faces are the ones the radar illuminates, the dark faces have no points, and the towers hide the ground behind them.</li>
         <li>Seasonal swing per slab: each tower's colour deepens upward, about 0.03 mm per metre. Buildings peak around day 210, the open quays around day 45.</li>
         <li>Play the slider: most passes are pale over the whole pier; some turn the whole scene at once, never one building alone, and the strip chart spikes on the same passes.</li>
+        <li>Colour the cells by spread rather than by mean: the quays are dark, so their points agree and the cell mean stands for all of them; the cells on facades are bright, where a single number hides points that differ by millimetres. Every card gives the spread beside the mean.</li>
         <li>The radar rays show why the layer of air is thin and tilted: the lower ray travels about 80 m further through it. The balloon lights the height bands of one pass in turn.</li>
       </ul>
       <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one grid cell of 10 m, 25 m for ground points only; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Ten of the twelve buildings that carry radar points are named: the register footprint was matched to a named building in Wikidata, and the name is used only where the construction year and the roof height agree as well. The other two keep their register id. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
@@ -128,8 +134,8 @@
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="../js/nav.js?v=20260917d"></script>
-<script src="colormaps.js?v=20260917d"></script>
-<script type="module" src="viewer.js?v=20260917d"></script>
+<script defer src="../js/nav.js?v=20260917g"></script>
+<script src="colormaps.js?v=20260917g"></script>
+<script type="module" src="viewer.js?v=20260917g"></script>
 </body>
 </html>

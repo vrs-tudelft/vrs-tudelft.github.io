@@ -34,7 +34,12 @@ This site is public. Only put here what we would be happy to show anyone:
 - Figures, drawings and animations: yes.
 - Numbers with their caveats: yes.
 - Aggregates of the radar data: yes, if every record is a mean over **at least 20 radar
-  points** (a grid cell of 10 or 25 m, a building, a 10 m slab of a building, a height band, the scene)
+  points** (a grid cell of 10 or 25 m, a building, a 10 m slab of a building, a height band, the scene),
+  **published together with the spread of the points behind it**: the standard deviation of their
+  rates with the tenth and ninetieth percentiles, the spread of their heights, and how far they sit
+  from their own mean on a single pass (`cells-sd.bin`, and `sd`/`se` per height band). The spread is
+  measured after each point's offset, trend and curvature are removed, so it says how well the mean
+  stands for its points on one pass, not how differently they settle
   and no record carries a point position or a single point's series. `site_export.py` in
   the team repository writes them that way and refuses anything else; run
   `python tools/check_data.py` here before pushing, it must print `0 problems`.
@@ -51,6 +56,11 @@ From the team repository, with its virtual environment:
 mvp/.venv/Scripts/python.exe mvp/src/site_export.py        # data/*.json, data/cells.bin, MANIFEST.json
 mvp/.venv/Scripts/python.exe mvp/src/site_figures.py       # mvp/figures/24-31 (copy the PNGs into figures/)
 mvp/.venv/Scripts/python.exe mvp/src/site_3d_export.py     # data/3d/*, 3d/colormaps.js, the 3DBAG order in data/buildings.json
+
+# Per-point build, for the team only. Writes data/points.json + points.bin (about 7 MB), which
+# .gitignore keeps out of git and tools/check_data.py refuses to let anyone commit. The 3D view
+# offers "every radar point" while those files are present; the published site never has them.
+mvp/.venv/Scripts/python.exe mvp/src/site_export.py --only cells --points ../vrs-tudelft.github.io/data
 ```
 
 Then here: `python tools/check_data.py` and, after editing a drawing in `svg/`,

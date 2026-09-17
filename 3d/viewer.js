@@ -35,6 +35,8 @@ const LAYERS = {
   bx: { title: "east-west slope of the seasonal term [mm per m]; +0.015 expected", ramp: "RdBu_r", lim: [-0.03, 0.03], get: (r) => r.bx },
   ground_rate: { title: "rate of the pavement within 15 m [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], get: (r) => r.ground_rate },
   n: { title: "number of radar points (log10)", ramp: "cividis", lim: [1.3, 3.5], get: (r) => Math.log10(r.n) },
+  rate_sd: { title: "spread of the rate between the building's own points [mm/yr]", ramp: "magma", lim: [0, 1.5], get: (r) => r.rate_sd },
+  scatter: { title: "spread of the points about the building mean, one pass [mm]", ramp: "magma", lim: [0, 2.5], get: (r) => r.scatter_mm },
   band_rate: { title: "rate per 10 m slab [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], band: (b) => b.rate },
   band_amp: { title: "seasonal swing per 10 m slab [mm]", ramp: "magma", lim: [0, 3], band: (b) => b.amp },
   band_peak: { title: "peak day per 10 m slab", ramp: "twilight_shifted", lim: [0, 365.25], band: (b) => b.peak_doy, cyclic: true },
@@ -46,36 +48,56 @@ const CELL_LAYERS = {
   amp: { title: "seasonal swing of the cell [mm]", ramp: "magma", lim: [0, 2] },
   peak_doy: { title: "peak day of the cell's swing", ramp: "twilight_shifted", lim: [0, 365.25], cyclic: true },
   h_agl_mean: { title: "mean height of the cell's points [m]", ramp: "viridis", lim: [0, 60] },
-  n: { title: "radar points in the cell", ramp: "cividis", lim: [20, 500] }
+  n: { title: "radar points in the cell", ramp: "cividis", lim: [20, 500] },
+  rate_sd: { title: "spread of the rate inside the cell [mm/yr]", ramp: "magma", lim: [0, 2] },
+  scatter_mm: { title: "spread of the points about the cell mean, one pass [mm]", ramp: "magma", lim: [0, 2.5] },
+  spread_now: { title: "spread inside the cell on the pass on the slider [mm]", ramp: "magma", lim: [0, 4.5], perEpoch: true }
 };
 
 const S = {  /* state */
   epoch: 0, tmode: "increment", playing: false, speed: 8, layer: "rate", cellLayer: "time", cellGrid: "ground",
-  columns: false, edges: !isMobile, texture: true, radarLight: false, ceiling: false, rays: false, balloon: false,
+  pointLayer: "time", columns: false, edges: !isMobile, texture: true, radarLight: false, ceiling: false, rays: false, balloon: false,
   selected: null, needsRender: true, anim: null
 };
 
 let renderer, scene, camera, persp, ortho, controls, buildings, edgesObj, cellsMesh, ground, gridHelper, ceilingPlane, hemi, sun, table, tableTex, uniforms, flight;
 let D = {};   /* data */
 let cellGeom = { all: null, ground: null };
-let rayGroup, balloonGroup, airSlab;
+let rayGroup, balloonGroup, airSlab, pointCloud;
 
 async function loadAll() {
-  const [manifest, bld, cells, epochs, bands, bin] = await Promise.all([
+  const [manifest, bld, cells, epochs, bands, bin, sdBin] = await Promise.all([
     fetch(DATA + "3d/manifest.json").then((r) => r.json()),
     fetch(DATA + "buildings.json").then((r) => r.json()),
     fetch(DATA + "cells.json").then((r) => r.json()),
     fetch(DATA + "epochs.json").then((r) => r.json()),
     fetch(DATA + "bands.json").then((r) => r.json()),
-    fetch(DATA + "cells.bin").then((r) => r.arrayBuffer())
+    fetch(DATA + "cells.bin").then((r) => r.arrayBuffer()),
+    fetch(DATA + "cells-sd.bin").then((r) => r.arrayBuffer())
   ]);
-  const i16 = new Int16Array(bin);
+  const i16 = new Int16Array(bin), sd16 = new Int16Array(sdBin);
   const grids = {};
   for (const g of ["all", "ground"]) {
     const G = cells.grids[g], start = G.offset_bytes / 2, n = cells.series.epochs;
-    grids[g] = { cells: G.cells, get: (c, t) => i16[start + c * n + t] / 100 };
+    grids[g] = { cells: G.cells, get: (c, t) => i16[start + c * n + t] / 100, sd: (c, t) => sd16[start + c * n + t] / 100 };
   }
   D = { manifest, bld, cells, epochs, bands, grids, tYears: epochs.days_since_ref.map((d) => d / 365.25) };
+  D.points = await loadLocalPoints();
+}
+
+/* data/points.* is a local build for the team: git ignores it and it is not on the published
+   site, so this quietly does nothing when the files are absent. */
+async function loadLocalPoints() {
+  try {
+    const meta = await fetch(DATA + "points.json").then((r) => (r.ok ? r.json() : null));
+    if (!meta) return null;
+    const buf = await fetch(DATA + "points.bin").then((r) => (r.ok ? r.arrayBuffer() : null));
+    if (!buf) return null;
+    const i16 = new Int16Array(buf), n = meta.epochs;
+    return { meta, n, get: (k, t) => i16[k * n + t] / 100 };
+  } catch (e) {
+    return null;
+  }
 }
 
 function initScene() {
@@ -218,6 +240,45 @@ function buildCells() {
   colourCells();
 }
 
+function buildPoints() {
+  if (!D.points || pointCloud) return;
+  const P = D.points.meta, n = P.n_points, ground = D.manifest.ground_nap;
+  const pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  for (let k = 0; k < n; k++) {
+    pos[k * 3] = P.e[k];
+    pos[k * 3 + 1] = ground + P.h_agl[k];
+    pos[k * 3 + 2] = -P.n_coord[k];
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  pointCloud = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: true, vertexColors: true }));
+  pointCloud.visible = false;
+  scene.add(pointCloud);
+}
+
+function colourPoints() {
+  if (!pointCloud || !D.points) return;
+  const P = D.points.meta, n = P.n_points, col = pointCloud.geometry.getAttribute("color");
+  const mode = S.pointLayer;
+  const L = mode === "rate" ? { ramp: "RdBu_r", lim: [-7, 7] }
+    : mode === "amp" ? { ramp: "magma", lim: [0, 3] }
+    : mode === "h" ? { ramp: "viridis", lim: [0, 90] }
+    : { ramp: "RdBu_r", lim: [-D.manifest.scales.cells[S.tmode + "_mm"], D.manifest.scales.cells[S.tmode + "_mm"]] };
+  for (let k = 0; k < n; k++) {
+    let v;
+    if (mode === "rate") v = P.rate[k];
+    else if (mode === "amp") v = P.amp[k];
+    else if (mode === "h") v = P.h_agl[k];
+    else if (S.tmode === "increment") v = S.epoch === 0 ? 0 : D.points.get(k, S.epoch) - D.points.get(k, S.epoch - 1);
+    else v = D.points.get(k, S.epoch);
+    const rgb = colourOf(L, v) || [170, 170, 170];
+    col.array[k * 3] = rgb[0] / 255; col.array[k * 3 + 1] = rgb[1] / 255; col.array[k * 3 + 2] = rgb[2] / 255;
+  }
+  col.needsUpdate = true;
+  S.needsRender = true;
+}
+
 function cellValue(G, c, k, t) {
   if (S.tmode === "increment") return t === 0 ? 0 : G.get(k, t) - G.get(k, t - 1);
   if (S.tmode === "cumulative") return G.get(k, t);
@@ -227,6 +288,8 @@ function cellValue(G, c, k, t) {
 
 function colourCells() {
   if (!cellsMesh) return;
+  if (pointCloud) pointCloud.visible = S.cellLayer === "points";
+  if (S.cellLayer === "points") { cellsMesh.visible = false; colourPoints(); return; }
   cellsMesh.visible = S.cellLayer !== "none";
   if (!cellsMesh.visible) { S.needsRender = true; return; }
   const G = D.grids[S.cellGrid], col = new THREE.Color();
@@ -237,7 +300,12 @@ function colourCells() {
     G.cells.forEach((c, k) => { const v = cellValue(G, c, k, S.epoch); const rgb = colourOf(L, v); col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col); });
   } else {
     L = CELL_LAYERS[S.cellLayer];
-    G.cells.forEach((c, k) => { const rgb = colourOf(L, c[S.cellLayer]) || [200, 200, 200]; col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col); });
+    const perEpoch = L.perEpoch;
+    G.cells.forEach((c, k) => {
+      const v = perEpoch ? G.sd(k, S.epoch) : c[S.cellLayer];
+      const rgb = colourOf(L, v) || [200, 200, 200];
+      col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col);
+    });
   }
   cellsMesh.instanceColor.needsUpdate = true;
   S.needsRender = true;
@@ -434,6 +502,7 @@ function buildingCard(bid) {
   }
   html += `<tr><td>Radar points</td><td>${r.n} on the building (${r.h_agl.min.toFixed(0)} to ${r.h_agl.max.toFixed(0)} m), ${r.n_ground} on the pavement within 15 m</td></tr>
     <tr><td>Long-term rate</td><td>${sgn(r.rate, 2)} mm/yr (at the top ${r.rate_at_top === null ? "n/a" : sgn(r.rate_at_top, 1)})</td></tr>
+    <tr><td>Spread between its points</td><td>rate ± ${r.rate_sd.toFixed(2)} mm/yr (10th to 90th: ${sgn(r.rate_p10, 1)} to ${sgn(r.rate_p90, 1)}), swing ± ${r.amp_sd.toFixed(2)} mm; ${r.scatter_mm.toFixed(1)} mm apart on a typical pass</td></tr>
     <tr><td>Tilt</td><td>${r.tilt_per100 === null ? "n/a" : sgn(r.tilt_per100, 2) + " mm per 100 m per yr"}</td></tr>
     <tr><td>Curvature</td><td>${sgn(r.quad, 2)} mm/yr² (positive = slowing down)</td></tr>
     <tr><td>Seasonal swing</td><td>${r.seasonal.amp.toFixed(2)} mm, peaking around ${doyText(r.seasonal.peak_doy)} (± ${r.seasonal.peak_sd.toFixed(0)} days)</td></tr>
@@ -451,6 +520,7 @@ function cellCard(k) {
   card.innerHTML = `<h4>Cell ${c.i}, ${c.j} (${S.cellGrid === "ground" ? "ground points" : "all points"})</h4><table><tbody>
     <tr><td>Radar points</td><td>${c.n}, mean height ${c.h_agl_mean.toFixed(1)} m, highest ${c.h_agl_max.toFixed(0)} m</td></tr>
     <tr><td>Long-term rate</td><td>${sgn(c.rate_mean, 2)} mm/yr, curvature ${sgn(c.quad_mean, 2)} mm/yr²</td></tr>
+    <tr><td>Spread between its points</td><td>rate ± ${c.rate_sd.toFixed(2)} mm/yr (10th to 90th: ${sgn(c.rate_p10, 1)} to ${sgn(c.rate_p90, 1)}), heights ± ${c.h_agl_sd.toFixed(1)} m; ${G.sd(k, S.epoch).toFixed(1)} mm apart on this pass, ${c.scatter_mm.toFixed(1)} mm on a typical one</td></tr>
     <tr><td>Seasonal swing</td><td>${c.amp.toFixed(2)} mm, peaking around ${doyText(c.peak_doy)}</td></tr>
     <tr><td>This pass</td><td>${sgn(cellValue(G, c, k, S.epoch), 2)} mm (${S.tmode === "increment" ? "since the previous pass" : S.tmode === "cumulative" ? "since 2014" : "minus the cell's trend"})</td></tr>
     </tbody></table><canvas id="spark"></canvas>`;
@@ -460,7 +530,7 @@ function cellCard(k) {
 /* ------------------------------------------------------------ time */
 function setEpoch(t) {
   S.epoch = Math.max(0, Math.min(D.epochs.n_epochs - 1, t));
-  if (S.cellLayer === "time") colourCells();
+  if (S.cellLayer === "time" || S.cellLayer === "points" || (CELL_LAYERS[S.cellLayer] && CELL_LAYERS[S.cellLayer].perEpoch)) colourCells();
   updateEpochLabel(); drawStrip();
   if (S.selected) { if (S.selected.kind === "building") { const cv = $("spark"); if (cv) sparkline(cv, D.bld.buildings[S.selected.id].series, S.epoch, "mm"); } else cellCard(S.selected.k); }
   S.needsRender = true;
@@ -533,7 +603,18 @@ async function main() {
     await loadAll();
     initScene();
     await loadBuildings();
-    buildCells(); buildRays(); buildBalloon();
+    buildCells(); buildRays(); buildBalloon(); buildPoints();
+    if (D.points) {                       /* only on a machine with the local per-point build */
+      const sel = $("cellLayer"), o = document.createElement("option");
+      o.value = "points";
+      o.textContent = "every radar point (local file, not published)";
+      sel.insertBefore(o, sel.lastElementChild);
+      const note = document.createElement("p");
+      note.className = "small";
+      note.textContent = "A local per-point file is present, so the view can show all " +
+        D.points.meta.n_points + " points instead of cell means. That file is not part of the published site.";
+      $("panel").appendChild(note);
+    }
     wire();
     setPreset("overview");
     setEpoch(0);
