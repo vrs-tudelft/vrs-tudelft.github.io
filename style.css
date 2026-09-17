@@ -199,12 +199,12 @@ figure.diagram svg { width: 100%; height: auto; display: block; background: var(
 .svg-dot { fill: var(--bad); }
 
 /* our own reading of a result */
-.own {
+.ask {
   background: var(--accent-soft); border-left: 2px solid var(--accent);
   border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 22px 0 26px; color: var(--ink-2);
 }
-.own::before { content: "Our reading"; display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; font-weight: 650; }
-.own p:last-child { margin-bottom: 0; }
+.ask::before { content: "Still open"; display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; font-weight: 650; }
+.ask p:last-child { margin-bottom: 0; }
 
 details { border-top: 1px solid var(--line); padding: 14px 0; }
 details:last-of-type { border-bottom: 1px solid var(--line); }
