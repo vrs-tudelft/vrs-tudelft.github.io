@@ -19,7 +19,7 @@ site updates within a minute or two.
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below); `data/3d/` holds the building models, the ground image and the manifest |
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
 | `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated) |
-| `tools/` | `check_data.py` (the aggregation check) and `inline_svg.py` |
+| `tools/` | `check_data.py` (the aggregation check), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
 | `style.css` | The look: one light theme, the shell grid, the tooltips |
 
 Every figure is made by a script in the team repository
@@ -56,8 +56,10 @@ mvp/.venv/Scripts/python.exe mvp/src/site_3d_export.py     # data/3d/*, 3d/color
 Then here: `python tools/check_data.py` and, after editing a drawing in `svg/`,
 `python tools/inline_svg.py`.
 
-To test locally, serve the folder (the 3D view loads ES modules and will not run from a
-`file://` address): `python -m http.server 8000`, then open `http://localhost:8000/`.
+To test locally, run `python tools/serve.py` and open `http://localhost:8000/`. It sends
+`Cache-Control: no-store`, because a plain `python -m http.server` lets the browser keep
+serving pages you have already visited and your edits look as if they never landed. The 3D
+view loads ES modules, so it needs a server either way and will not run from a `file://` path.
 
 ## How to add or update something
 
