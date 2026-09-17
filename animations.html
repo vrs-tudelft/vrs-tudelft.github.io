@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Animations · Virtual Radiosonde</title>
 <meta name="description" content="Six animations of the TerraSAR-X record over Kop van Zuid, drawn in the browser from averages: the scene pass by pass, the height gradient, its decomposition, buildings against air, the year clock, and a virtual balloon.">
-<link rel="stylesheet" href="style.css?v=20260917">
+<link rel="stylesheet" href="style.css?v=20260917b">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -29,9 +29,9 @@
     <p class="small">Every colour and every dot is a mean over at least 20 radar points. Play, pause and step with the buttons, drag the slider to scrub, or focus a player and use the arrow keys and the space bar. The players pause when scrolled out of view.</p>
 
     <h2 id="scene" data-short="The scene">The scene, pass by pass</h2>
-    <p>Kop van Zuid on a 25 m grid, north up. Each cell is coloured by how much its points moved since the previous pass, on a <span class="t" data-tip="Fixed for all frames and symmetric around zero, so a calm pass looks calm. A scale that rescaled per frame would make every pass look equally eventful.">scale that never changes</span>. On most passes the whole pier turns one shade together: that common change is the atmosphere over the whole scene, the reference point, or both. The height-dependent part we are after is the small extra colour on the tall buildings, which is why the trace of s(t) runs underneath.</p>
+    <p>Kop van Zuid on a 10 m grid, north up; the ground-only grid stays at 25 m because those points are three times sparser. Each cell is coloured by how much its points moved since the previous pass, on a <span class="t" data-tip="Fixed for all frames and symmetric around zero, so a calm pass looks calm. A scale that rescaled per frame would make every pass look equally eventful.">scale that never changes</span>. On most passes the whole pier turns one shade together: that common change is the atmosphere over the whole scene, the reference point, or both. The height-dependent part we are after is the small extra colour on the tall buildings, which is why the trace of s(t) runs underneath.</p>
     <div data-anim="scene"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the 25 m cells and the building outlines. Still images: figures 1, 6 and 25.</p>
+    <p class="databehind">From the cell grids, 10 m over all points and 25 m over ground points only, and the building outlines. Still images: figures 1, 6 and 25.</p>
 
     <h2 id="bands" data-short="The gradient">The height gradient, pass by pass</h2>
     <p>Above, the mean displacement of ten height bands against their height, relative to the scene mean, with the fitted line for that pass; its slope is s(t). Below, the ten-year series of that slope with a marker following the frame. The tilt above and the curve below are the same quantity, and most of the tilt is seasonal and slow: in summer the high bands sit to the right, in winter to the left.</p>
@@ -61,8 +61,8 @@
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="js/nav.js?v=20260917"></script>
-<script defer src="js/player.js?v=20260917"></script>
-<script defer src="js/animations.js?v=20260917"></script>
+<script defer src="js/nav.js?v=20260917b"></script>
+<script defer src="js/player.js?v=20260917b"></script>
+<script defer src="js/animations.js?v=20260917b"></script>
 </body>
 </html>

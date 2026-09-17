@@ -21,13 +21,13 @@
         var grids = {};
         ["all", "ground"].forEach(function (g) {
           var G = cells.grids[g];
-          grids[g] = { cells: G.cells, S: L.grid(bin, G.offset_bytes, G.n_cells, cells.series.epochs) };
+          grids[g] = { cells: G.cells, cm: G.cell_m, S: L.grid(bin, G.offset_bytes, G.n_cells, cells.series.epochs) };
         });
-        var ox = cells.origin_local[0], oy = cells.origin_local[1], cm = cells.cell_m;
+        var ox = cells.origin_local[0], oy = cells.origin_local[1];
         /* map extent: the cells plus a margin, not the whole outline box */
-        var ci = cells.grids.all.cells.map(function (c) { return c.i; }), cj = cells.grids.all.cells.map(function (c) { return c.j; });
-        var e0 = ox + cm * Math.min.apply(null, ci) - 60, e1 = ox + cm * (Math.max.apply(null, ci) + 1) + 60;
-        var n0 = oy + cm * Math.min.apply(null, cj) - 40, n1 = oy + cm * (Math.max.apply(null, cj) + 1) + 40;
+        var gA = grids.all, ci = gA.cells.map(function (c) { return c.i; }), cj = gA.cells.map(function (c) { return c.j; });
+        var e0 = ox + gA.cm * Math.min.apply(null, ci) - 60, e1 = ox + gA.cm * (Math.max.apply(null, ci) + 1) + 60;
+        var n0 = oy + gA.cm * Math.min.apply(null, cj) - 40, n1 = oy + gA.cm * (Math.max.apply(null, cj) + 1) + 40;
         var lim = { increment: cells.scales.increment_mm, cumulative: cells.scales.cumulative_mm, detrended: cells.scales.detrended_mm };
         var tYears = ep.days_since_ref.map(function (d) { return d / 365.25; });
         function value(G, c, k, i) {
@@ -47,7 +47,7 @@
             function px(e) { return mx0 + (e - e0) * sc; }
             function py(n) { return my0 + (n1 - n) * sc; }
             /* water and land hint: nothing; cells first, outlines on top */
-            var G = grids[gridName], colour = V.scales.diverging(lim[mode]);
+            var G = grids[gridName], colour = V.scales.diverging(lim[mode]), cm = G.cm;
             G.cells.forEach(function (c, k) {
               var v = value(G, c, k, i);
               ctx.fillStyle = colour(v);
@@ -73,7 +73,7 @@
             V.legend(ctx, w - lw - 12, 20, lw, 9, V.scales.ramp("RdBu_r"),
               ["-" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1), "0", "+" + lim[mode].toFixed(mode === "cumulative" ? 0 : 1)], f1);
             D.text(ctx, "blue = away from the satellite, red = towards it", w - 12, 56, { font: f1, colour: css("--muted"), align: "right" });
-            D.text(ctx, "north up · 25 m cells, each a mean over at least 20 radar points", 12, 16, { font: f1, colour: css("--muted") });
+            D.text(ctx, "north up · " + cm + " m cells, each a mean over at least 20 radar points", 12, 16, { font: f1, colour: css("--muted") });
             D.text(ctx, "outlines: BAG buildings", 12, 30, { font: f1, colour: css("--muted") });
             /* strip: s_resid */
             var y0 = h - stripH, X = A.linear(0, ep.n_epochs - 1, 46, w - 12), s = ep.s_resid;
