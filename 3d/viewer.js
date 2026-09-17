@@ -55,7 +55,7 @@ const S = {  /* state */
   selected: null, needsRender: true, anim: null
 };
 
-let renderer, scene, camera, persp, ortho, controls, buildings, edgesObj, cellsMesh, ground, gridHelper, ceilingPlane, hemi, sun, table, tableTex, uniforms;
+let renderer, scene, camera, persp, ortho, controls, buildings, edgesObj, cellsMesh, ground, gridHelper, ceilingPlane, hemi, sun, table, tableTex, uniforms, flight;
 let D = {};   /* data */
 let cellGeom = { all: null, ground: null };
 let rayGroup, balloonGroup, airSlab;
@@ -201,7 +201,7 @@ function fillTable() {
 /* ------------------------------------------------------------ cells */
 function buildCells() {
   if (cellsMesh) { scene.remove(cellsMesh); cellsMesh.geometry.dispose(); }
-  const G = D.grids[S.cellGrid], cm = D.cells.cell_m, ox = D.cells.origin_local[0], oy = D.cells.origin_local[1];
+  const G = D.grids[S.cellGrid], cm = D.cells.grids[S.cellGrid].cell_m, ox = D.cells.origin_local[0], oy = D.cells.origin_local[1];
   const geom = new THREE.BoxGeometry(cm - 1, 1, cm - 1);
   geom.translate(0, 0.5, 0);
   cellsMesh = new THREE.InstancedMesh(geom, new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }), G.cells.length);
@@ -473,7 +473,8 @@ function loop(t) {
   if (S.playing) { acc += dt; const step = 1000 / S.speed; if (acc >= step) { const n = Math.floor(acc / step); acc -= n * step; setEpoch((S.epoch + n) % D.epochs.n_epochs); } }
   if (S.rays) { stepRays(dt); S.needsRender = true; }
   if (S.balloon) { stepBalloon(dt); S.needsRender = true; }
-  controls.update();
+  if (flight && flight.active) { flight.update(dt / 1000); S.needsRender = true; }
+  else controls.update();
   if (S.needsRender) { renderer.render(scene, camera); S.needsRender = false; }
   if (location.search.includes("debug")) $("hud").textContent = `draw calls ${renderer.info.render.calls}, triangles ${renderer.info.render.triangles}`;
 }
@@ -501,8 +502,30 @@ function wire() {
   renderer.domElement.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; });
   renderer.domElement.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 6) pick(e); down = null; });
   renderer.domElement.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { e.preventDefault(); setEpoch(S.epoch + (e.shiftKey ? 10 : 1)); } if (e.key === "ArrowLeft") { e.preventDefault(); setEpoch(S.epoch - (e.shiftKey ? 10 : 1)); } if (e.key === " ") { e.preventDefault(); $("tPlay").click(); } });
+  $("flyBtn").addEventListener("click", takeOff);
   window.addEventListener("resize", drawStrip);
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { scene.background = new THREE.Color(css("--canvas")); fillTable(); drawStrip(); S.needsRender = true; });
+}
+
+/* the easter egg: loaded only when someone finds the plane */
+async function takeOff() {
+  if (flight && flight.active) return;
+  S.playing = false; $("tPlay").textContent = "▶";
+  S.rays = S.balloon = false;
+  if (rayGroup) rayGroup.visible = false;
+  if (balloonGroup) balloonGroup.visible = false;
+  $("overlay").classList.remove("on");
+  $("raysBtn").classList.remove("on"); $("balloonBtn").classList.remove("on");
+  if (camera !== persp) { camera = persp; controls.object = camera; resize(); }
+  if (!flight) {
+    const mod = await import("./flight.js");
+    flight = mod.createFlight({
+      scene, stage: $("stage"), camera: persp, controls, manifest: D.manifest, dataUrl: DATA,
+      onExit: () => { setPreset("overview"); }
+    });
+  }
+  await flight.start();
+  $("hud").textContent = "";
 }
 
 async function main() {

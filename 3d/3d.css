@@ -57,6 +57,54 @@
 .timepanel .modes label { display: inline-flex; align-items: center; gap: 5px; margin: 8px 14px 0 0; color: var(--muted); font-size: .86rem; }
 .strip { width: 100%; height: 110px; display: block; margin-top: 10px; cursor: crosshair; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 
+/* the easter egg: a small plane in the corner, and its head-up display */
+.fly-btn {
+  position: absolute; left: 12px; bottom: 12px; width: 30px; height: 30px; padding: 5px;
+  border: 0; background: none; color: var(--muted); opacity: .35; cursor: pointer; transition: opacity .15s, transform .15s;
+}
+.fly-btn svg { width: 100%; height: 100%; fill: currentColor; }
+.fly-btn:hover { opacity: 1; color: var(--accent); transform: translateY(-2px) rotate(-8deg); }
+.stage.flying .fly-btn, .stage.flying .hud, .stage.flying .overlay { display: none; }
+
+.fly-hud { position: absolute; inset: 0; pointer-events: none; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fly-hud .fly-corner { position: absolute; top: 12px; display: flex; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; max-width: 46%; }
+.fly-hud .fly-corner.tl { left: 14px; }
+.fly-hud .fly-corner.tr { right: 14px; }
+.fly-hud .v { font-size: 1.32rem; font-weight: 650; letter-spacing: -.02em; }
+.fly-hud .u { font-size: .74rem; color: var(--muted); margin-right: 10px; }
+.fly-hud .fly-throttle { position: absolute; left: 14px; bottom: 14px; width: 128px; font-size: .7rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.fly-hud .fly-throttle .bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-bottom: 4px; }
+.fly-hud .fly-throttle i { display: block; height: 100%; width: 70%; background: var(--accent); }
+.fly-hud .fly-keys { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font-size: .72rem; color: var(--muted); }
+.fly-hud .fly-warn {
+  position: absolute; left: 50%; top: 16%; transform: translateX(-50%);
+  font-size: .78rem; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; color: var(--bad);
+  animation: fly-blink 1s steps(2, end) infinite;
+}
+@keyframes fly-blink { 50% { opacity: .15; } }
+.fly-hud .fly-exit {
+  position: absolute; right: 12px; bottom: 12px; pointer-events: auto; width: 30px; height: 30px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; line-height: 1;
+}
+.fly-hud .fly-exit:hover { color: var(--ink); border-color: var(--line-2); }
+/* artificial horizon */
+.fly-hud .fly-horizon { position: absolute; right: 16px; bottom: 44px; width: 92px; height: 92px; }
+.fly-hud .fly-horizon .ring {
+  position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  border: 1px solid var(--line-2); background: #cbb99a;
+}
+.fly-hud .fly-horizon .sky { position: absolute; inset: -50% 0 0; }
+.fly-hud .fly-horizon .sky i { position: absolute; inset: 0 0 50%; background: #9fc4da; border-bottom: 1px solid #fff; display: block; }
+.fly-hud .fly-horizon .wings {
+  position: absolute; left: 50%; top: 50%; width: 46px; height: 2px; margin: -1px 0 0 -23px;
+  background: var(--ink); box-shadow: 0 0 0 1px rgba(255,255,255,.55);
+}
+.stage.fly-crash::after {
+  content: ""; position: absolute; inset: 0; background: var(--bad); opacity: .3; pointer-events: none;
+  animation: fly-fade 1.3s ease-out forwards;
+}
+@keyframes fly-fade { to { opacity: 0; } }
+
 .notes { margin-top: 40px; }
 .notes p, .notes li { max-width: 68ch; }
 @media (max-width: 480px) { .timepanel input[type="range"] { flex-basis: 100%; } }

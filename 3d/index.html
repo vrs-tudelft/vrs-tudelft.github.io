@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3D · Virtual Radiosonde</title>
 <meta name="description" content="Kop van Zuid in three dimensions from the open 3DBAG building models, coloured by what the radar saw: sinking, tilt, seasonal swing, and a time slider over the 288 passes. Every colour is a mean over at least 20 radar points.">
-<link rel="stylesheet" href="../style.css?v=20260917">
-<link rel="stylesheet" href="3d.css?v=20260917">
+<link rel="stylesheet" href="../style.css?v=20260917b">
+<link rel="stylesheet" href="3d.css?v=20260917b">
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"}}
 </script>
@@ -35,6 +35,9 @@
         <canvas class="gl" id="gl" tabindex="0" aria-label="Three-dimensional view of Kop van Zuid"></canvas>
         <div class="hud" id="hud"></div>
         <div class="overlay" id="overlay"></div>
+        <button type="button" class="fly-btn" id="flyBtn" title="Take off" aria-label="Take off">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c.7 0 1.2.8 1.2 1.8v4.3l7.8 4.5v1.9l-7.8-2.3v4.2l2.4 1.7v1.4L12 18.6l-3.6.9v-1.4l2.4-1.7v-4.2L3 14.5v-1.9l7.8-4.5V3.8C10.8 2.8 11.3 2 12 2z"/></svg>
+        </button>
         <div class="loading" id="loading">Loading the 3D view…</div>
       </div>
       <aside class="panel" id="panel">
@@ -118,15 +121,15 @@
         <li>Play the slider: most passes are pale over the whole pier; some turn the whole scene at once, never one building alone, and the strip chart spikes on the same passes.</li>
         <li>The radar rays show why the layer of air is thin and tilted: the lower ray travels about 80 m further through it. The balloon lights the height bands of one pass in turn.</li>
       </ul>
-      <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one 25 m ground cell; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
+      <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one grid cell of 10 m, 25 m for ground points only; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
       <p class="small" id="noWebgl" hidden>This browser could not start the 3D view. The same results are on the <a href="../findings.html#ground">findings</a> page as still images.</p>
     </div>
 
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="../js/nav.js?v=20260917"></script>
-<script src="colormaps.js?v=20260917"></script>
-<script type="module" src="viewer.js?v=20260917"></script>
+<script defer src="../js/nav.js?v=20260917b"></script>
+<script src="colormaps.js?v=20260917b"></script>
+<script type="module" src="viewer.js?v=20260917b"></script>
 </body>
 </html>

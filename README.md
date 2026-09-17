@@ -18,7 +18,7 @@ site updates within a minute or two.
 | `svg/` | The drawings; `tools/inline_svg.py` pastes them into the pages |
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below); `data/3d/` holds the building models, the ground image and the manifest |
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
-| `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated) |
+| `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated), `flight.js` (the small plane in the corner of the view: a flight model over the same scene, loaded only when someone clicks it) |
 | `tools/` | `check_data.py` (the aggregation check), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
 | `style.css` | The look: one light theme, the shell grid, the tooltips |
 
@@ -34,7 +34,7 @@ This site is public. Only put here what we would be happy to show anyone:
 - Figures, drawings and animations: yes.
 - Numbers with their caveats: yes.
 - Aggregates of the radar data: yes, if every record is a mean over **at least 20 radar
-  points** (a 25 m cell, a building, a 10 m slab of a building, a height band, the scene)
+  points** (a grid cell of 10 or 25 m, a building, a 10 m slab of a building, a height band, the scene)
   and no record carries a point position or a single point's series. `site_export.py` in
   the team repository writes them that way and refuses anything else; run
   `python tools/check_data.py` here before pushing, it must print `0 problems`.
