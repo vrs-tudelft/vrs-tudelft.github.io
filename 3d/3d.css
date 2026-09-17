@@ -1,38 +1,63 @@
 /* The 3D view: layout on top of the site tokens in ../style.css */
-.viewer { display: grid; grid-template-columns: 1fr 280px; gap: 16px; margin: 8px 0; }
-@media (max-width: 800px) { .viewer { grid-template-columns: 1fr; } }
-.stage { position: relative; background: var(--panel); border: 1px solid var(--line); overflow: hidden; min-height: 360px; aspect-ratio: 16 / 10; }
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 22px; margin: 10px 0 0; align-items: start; }
+@media (max-width: 900px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
+
+.stage {
+  position: relative; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden; min-height: 380px; aspect-ratio: 16 / 10;
+}
 .stage canvas.gl { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
-.stage .hud { position: absolute; left: 10px; top: 8px; font-size: .8rem; color: var(--muted); pointer-events: none; max-width: 70%; }
-.stage .overlay { position: absolute; right: 10px; bottom: 10px; font-size: .85rem; color: var(--ink); background: color-mix(in srgb, var(--panel) 90%, transparent); padding: 8px 10px; max-width: 320px; display: none; border: 1px solid var(--line); }
+.stage .hud { position: absolute; left: 14px; top: 12px; font-size: .8rem; color: var(--muted); pointer-events: none; max-width: 70%; }
+.stage .overlay {
+  position: absolute; right: 14px; bottom: 14px; display: none;
+  font-size: .84rem; line-height: 1.5; color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--line); box-shadow: var(--shadow);
+  padding: 10px 12px; border-radius: 9px; max-width: 320px;
+}
 .stage .overlay.on { display: block; }
 .stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .95rem; }
+
 .panel { font-size: .9rem; }
-.panel h3 { margin: 0 0 6px; font-size: .95rem; }
-.panel h3 + select, .panel .row { margin-bottom: 10px; }
-.panel select, .panel button, .panel input[type="range"] { font: inherit; font-size: .88rem; }
-.panel select { width: 100%; min-height: 34px; padding: 4px 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 4px; }
-.panel .row { display: flex; flex-wrap: wrap; gap: 6px; }
-.panel button { min-height: 34px; padding: 4px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; border-radius: 4px; }
-.panel button:hover { border-color: var(--muted); }
-.panel button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.panel .checks { margin: 4px 0 14px; }
-.panel .checks label { display: inline-flex; align-items: center; gap: 4px; margin: 2px 10px 2px 0; color: var(--muted); }
-.legend { margin: 6px 0 16px; }
+.panel h3 { margin: 0 0 7px; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 650; }
+.panel h3:not(:first-child) { margin-top: 22px; }
+.panel select {
+  width: 100%; min-height: 36px; padding: 5px 8px; font: inherit; font-size: .88rem;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px;
+}
+.panel .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.panel button {
+  font: inherit; font-size: .86rem; min-height: 34px; padding: 4px 11px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.panel button:hover { border-color: var(--line-2); }
+.panel button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.panel .checks { margin: 9px 0 0; }
+.panel .checks label { display: inline-flex; align-items: center; gap: 5px; margin: 3px 12px 3px 0; color: var(--muted); font-size: .86rem; }
+.legend { margin: 10px 0 0; }
 .legend canvas { width: 100%; height: 44px; display: block; }
-.legend .lt { font-size: .8rem; color: var(--muted); }
-.card { font-size: .86rem; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
-.card h4 { margin: 0 0 4px; font-size: .95rem; font-weight: 600; }
+.legend .lt { font-size: .8rem; color: var(--muted); line-height: 1.45; }
+
+.card { font-size: .86rem; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 20px; }
+.card h4 { margin: 0 0 6px; font-size: .95rem; font-weight: 650; }
 .card table { font-size: .8rem; margin: 0; }
-.card td { padding: 3px 6px 3px 0; }
-.card canvas { width: 100%; height: 70px; display: block; margin-top: 6px; }
-.timepanel { margin: 14px 0 8px; }
+.card td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+.card canvas { width: 100%; height: 70px; display: block; margin-top: 8px; }
+.card p { margin: 0; }
+
+.timepanel { margin: 18px 0 0; max-width: none; }
 .timepanel .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.timepanel input[type="range"] { flex: 1 1 260px; accent-color: var(--accent); height: 38px; margin: 0; }
-.timepanel button, .timepanel select { font: inherit; font-size: .9rem; min-height: 38px; min-width: 38px; padding: 4px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; border-radius: 4px; }
-.timepanel button.play { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.timepanel .epoch { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; margin: 6px 0 0; min-height: 1.3em; }
-.timepanel .modes label { display: inline-flex; align-items: center; gap: 4px; margin: 6px 12px 0 0; color: var(--muted); font-size: .88rem; }
-.strip { width: 100%; height: 110px; display: block; margin-top: 8px; cursor: crosshair; }
+.timepanel input[type="range"] { flex: 1 1 260px; accent-color: var(--accent); height: 36px; margin: 0; }
+.timepanel button, .timepanel select {
+  font: inherit; font-size: .88rem; min-height: 36px; min-width: 36px; padding: 4px 11px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; border-radius: 8px;
+}
+.timepanel button.play { background: var(--ink); color: #fff; border-color: var(--ink); }
+.timepanel .epoch { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem; margin: 10px 0 0; min-height: 1.3em; }
+.timepanel .modes label { display: inline-flex; align-items: center; gap: 5px; margin: 8px 14px 0 0; color: var(--muted); font-size: .86rem; }
+.strip { width: 100%; height: 110px; display: block; margin-top: 10px; cursor: crosshair; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+
+.notes { margin-top: 40px; }
+.notes p, .notes li { max-width: 68ch; }
 @media (max-width: 480px) { .timepanel input[type="range"] { flex-basis: 100%; } }
 @media print { .viewer, .timepanel { display: none; } }

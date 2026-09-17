@@ -5,53 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Animations · Virtual Radiosonde</title>
 <meta name="description" content="Six animations of the TerraSAR-X record over Kop van Zuid, drawn in the browser from averages: the scene pass by pass, the height gradient, its decomposition, buildings against air, the year clock, and a virtual balloon.">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260917">
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a class="brand" href="index.html">Virtual Radiosonde</a>
-    <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
-  </header>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
+</div></header>
 
-  <h1>Animations</h1>
-  <p class="lead">Six players, drawn in the browser from small tables of averages. Each moves through the 288 passes, or through one year; the line under each one says which pass you are looking at and what the weather was.</p>
-  <p class="small">Every colour and every dot is a mean over at least 20 radar points. Play, pause and step with the buttons, drag the slider to scrub, or focus a player and use the arrow keys and the space bar. The players pause when scrolled out of view.</p>
+<div class="shell">
+  <nav class="side" aria-label="On this page"></nav>
+  <main>
+    <h1>Animations</h1>
+    <p class="lead">Six players, drawn in the browser from small tables of averages. Each moves through the 288 passes, or through one year; the line under each one says which pass you are looking at and what the weather was.</p>
+    <p class="small">Every colour and every dot is a mean over at least 20 radar points. Play, pause and step with the buttons, drag the slider to scrub, or focus a player and use the arrow keys and the space bar. The players pause when scrolled out of view.</p>
 
-  <h2 id="scene">The scene, pass by pass</h2>
-  <p>Kop van Zuid on a 25 m grid, north up. Each cell is coloured by how much its points moved since the previous pass, on a scale that is fixed for all frames and symmetric around zero, so a calm pass looks calm. On most passes the whole pier turns one shade together: that common change is the atmosphere over the whole scene, the reference point, or both. The height-dependent part we are after is the small extra colour on the tall buildings, which is why the trace of s(t) runs underneath. The other two views show the decade of sinking building up, and the yearly breathing without it.</p>
-  <div data-anim="scene"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/cells.json</code>, <code>cells.bin</code> and the building outlines; still images: figures 1, 6 and 25.</p>
+    <h2 id="scene" data-short="The scene">The scene, pass by pass</h2>
+    <p>Kop van Zuid on a 25 m grid, north up. Each cell is coloured by how much its points moved since the previous pass, on a <span class="t" data-tip="Fixed for all frames and symmetric around zero, so a calm pass looks calm. A scale that rescaled per frame would make every pass look equally eventful.">scale that never changes</span>. On most passes the whole pier turns one shade together: that common change is the atmosphere over the whole scene, the reference point, or both. The height-dependent part we are after is the small extra colour on the tall buildings, which is why the trace of s(t) runs underneath.</p>
+    <div data-anim="scene"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From the 25 m cells and the building outlines. Still images: figures 1, 6 and 25.</p>
 
-  <h2 id="bands">The height gradient, pass by pass</h2>
-  <p>Above, the mean displacement of ten height bands against their height, relative to the scene mean, with the fitted line for that pass; its slope is s(t). Below, the ten-year series of that slope with a marker following the frame. The tilt above and the curve below are the same quantity, and most of the tilt is seasonal and slow: in summer the high bands sit to the right, in winter to the left.</p>
-  <div data-anim="bands"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/bands.json</code> and <code>epochs.json</code>; still images: figures 6, 7 and 24.</p>
+    <h2 id="bands" data-short="The gradient">The height gradient, pass by pass</h2>
+    <p>Above, the mean displacement of ten height bands against their height, relative to the scene mean, with the fitted line for that pass; its slope is s(t). Below, the ten-year series of that slope with a marker following the frame. The tilt above and the curve below are the same quantity, and most of the tilt is seasonal and slow: in summer the high bands sit to the right, in winter to the left.</p>
+    <div data-anim="bands"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From the ten height bands, 119 to 3 273 points each. Still images: figures 6, 7 and 24.</p>
 
-  <h2 id="decomp">Taking the gradient apart</h2>
-  <p>The same s(t) in four steps: as measured; the trend removed, the north-east towers sinking faster than the ground; the yearly wave removed, the buildings expanding in summer; and the remainder differenced from pass to pass. That leftover, about 1.7 mm per 100 m, is three times the noise of the fit and about 16 N-units if it were all air. It is a candidate, not a proof.</p>
-  <div data-anim="decomp"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/epochs.json</code>; still image: figure 8.</p>
+    <h2 id="decomp" data-short="Taking it apart">Taking the gradient apart</h2>
+    <p>The same s(t) in four steps: as measured; the trend removed, the north-east towers sinking faster than the ground; the yearly wave removed, the buildings expanding in summer; and the remainder differenced from pass to pass. That leftover, about 1.7 mm per 100 m, is three times the noise of the fit and about <span class="t" data-tip="An N-unit is one unit of refractivity. If the whole remainder were air, this is the change it would correspond to across the layer.">16 N-units</span> if it were all air. It is a candidate, not a proof.</p>
+    <div data-anim="decomp"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From the scene-wide s(t) and its fitted model. Still image: figure 8.</p>
 
-  <h2 id="joint">Buildings or air?</h2>
-  <p>Left, the 11-day changes of s(t), of a lagged air temperature standing in for the buildings, and of the lowest 100 m of refractivity from the De Bilt balloon. Right, the change of s(t) against each of the two, one dot per pass filling in as time advances, with the fitted line and, dashed, what physics would give if that explanation carried all of it. Both fitted lines are real and both fall short by the same third. The south-west half, without the sinking towers, is the cleaner test.</p>
-  <div data-anim="joint"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/joint.json</code>; still images: figures 14 and 15.</p>
+    <h2 id="joint" data-short="Buildings or air">Buildings or air?</h2>
+    <p>Left, the 11-day changes of s(t), of a lagged air temperature standing in for the buildings, and of the lowest 100 m of refractivity above De Bilt. Right, the change of s(t) against each of the two, one dot per pass filling in as time advances, with the fitted line and, dashed, what physics would give if that explanation carried all of it. Both fitted lines are real and both fall short by the same third. The <span class="t" data-tip="The south-west half has no sinking towers, so its s(t) carries no long-term trend. Fitting there removes one nuisance from the test.">south-west half</span> is the cleaner test.</p>
+    <div data-anim="joint"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From the joint fit on 287 pairs of passes. Still images: figures 14 and 15.</p>
 
-  <h2 id="yearclock">The year clock</h2>
-  <p>One year on a clock face, January at the top. As the hand sweeps, each pass drops a dot: the open ground in blue, the buildings above 40 m in red, after offset, trend and curvature are removed per point. The lines are the monthly means; the dotted trace inside is the air temperature. The buildings peak in late July with the air. The open ground peaks in February, half a year away and two to three weeks later than a plain mirror image of the buildings would.</p>
-  <div data-anim="yearclock"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/yearclock.json</code>; still images: figures 21 and 27.</p>
+    <h2 id="yearclock" data-short="The year clock">The year clock</h2>
+    <p>One year on a clock face, January at the top. As the hand sweeps, each pass drops a dot: the open ground in blue, the buildings above 40 m in red, after offset, trend and curvature are removed per point. The lines are the monthly means; the dotted trace inside is the air temperature. The buildings peak in late July with the air. The open ground peaks in February, half a year away and <span class="t" data-tip="A plain mirror image of the buildings would peak around day 28; the open ground peaks on day 45. Close, not equal, which is why the cause is still open.">later than a mirror image would</span>.</p>
+    <div data-anim="yearclock"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From groups of 1 505 to 2 707 points, with the KNMI monthly means. Still images: figures 21 and 27.</p>
 
-  <h2 id="balloon">A virtual balloon</h2>
-  <p>For every pair of consecutive passes a balloon rises from the lowest height bin to 83 m and drops a dot at each bin: how much that bin's residual changed over the 11 days, relative to the lowest bin. The red line is the fit through the dots and its slope is the layer gradient, the one number per pass the project retrieves today. The dashed line is what the De Bilt sounding, interpolated across the same layer, predicts for the same 11 days. On most passes the dots fall close to a straight line, and the two series on the right follow each other with a correlation of about 0.56.</p>
-  <div data-anim="balloon"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-  <p class="databehind">From <code>data/profile.json</code>; still images: figures 17, 19 and 28.</p>
+    <h2 id="balloon" data-short="A virtual balloon">A virtual balloon</h2>
+    <p>For every pair of consecutive passes a balloon rises from the lowest height bin to 83 m and drops a dot at each bin: how much that bin's residual changed over the 11 days, relative to the lowest bin. The red line is the fit through the dots and its slope is the layer gradient, the one number per pass the project retrieves today. The dashed line is what the De Bilt sounding predicts for the same 11 days. On most passes the dots fall close to a straight line, and the two series on the right follow each other with a correlation of about 0.56.</p>
+    <div data-anim="balloon"><p class="anim-fallback">This animation needs JavaScript.</p></div>
+    <p class="databehind">From the binned height profile and the De Bilt soundings within 36 h of a pass. Still images: figures 17, 19 and 28.</p>
 
-  <footer data-shared></footer>
+    <footer data-shared></footer>
+  </main>
 </div>
-<script defer src="js/nav.js"></script>
-<script defer src="js/player.js"></script>
-<script defer src="js/animations.js"></script>
+<script defer src="js/nav.js?v=20260917"></script>
+<script defer src="js/player.js?v=20260917"></script>
+<script defer src="js/animations.js?v=20260917"></script>
 </body>
 </html>

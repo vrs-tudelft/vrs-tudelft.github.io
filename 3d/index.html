@@ -5,114 +5,128 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3D · Virtual Radiosonde</title>
 <meta name="description" content="Kop van Zuid in three dimensions from the open 3DBAG building models, coloured by what the radar saw: sinking, tilt, seasonal swing, and a time slider over the 288 passes. Every colour is a mean over at least 20 radar points.">
-<link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="3d.css">
+<link rel="stylesheet" href="../style.css?v=20260917">
+<link rel="stylesheet" href="3d.css?v=20260917">
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"}}
 </script>
 </head>
 <body>
-<div class="wrap wide">
-  <header class="top">
-    <a class="brand" href="../index.html">Virtual Radiosonde</a>
-    <noscript><nav><a href="../index.html">Home</a> <a href="../findings.html">Findings</a> <a href="../method.html">Data and method</a> <a href="../animations.html">Animations</a> <a href="index.html">3D</a></nav></noscript>
-  </header>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="../index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="../index.html">Home</a> <a href="../findings.html">Findings</a> <a href="../method.html">Data and method</a> <a href="../animations.html">Animations</a> <a href="index.html">3D</a></nav></noscript>
+</div></header>
 
-  <h1>Kop van Zuid in three dimensions</h1>
-  <p class="lead">An experimental view. The buildings of the pier from the open 3D register, coloured by what the radar saw on them over ten years, with a time slider over the 288 passes. Drag to orbit, scroll to zoom, click a building or a cell for its numbers.</p>
+<div class="shell wide">
+  <main>
+    <h1>Kop van Zuid in three dimensions</h1>
+    <p class="lead">The buildings of the pier from the open 3D register, coloured by what the radar saw on them over ten years, with a time slider over the 288 passes. Drag to orbit, scroll to zoom, click a building or a cell for its numbers.</p>
 
-  <div class="viewer">
-    <div class="stage" id="stage">
-      <canvas class="gl" id="gl" tabindex="0" aria-label="Three-dimensional view of Kop van Zuid"></canvas>
-      <div class="hud" id="hud"></div>
-      <div class="overlay" id="overlay"></div>
-      <div class="loading" id="loading">Loading the 3D view (about 1 MB)…</div>
-    </div>
-    <aside class="panel" id="panel">
-      <h3>Buildings</h3>
-      <select id="layer" aria-label="Building layer">
-        <optgroup label="Whole building, mean over its radar points">
-          <option value="rate" selected>long-term rate [mm/yr]</option>
-          <option value="tilt">rate against height [mm/100 m/yr]</option>
-          <option value="quad">slowing down [mm/yr²]</option>
+    <div class="viewer">
+      <div class="stage" id="stage">
+        <canvas class="gl" id="gl" tabindex="0" aria-label="Three-dimensional view of Kop van Zuid"></canvas>
+        <div class="hud" id="hud"></div>
+        <div class="overlay" id="overlay"></div>
+        <div class="loading" id="loading">Loading the 3D view…</div>
+      </div>
+      <aside class="panel" id="panel">
+        <h3>Buildings</h3>
+        <select id="layer" aria-label="Building layer">
+          <optgroup label="Whole building, mean over its radar points">
+            <option value="rate" selected>long-term rate [mm/yr]</option>
+            <option value="tilt">rate against height [mm/100 m/yr]</option>
+            <option value="quad">slowing down [mm/yr²]</option>
+            <option value="amp">seasonal swing [mm]</option>
+            <option value="peak">when the swing peaks</option>
+            <option value="bx">sideways expansion [mm/m]</option>
+            <option value="ground_rate">pavement rate next to it [mm/yr]</option>
+            <option value="n">number of radar points</option>
+          </optgroup>
+          <optgroup label="Per 10 m slab">
+            <option value="band_rate">rate per slab [mm/yr]</option>
+            <option value="band_amp">seasonal swing per slab [mm]</option>
+            <option value="band_peak">peak day per slab</option>
+          </optgroup>
+          <optgroup label="Register, all 46 buildings">
+            <option value="height">roof height [m]</option>
+            <option value="year">construction year</option>
+          </optgroup>
+        </select>
+        <div class="legend"><canvas id="legend"></canvas><div class="lt" id="legendText"></div></div>
+
+        <h3>Ground cells</h3>
+        <select id="cellLayer" aria-label="Cell layer">
+          <option value="time" selected>the pass on the slider</option>
+          <option value="rate_mean">long-term rate [mm/yr]</option>
           <option value="amp">seasonal swing [mm]</option>
-          <option value="peak">when the swing peaks</option>
-          <option value="bx">sideways expansion [mm/m]</option>
-          <option value="ground_rate">pavement rate next to it [mm/yr]</option>
-          <option value="n">number of radar points</option>
-        </optgroup>
-        <optgroup label="Per 10 m slab">
-          <option value="band_rate">rate per slab [mm/yr]</option>
-          <option value="band_amp">seasonal swing per slab [mm]</option>
-          <option value="band_peak">peak day per slab</option>
-        </optgroup>
-        <optgroup label="Register, all 46 buildings">
-          <option value="height">roof height [m]</option>
-          <option value="year">construction year</option>
-        </optgroup>
-      </select>
-      <div class="legend"><canvas id="legend"></canvas><div class="lt" id="legendText"></div></div>
-      <h3>Ground cells</h3>
-      <select id="cellLayer" aria-label="Cell layer">
-        <option value="time" selected>the pass on the slider</option>
-        <option value="rate_mean">long-term rate [mm/yr]</option>
-        <option value="amp">seasonal swing [mm]</option>
-        <option value="peak_doy">when the swing peaks</option>
-        <option value="h_agl_mean">mean point height [m]</option>
-        <option value="n">number of points</option>
-        <option value="none">hidden</option>
-      </select>
-      <div class="checks">
-        <label><input type="checkbox" id="cellGround" checked> ground points only</label>
-        <label><input type="checkbox" id="columns"> as columns</label>
-      </div>
-      <h3>View</h3>
-      <div class="row" id="presets"></div>
-      <div class="checks">
-        <label><input type="checkbox" id="edges" checked> edges</label>
-        <label><input type="checkbox" id="texture" checked> aerial image</label>
-        <label><input type="checkbox" id="radarLight"> radar lighting</label>
-        <label><input type="checkbox" id="ceiling"> 83 m ceiling</label>
-      </div>
+          <option value="peak_doy">when the swing peaks</option>
+          <option value="h_agl_mean">mean point height [m]</option>
+          <option value="n">number of points</option>
+          <option value="none">hidden</option>
+        </select>
+        <div class="checks">
+          <label><input type="checkbox" id="cellGround" checked> ground points only</label>
+          <label><input type="checkbox" id="columns"> as columns</label>
+        </div>
+
+        <h3>View</h3>
+        <div class="row" id="presets"></div>
+        <div class="checks">
+          <label><input type="checkbox" id="edges" checked> edges</label>
+          <label><input type="checkbox" id="texture" checked> aerial image</label>
+          <label><input type="checkbox" id="radarLight"> radar lighting</label>
+          <label><input type="checkbox" id="ceiling"> 83 m ceiling</label>
+        </div>
+        <div class="row">
+          <button type="button" id="raysBtn">Radar rays</button>
+          <button type="button" id="balloonBtn">Launch a balloon</button>
+        </div>
+        <div class="card" id="card"><p class="small">Click a building or a cell for its numbers and its mean series.</p></div>
+      </aside>
+    </div>
+
+    <div class="timepanel" id="timepanel">
       <div class="row">
-        <button type="button" id="raysBtn">Radar rays</button>
-        <button type="button" id="balloonBtn">Launch a balloon</button>
+        <button type="button" id="tPlay" class="play" aria-label="Play">▶</button>
+        <input type="range" id="tSlider" min="0" max="287" value="0" aria-label="Pass">
+        <select id="tSpeed" aria-label="Speed"><option value="4">4 passes/s</option><option value="8" selected>8 passes/s</option><option value="16">16 passes/s</option></select>
       </div>
-      <div class="card" id="card"><p class="small">Click a building or a cell for its numbers and its mean series.</p></div>
-    </aside>
-  </div>
-
-  <div class="timepanel" id="timepanel">
-    <div class="row">
-      <button type="button" id="tPlay" class="play" aria-label="Play">▶</button>
-      <input type="range" id="tSlider" min="0" max="287" value="0" aria-label="Pass">
-      <select id="tSpeed" aria-label="Speed"><option value="4">4 passes/s</option><option value="8" selected>8 passes/s</option><option value="16">16 passes/s</option></select>
+      <div class="modes">
+        <label><input type="radio" name="tmode" value="increment" checked> change since the previous pass</label>
+        <label><input type="radio" name="tmode" value="cumulative"> since 2014</label>
+        <label><input type="radio" name="tmode" value="detrended"> minus each cell's trend</label>
+      </div>
+      <div class="epoch" id="epochLabel"></div>
+      <canvas class="strip" id="strip" aria-label="Height gradient over time"></canvas>
     </div>
-    <div class="modes">
-      <label><input type="radio" name="tmode" value="increment" checked> change since the previous pass</label>
-      <label><input type="radio" name="tmode" value="cumulative"> since 2014</label>
-      <label><input type="radio" name="tmode" value="detrended"> minus each cell's trend</label>
+
+    <div class="notes">
+      <h2 id="see">What to look for</h2>
+      <ul class="cols">
+        <li>Colour by rate: the towers at the north-east end are deep blue, the south-west tip around Hotel New York almost white. Switch to construction year and the orderings match.</li>
+        <li>Colour per slab and switch on the ceiling plane: every tower goes grey above 83 m although the register's geometry continues to 150 m and more.</li>
+        <li>The satellite view with radar lighting: the bright faces are the ones the radar illuminates, the dark faces have no points, and the towers hide the ground behind them.</li>
+        <li>Seasonal swing per slab: each tower's colour deepens upward, about 0.03 mm per metre. Buildings peak around day 210, the open quays around day 45.</li>
+        <li>Play the slider: most passes are pale over the whole pier; some turn the whole scene at once, never one building alone, and the strip chart spikes on the same passes.</li>
+        <li>The radar rays show why the layer of air is thin and tilted: the lower ray travels about 80 m further through it. The balloon lights the height bands of one pass in turn.</li>
+      </ul>
+      <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one 25 m ground cell; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
+      <p class="small" id="noWebgl" hidden>This browser could not start the 3D view. The same results are on the <a href="../findings.html#ground">findings</a> page as still images.</p>
     </div>
-    <div class="epoch" id="epochLabel"></div>
-    <canvas class="strip" id="strip" aria-label="Height gradient over time"></canvas>
-  </div>
 
-  <h2 id="see">What to look for</h2>
-  <ul>
-    <li>Colour by rate: the towers at the north-east end are deep blue, the south-west tip around Hotel New York almost white. Switch to construction year and the orderings match.</li>
-    <li>Colour per slab and switch on the ceiling plane: every tower goes grey above 83 m although the register's geometry continues to 150 m and more.</li>
-    <li>The satellite view with radar lighting: the bright faces are the ones the radar illuminates; the dark faces have no points, and the tall towers hide the ground behind them.</li>
-    <li>Seasonal swing per slab: each tower's colour deepens upward, about 0.03 mm per metre. Buildings peak around day 210, the open quays around day 45, the cells at the towers' feet hardly at all.</li>
-    <li>Play the slider: most passes are pale over the whole pier; some turn the whole scene red or blue at once, never one building alone, and the strip chart spikes on the same passes.</li>
-    <li>The radar rays show why the layer of air is thin and tilted: the lower ray travels about 80 m further through it. The balloon lights the height bands of one pass in turn.</li>
-  </ul>
-  <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one 25 m ground cell; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
-  <p class="small" id="noWebgl" hidden>This browser could not start the 3D view. The same results are on the <a href="../findings.html#ground">findings</a> page as still images.</p>
-
-  <footer data-shared></footer>
+    <footer data-shared></footer>
+  </main>
 </div>
-<script defer src="../js/nav.js"></script>
-<script src="colormaps.js"></script>
-<script type="module" src="viewer.js"></script>
+<script defer src="../js/nav.js?v=20260917"></script>
+<script src="colormaps.js?v=20260917"></script>
+<script type="module" src="viewer.js?v=20260917"></script>
 </body>
 </html>

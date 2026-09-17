@@ -20,7 +20,7 @@ site updates within a minute or two.
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
 | `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated) |
 | `tools/` | `check_data.py` (the aggregation check) and `inline_svg.py` |
-| `style.css` | The look, light and dark |
+| `style.css` | The look: one light theme, the shell grid, the tooltips |
 
 Every figure is made by a script in the team repository
 ([virtual-radiosonde](https://github.com/vrs-tudelft/virtual-radiosonde), `mvp/src/`)
@@ -67,8 +67,9 @@ To test locally, serve the folder (the 3D view loads ES modules and will not run
 2. An open question: add an item to the list on `method.html`.
 3. An animation: add a builder to `js/animations.js`, an element with `data-anim="..."`
    to `animations.html`, and the data it needs to `site_export.py`.
-4. If a key number on `index.html` changes, change it there too.
-5. Commit and push, or edit the file directly on GitHub and press "Commit changes".
+4. A term worth explaining: wrap it in `<span class="t" data-tip="...">`, which renders as a tooltip on hover, focus or tap.
+5. If a key number on `index.html` changes, change it there too. Bump the `?v=` on the stylesheet and script links when you change them, so returning visitors get the new file.
+6. Commit and push, or edit the file directly on GitHub and press "Commit changes".
 
 ## Licences
 
