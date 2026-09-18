@@ -111,10 +111,50 @@
       }).catch(function (e) { V.Player.fallback(mount, "The scene animation could not load its data (" + e.message + ")."); });
   }
 
+  /* data/points.* is a local build for the team (site_export.py --points). It is git-ignored and
+     never published, so this resolves to null on the live site and the per-point views disappear. */
+  function localPoints() {
+    if (localPoints.cached !== undefined) return localPoints.cached;
+    localPoints.cached = fetch(DATA + "points.json").then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (meta) {
+        if (!meta) return null;
+        return Promise.all([
+          fetch(DATA + "points.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; }),
+          fetch(DATA + "points-resid.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+        ]).then(function (bufs) {
+          if (!bufs[0]) return null;
+          var raw = new Int16Array(bufs[0]), res = bufs[1] ? new Int16Array(bufs[1]) : null, n = meta.epochs;
+          return {
+            meta: meta, n: n,
+            get: function (k, t) { return raw[k * n + t] / 100; },
+            resid: res ? function (k, t) { return res[k * n + t] / 100; } : null,
+            fast: res ? function (k, t) { return t === 0 ? 0 : (res[k * n + t] - res[k * n + t - 1]) / 100; } : null
+          };
+        });
+      }).catch(function () { return null; });
+    return localPoints.cached;
+  }
+
   /* ================================================================ (b) bands */
   function bands(mount) {
-    Promise.all([L.json(DATA + "bands.json"), L.json(DATA + "epochs.json")]).then(function (r) {
-      var B = r[0].fine, ep = r[1];
+    Promise.all([L.json(DATA + "bands.json"), L.json(DATA + "epochs.json"), localPoints()]).then(function (r) {
+      var B = r[0].fine, ep = r[1], PTS = r[2], epochMean = r[0].epoch_mean;
+      var perPoint = false, pQty = "resid";
+      /* the residual and the 11-day change are what s(t) is actually fitted to, so they get
+         their own axis: the cumulative view is dominated by ten years of settlement. */
+      var pLim = { cumulative: 0, resid: 0, fast: 0 };
+      if (PTS && PTS.resid) {
+        var probe = [], nP = PTS.meta.n_points;
+        for (var t = 20; t < ep.n_epochs; t += 37) {
+          for (var k = 0; k < nP; k += 7) { probe.push(Math.abs(PTS.resid(k, t))); }
+        }
+        pLim.resid = Math.ceil(U.pct(probe, 99));
+        probe = [];
+        for (var t2 = 20; t2 < ep.n_epochs; t2 += 37) {
+          for (var k2 = 0; k2 < nP; k2 += 7) { probe.push(Math.abs(PTS.fast(k2, t2))); }
+        }
+        pLim.fast = Math.ceil(U.pct(probe, 99));
+      }
       var allv = []; B.forEach(function (b) { b.mean_rel.forEach(function (v) { allv.push(Math.abs(v)); }); });
       var lim = Math.ceil(U.pct(allv, 99));
       var hmax = 90, sLim = Math.ceil(U.pct(ep.s.slope.map(Math.abs), 99.5));
@@ -127,13 +167,57 @@
         draw: function (i, ctx, size) {
           var w = size.w, h = size.h, p = pad(size), topH = Math.round(h * 0.6);
           var X = A.linear(-lim, lim, p.l, w - p.r), Y = A.linear(0, hmax, topH - 26, p.t + 6);
-          A.xAxis(ctx, X, topH - 26, A.niceTicks(-lim, lim, 6), "mean displacement of the band minus the scene mean [mm]", p.f);
+          if (!perPoint) {
+            A.xAxis(ctx, X, topH - 26, A.niceTicks(-lim, lim, 6), "mean displacement of the band minus the scene mean [mm]", p.f);
+          }
           A.yAxis(ctx, Y, p.l, [0, 20, 40, 60, 80], "height above ground [m]", p.f);
           ctx.strokeStyle = css("--line"); ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(0), Y(hmax)); ctx.stroke(); ctx.setLineDash([]);
           /* fitted line: through (0, hbar) with slope s/100 */
           var s = ep.s.slope[i] / 100;
-          ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(s * (0 - hbar)), Y(0)); ctx.lineTo(X(s * (hmax - hbar)), Y(hmax)); ctx.stroke(); ctx.lineWidth = 1;
+          if (!perPoint) {
+            ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.beginPath();
+            ctx.moveTo(X(s * (0 - hbar)), Y(0)); ctx.lineTo(X(s * (hmax - hbar)), Y(hmax)); ctx.stroke(); ctx.lineWidth = 1;
+          }
+          if (perPoint && PTS) {
+            /* no bins at all: every point at its own height, on this pass */
+            var P = PTS.meta, em = epochMean[i], drawn = 0, off = 0;
+            var pl = pQty === "cumulative" ? lim : pLim[pQty], XP = A.linear(-pl, pl, p.l, w - p.r);
+            var sh = 0, sv = 0, shh = 0, shv = 0;       /* sums for the fit through these very points */
+            ctx.fillStyle = "rgba(21, 104, 143, 0.3)";
+            for (var k = 0; k < P.n_points; k++) {
+              var hv = P.h_agl[k];
+              if (hv < 0 || hv > hmax) continue;
+              var vv = pQty === "cumulative" ? PTS.get(k, i) - em
+                : pQty === "fast" ? PTS.fast(k, i) : PTS.resid(k, i);
+              if (vv < -pl || vv > pl) { off++; continue; }
+              ctx.fillRect(XP(vv) - 0.9, Y(hv) - 0.9, 1.8, 1.8);
+              sh += hv; sv += vv; shh += hv * hv; shv += hv * vv;
+              drawn++;
+            }
+            /* ordinary least squares through the points drawn above */
+            var den = drawn * shh - sh * sh;
+            var slope = den === 0 ? 0 : (drawn * shv - sh * sv) / den;      /* mm per metre */
+            var icpt = drawn === 0 ? 0 : (sv - slope * sh) / drawn;
+            var sp = slope * 100;
+            var cl = function (x) { return XP(Math.max(-pl, Math.min(pl, x))); };
+            ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cl(icpt), Y(0));
+            ctx.lineTo(cl(icpt + slope * hmax), Y(hmax));
+            ctx.stroke(); ctx.lineWidth = 1;
+            A.xAxis(ctx, XP, topH - 26, A.niceTicks(-pl, pl, 6),
+              pQty === "cumulative" ? "displacement of each point minus the scene mean [mm]"
+                : pQty === "fast" ? "change of each point since the previous pass [mm]"
+                : "each point minus its own offset, trend and curvature [mm]", p.f);
+            D.text(ctx, "line fitted to these points: " + (sp >= 0 ? "+" : "") + sp.toFixed(2) + " mm/100 m",
+              w - p.r - 4, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--bad"), align: "right" });
+            D.text(ctx, drawn + " points, one dot each"
+              + (off ? " · " + off + " off the scale" : "")
+              + " · local file, not published",
+              p.l + 4, p.t + 14 + size.font, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          }
           B.forEach(function (b) {
+            if (perPoint) return;
             var v = b.mean_rel[i], rr = 3 + Math.log10(b.n) * 1.6, y = Y(b.h_mean);
             var cl = function (x) { return X(Math.max(-lim, Math.min(lim, x))); };
             if (spread && b.sd) {           /* the points themselves, not only their mean */
@@ -151,10 +235,17 @@
             ctx.fillStyle = css("--accent"); ctx.beginPath(); ctx.arc(cl(v), y, rr, 0, 2 * Math.PI); ctx.fill();
             D.text(ctx, "n=" + b.n, w - p.r - 2, y, { font: (size.font - 2) + "px system-ui", colour: css("--muted"), align: "right", baseline: "middle" });
           });
-          D.text(ctx, "ten height bands, each a mean over 119 to 3 273 points; red line: the weighted fit, slope s(t)", p.l + 4, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
-          D.text(ctx, spread ? "thick bar: twice the standard error of the band mean · thin bar: one standard deviation of the points in the band"
-                             : "thick bar: twice the standard error of the band mean",
-            p.l + 4, p.t + 14 + size.font, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, perPoint
+            ? (pQty === "resid" ? "every coherent point at its own height; the yearly wave of each structure is still in here"
+               : pQty === "fast" ? "every coherent point at its own height; 11 days apart, so the season largely cancels"
+               : "every coherent point at its own height, ten years of settlement included")
+            : "ten height bands, each a mean over 119 to 3 273 points; red line: the weighted fit, slope s(t)",
+            p.l + 4, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          if (!perPoint) {
+            D.text(ctx, spread ? "thick bar: twice the standard error of the band mean · thin bar: one standard deviation of the points in the band"
+                               : "thick bar: twice the standard error of the band mean",
+              p.l + 4, p.t + 14 + size.font, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          }
           /* bottom: s(t) */
           var X2 = A.linear(0, ep.n_epochs - 1, p.l, w - p.r), Y2 = A.linear(-sLim, sLim, h - p.b, topH + 8);
           ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(X2(0), Y2(0)); ctx.lineTo(X2(ep.n_epochs - 1), Y2(0)); ctx.stroke();
@@ -168,6 +259,17 @@
       player.addToggle("Bars:", "spread", [
         { value: "both", label: "spread of the points and error of the mean", checked: true },
         { value: "se", label: "error of the mean only" }], function (v) { spread = v === "both"; });
+      if (PTS) {
+        player.addToggle("Show:", "perpoint", [
+          { value: "bands", label: "ten band means", checked: true },
+          { value: "points", label: "every point, no bins (local file)" }], function (v) { perPoint = v === "points"; });
+        if (PTS.resid) {
+          player.addToggle("Per point:", "pqty", [
+            { value: "resid", label: "minus its own trend and yearly wave", checked: true },
+            { value: "fast", label: "change since the previous pass" },
+            { value: "cumulative", label: "displacement since 2014" }], function (v) { pQty = v; });
+        }
+      }
     }).catch(function (e) { V.Player.fallback(mount, "The height-band animation could not load its data (" + e.message + ")."); });
   }
 

@@ -1,3 +1,3 @@
 # Per-point radar data. The TerraSAR-X set was provided for the course and may not be
 # passed on. site_export.py --points writes these for a local look; they never go to GitHub.
-data/points.*
+data/points*

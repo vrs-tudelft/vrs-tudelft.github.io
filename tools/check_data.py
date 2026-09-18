@@ -52,7 +52,7 @@ def walk(node, path, fname, problems, seen):
 def tracked_point_files() -> list:
     """Per-point files are fine locally, fatal if git is tracking them."""
     try:
-        out = subprocess.run(["git", "ls-files", "data/points.*"], cwd=DATA.parent,
+        out = subprocess.run(["git", "ls-files", "data/points*"], cwd=DATA.parent,
                              capture_output=True, text=True, check=False).stdout
     except OSError:
         return []
@@ -63,16 +63,16 @@ def main() -> int:
     problems, seen, total = [], {}, 0
     for f in tracked_point_files():
         problems.append(f"{f}: a per-point file is tracked by git; it may not leave this machine")
-    local_points = sorted(DATA.glob("points.*"))
+    local_points = sorted(DATA.glob("points*"))
     for f in sorted(DATA.rglob("*")):
-        if f.is_dir() or f.name == "MANIFEST.json" or f.name == "manifest.json" or f.name.startswith("points."):
+        if f.is_dir() or f.name == "MANIFEST.json" or f.name == "manifest.json" or f.name.startswith("points"):
             continue
         total += f.stat().st_size
         if f.suffix == ".json":
             walk(json.loads(f.read_text(encoding="utf-8")), "", f.relative_to(DATA).as_posix(), problems, seen)
         elif f.suffix == ".bin" and f.stat().st_size % 2:
             problems.append(f"{f.name}: odd byte count")
-    top = sum(f.stat().st_size for f in DATA.glob("*") if f.is_file() and not f.name.startswith("points."))
+    top = sum(f.stat().st_size for f in DATA.glob("*") if f.is_file() and not f.name.startswith("points"))
     if top > SIZE_CAP:
         problems.append(f"data/ (top level) is {top} bytes, cap {SIZE_CAP}")
     for p in problems:

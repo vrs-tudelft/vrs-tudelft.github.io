@@ -54,6 +54,15 @@ const CELL_LAYERS = {
   spread_now: { title: "spread inside the cell on the pass on the slider [mm]", ramp: "magma", lim: [0, 4.5], perEpoch: true }
 };
 
+const POINT_LAYERS = {
+  time: { title: "what each point did on the pass on the slider [mm]", ramp: "RdBu_r", lim: [-4, 4] },
+  rate: { title: "long-term rate of each point [mm/yr]", ramp: "RdBu_r", lim: [-5, 5] },
+  amp: { title: "seasonal swing of each point [mm]", ramp: "magma", lim: [0, 3] },
+  peak_doy: { title: "day of year each point peaks", ramp: "twilight_shifted", lim: [0, 365.25], cyclic: true },
+  h: { title: "height of each point above ground [m]", ramp: "viridis", lim: [0, 90] },
+  coh: { title: "coherence of each point", ramp: "cividis", lim: [0.5, 1] }
+};
+
 const S = {  /* state */
   epoch: 0, tmode: "increment", playing: false, speed: 8, layer: "rate", cellLayer: "time", cellGrid: "ground",
   pointLayer: "time", columns: false, edges: !isMobile, texture: true, radarLight: false, ceiling: false, rays: false, balloon: false,
@@ -202,6 +211,13 @@ function fillTable() {
   const L = LAYERS[S.layer], nCols = 11;
   const recs = D.bld.buildings, attrs = D.bld.bag3d;
   uniforms.uMode.value = L.band ? 1 : 0;
+  if (S.cellLayer === "points") {      /* nothing averaged on screen: the points carry the colour */
+    table.fill(0);
+    tableTex.needsUpdate = true;
+    drawLegend(POINT_LAYERS[S.pointLayer]);
+    S.needsRender = true;
+    return;
+  }
   D.bld.order.forEach((bid, row) => {
     const rec = recs[bid], a = attrs[bid];
     for (let c = 0; c < nCols; c++) {
@@ -252,7 +268,7 @@ function buildPoints() {
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   g.setAttribute("color", new THREE.BufferAttribute(col, 3));
-  pointCloud = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.2, sizeAttenuation: true, vertexColors: true }));
+  pointCloud = new THREE.Points(g, new THREE.PointsMaterial({ size: 6, sizeAttenuation: true, vertexColors: true }));
   pointCloud.visible = false;
   scene.add(pointCloud);
 }
@@ -261,21 +277,23 @@ function colourPoints() {
   if (!pointCloud || !D.points) return;
   const P = D.points.meta, n = P.n_points, col = pointCloud.geometry.getAttribute("color");
   const mode = S.pointLayer;
-  const L = mode === "rate" ? { ramp: "RdBu_r", lim: [-7, 7] }
-    : mode === "amp" ? { ramp: "magma", lim: [0, 3] }
-    : mode === "h" ? { ramp: "viridis", lim: [0, 90] }
-    : { ramp: "RdBu_r", lim: [-D.manifest.scales.cells[S.tmode + "_mm"], D.manifest.scales.cells[S.tmode + "_mm"]] };
+  const L = mode === "time"
+    ? { ramp: "RdBu_r", lim: [-D.manifest.scales.cells[S.tmode + "_mm"], D.manifest.scales.cells[S.tmode + "_mm"]] }
+    : POINT_LAYERS[mode];
   for (let k = 0; k < n; k++) {
     let v;
     if (mode === "rate") v = P.rate[k];
     else if (mode === "amp") v = P.amp[k];
+    else if (mode === "peak_doy") v = P.peak_doy[k];
     else if (mode === "h") v = P.h_agl[k];
+    else if (mode === "coh") v = P.coh[k];
     else if (S.tmode === "increment") v = S.epoch === 0 ? 0 : D.points.get(k, S.epoch) - D.points.get(k, S.epoch - 1);
     else v = D.points.get(k, S.epoch);
     const rgb = colourOf(L, v) || [170, 170, 170];
     col.array[k * 3] = rgb[0] / 255; col.array[k * 3 + 1] = rgb[1] / 255; col.array[k * 3 + 2] = rgb[2] / 255;
   }
   col.needsUpdate = true;
+  drawLegend(mode === "time" ? { title: "what each point did on this pass [mm]", ramp: "RdBu_r", lim: L.lim } : L);
   S.needsRender = true;
 }
 
@@ -289,7 +307,14 @@ function cellValue(G, c, k, t) {
 function colourCells() {
   if (!cellsMesh) return;
   if (pointCloud) pointCloud.visible = S.cellLayer === "points";
-  if (S.cellLayer === "points") { cellsMesh.visible = false; colourPoints(); return; }
+  if (S.cellLayer === "points") {
+    cellsMesh.visible = false;
+    if (S.lastCellLayer !== "points") fillTable();               /* buildings step back to grey */
+    S.lastCellLayer = "points";
+    colourPoints();
+    return;
+  }
+  if (pointCloud && S.lastCellLayer === "points") fillTable();   /* give the buildings their colours back */
   cellsMesh.visible = S.cellLayer !== "none";
   if (!cellsMesh.visible) { S.needsRender = true; return; }
   const G = D.grids[S.cellGrid], col = new THREE.Color();
@@ -308,6 +333,7 @@ function colourCells() {
     });
   }
   cellsMesh.instanceColor.needsUpdate = true;
+  S.lastCellLayer = S.cellLayer;
   S.needsRender = true;
 }
 
@@ -609,11 +635,24 @@ async function main() {
       o.value = "points";
       o.textContent = "every radar point (local file, not published)";
       sel.insertBefore(o, sel.lastElementChild);
-      const note = document.createElement("p");
-      note.className = "small";
-      note.textContent = "A local per-point file is present, so the view can show all " +
-        D.points.meta.n_points + " points instead of cell means. That file is not part of the published site.";
-      $("panel").appendChild(note);
+      const wrap = document.createElement("div");
+      wrap.innerHTML = '<h3>Every point (local)</h3>' +
+        '<select id="pointLayer" aria-label="Point layer">' +
+        '<option value="time">what each point did on the slider pass</option>' +
+        '<option value="rate">long-term rate per point [mm/yr]</option>' +
+        '<option value="amp">seasonal swing per point [mm]</option>' +
+        '<option value="peak_doy">peak day per point</option>' +
+        '<option value="h">height above ground [m]</option>' +
+        '<option value="coh">coherence</option></select>' +
+        '<p class="small">' + D.points.meta.n_points + ' points, no averaging at all. Choose "every radar point" ' +
+        'under Ground cells to see them; the buildings go grey so only the points carry colour. ' +
+        'This file is local to this machine and is not part of the published site.</p>';
+      $("panel").appendChild(wrap);
+      $("pointLayer").addEventListener("change", (e) => {
+        S.pointLayer = e.target.value;
+        if (S.cellLayer !== "points") { $("cellLayer").value = "points"; S.cellLayer = "points"; }
+        colourCells();
+      });
     }
     wire();
     setPreset("overview");

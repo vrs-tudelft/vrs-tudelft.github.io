@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Findings · Virtual Radiosonde</title>
 <meta name="description" content="The plots from ten years of TerraSAR-X over Kop van Zuid, grouped by the question they answer: is there a height-dependent signal, is it scene-wide, buildings or air, towards a profile, and what the ground and the buildings do on their own.">
-<link rel="stylesheet" href="style.css?v=20260917g">
+<link rel="stylesheet" href="style.css?v=20260918f">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -29,7 +29,7 @@
 
     <h2 id="signal" data-short="Is there a signal?">Is there a height-dependent signal at all?</h2>
     <p>Yes, on 97 % of the passes, and most of it is the buildings. Fit a straight line of displacement against height across all points on one pass; the slope is s(t). It has a slow trend of −2.56 mm per 100 m per year, the north-east towers sinking faster than the ground, and a yearly wave of 5.26 mm per 100 m, the buildings expanding in summer. What changes from one pass to the next after those two are removed is 1.69 mm per 100 m, three times the <span class="t" data-tip="The formal one-sigma uncertainty of the fitted slope, 0.56 mm per 100 m, from the scatter of the points around the line.">noise of the fit</span> and about <span class="t" data-tip="An N-unit is one unit of refractivity. 16 of them across this layer is roughly the change a few tenths of a gram of water vapour per kilogram of air would make.">16 N-units</span> of refractivity if it were all air. Any building motion that varies with height and is neither a trend nor a yearly wave would produce the same number.</p>
-    <p>That is why nothing here rests on one point. Inside a 10 m cell the points sit about <span class="t" data-tip="The standard deviation between the points of one cell on a single pass, after each point’s own offset, trend and curvature are removed. Median over the 147 cells; the worst cells reach 2.3 mm.">1.6 mm apart on a single pass</span>, and their long-term rates differ by 0.6 mm per year, half a metre of spread in height being enough to change what a point does. The height-dependent part we are after is 1.69 mm per 100 m across the whole scene, smaller than the disagreement between neighbouring points, and it only appears in the mean of at least twenty of them. Every mean on this site is published with that spread beside it, and the animations and the 3D view will colour by it.</p>
+    <p>That is why nothing here rests on one point. Inside a 10 m cell the points sit about <span class="t" data-tip="The standard deviation between the points of one cell on a single pass, after each point’s own offset, trend and curvature are removed. Median over the 147 cells; the worst cells reach 2.3 mm.">1.6 mm apart on a single pass</span>, and their long-term rates differ by 0.6 mm per year, half a metre of spread in height being enough to change what a point does. The height-dependent part we are after is 1.69 mm per 100 m across the whole scene, smaller than the disagreement between neighbouring points, and it only appears in the mean of at least twenty of them. Every mean on this site is published with that spread beside it, and the animations and the 3D view will colour by it. Put the other way round: from one pass to the next a single point moves by <span class="t" data-tip="Standard deviation of the 11-day change of one point, median over the 287 steps, after each point's own offset, trend and curvature are removed. Measured on the full point set; only this summary is published.">2.7 mm</span>, while the whole height-dependent signal across the 83 m the radar sees is 1.4 mm. No single point can show it; the mean of thousands can.</p>
     <figure>
       <img src="figures/06-stratification-probe.png" width="1481" height="1281" alt="Three panels over ten years: the mean displacement of four height bands, the height gradient s(t) per pass with its uncertainty, and the correlation of displacement with height per pass." loading="lazy">
       <figcaption><b>Figure 6.</b> The average movement of four height bands, s(t) per pass with its 2-sigma band, and the correlation of displacement with height on each pass. The bands separate, the high points swing more and drift down, and the correlation is there on almost every pass.</figcaption>
@@ -138,6 +138,6 @@
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="js/nav.js?v=20260917g"></script>
+<script defer src="js/nav.js?v=20260918f"></script>
 </body>
 </html>
