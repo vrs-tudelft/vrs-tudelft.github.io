@@ -14,7 +14,7 @@ site updates within a minute or two.
 | `method.html` | The data, the three kinds of height, the ground truth, the method, the paper's outline, what is still open, a short glossary, and the rule on what may appear here |
 | `animations.html` | Six animations drawn in the browser from the aggregate files in `data/` |
 | `3d/index.html` | The experimental 3D view: 3DBAG buildings coloured by the radar aggregates, with a time slider |
-| `figures/` | The PNG files, `NN-short-name.png`; the number continues the count in the team repository's `mvp/figures/` (01 to 31 as of 16 September 2026) |
+| `figures/` | The PNG files, `NN-short-name.png`; the number continues the count in the team repository's `05_results/00_tsx_figures/` (01 to 31 as of 16 September 2026) |
 | `svg/` | The drawings; `tools/inline_svg.py` pastes them into the pages |
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below); `data/3d/` holds the building models, the ground image and the manifest |
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
@@ -23,7 +23,7 @@ site updates within a minute or two.
 | `style.css` | The look: one light theme, the shell grid, the tooltips |
 
 Every figure is made by a script in the team repository
-([virtual-radiosonde](https://github.com/vrs-tudelft/virtual-radiosonde), `mvp/src/`)
+([virtual-radiosonde](https://github.com/vrs-tudelft/virtual-radiosonde), `04_python/tsx/`)
 and has a dated note in `research/notes/` there that says what it shows and what it does
 not. The captions here are the plain-language version of those notes.
 
@@ -53,14 +53,14 @@ This site is public. Only put here what we would be happy to show anyone:
 From the team repository, with its virtual environment:
 
 ```
-mvp/.venv/Scripts/python.exe mvp/src/site_export.py        # data/*.json, data/cells.bin, MANIFEST.json
-mvp/.venv/Scripts/python.exe mvp/src/site_figures.py       # mvp/figures/24-31 (copy the PNGs into figures/)
-mvp/.venv/Scripts/python.exe mvp/src/site_3d_export.py     # data/3d/*, 3d/colormaps.js, the 3DBAG order in data/buildings.json
+.venv/Scripts/python.exe 04_python/tsx/site_export.py        # data/*.json, data/cells.bin, MANIFEST.json
+.venv/Scripts/python.exe 04_python/tsx/site_figures.py       # 05_results/00_tsx_figures/24-31 (copy the PNGs into figures/)
+.venv/Scripts/python.exe 04_python/tsx/site_3d_export.py     # data/3d/*, 3d/colormaps.js, the 3DBAG order in data/buildings.json
 
 # Per-point build, for the team only. Writes data/points.json + points.bin (about 7 MB), which
 # .gitignore keeps out of git and tools/check_data.py refuses to let anyone commit. The 3D view
 # offers "every radar point" while those files are present; the published site never has them.
-mvp/.venv/Scripts/python.exe mvp/src/site_export.py --only cells --points ../vrs-tudelft.github.io/data
+.venv/Scripts/python.exe 04_python/tsx/site_export.py --only cells --points ../vrs-tudelft.github.io/data
 ```
 
 Then here: `python tools/check_data.py` and, after editing a drawing in `svg/`,
