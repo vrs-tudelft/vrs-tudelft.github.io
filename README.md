@@ -24,7 +24,7 @@ site updates within a minute or two.
 
 Every figure is made by a script in the team repository
 ([virtual-radiosonde](https://github.com/vrs-tudelft/virtual-radiosonde), `04_python/tsx/`)
-and has a dated note in `research/notes/` there that says what it shows and what it does
+and has a dated note in `01_reference/notes/` there that says what it shows and what it does
 not. The captions here are the plain-language version of those notes.
 
 ## What may go on this site
