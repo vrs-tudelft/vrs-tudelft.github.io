@@ -11,6 +11,7 @@ site updates within a minute or two.
 |---|---|
 | `index.html` | The idea, five key numbers with their catches, what has been found so far, about and licences |
 | `findings.html` | The figures grouped by the question they answer, including the ground and the buildings (`figures.html` redirects here) |
+| `estimation.html` | Four-building reference tests, held-out-date diagnostics, synthetic atmospheric signal loss and absolute-profile ambiguity (30 September 2026). Figures 37-39 and `data/estimation-pilot.json`; no point records |
 | `method.html` | The data, the three kinds of height, the ground truth, the method, the paper's outline, what is still open, a short glossary, and the rule on what may appear here |
 | `animations.html` | Six animations drawn in the browser from the aggregate files in `data/` |
 | `3d/index.html` | The experimental 3D view: 3DBAG buildings coloured by the radar aggregates, with a time slider |
@@ -65,6 +66,18 @@ From the team repository, with its virtual environment:
 
 Then here: `python tools/check_data.py` and, after editing a drawing in `svg/`,
 `python tools/inline_svg.py`.
+
+The estimation pilot is regenerated separately, from the team repository:
+
+```powershell
+.venv/Scripts/python.exe 04_python/tsx/estimation_pilot.py
+.venv/Scripts/python.exe 04_python/tsx/publish_estimation_pilot.py
+```
+
+The second command stages only the approved aggregate/synthetic outputs and page
+edits in this checkout. It does not commit or push. Run this site's data check
+and inspect the diff before publication. The walkthrough and VS Code workspace
+are in the team repository's `03_notebooks/04_estimation_reference_pilot/`.
 
 To test locally, run `python tools/serve.py` and open `http://localhost:8000/`. It sends
 `Cache-Control: no-store`, because a plain `python -m http.server` lets the browser keep

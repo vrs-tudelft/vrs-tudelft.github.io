@@ -1,0 +1,474 @@
+{
+  "analysis_date": "2026-09-30",
+  "status": "diagnostic pilot, not validated retrieval",
+  "real": {
+    "common_dates": 122,
+    "first_date": "2020-01-08",
+    "last_date": "2023-12-30",
+    "ground_pairs": 499,
+    "training_dates": 63,
+    "evaluation_dates": 59,
+    "buildings": [
+      {
+        "dataset": "2014-2023 processing",
+        "building": "De Rotterdam",
+        "n": 2510,
+        "height_mean_m": 36.91725290039841,
+        "height_sd_m": 19.723499105436705,
+        "height_p10_m": 13.512883000000004,
+        "height_p90_m": 64.16091299999998,
+        "rate_mean_mm_year": -3.8087046186150255,
+        "rate_sd_mm_year": 1.218622471549467,
+        "rate_p10_mm_year": -5.225230690444421,
+        "rate_p90_mm_year": -1.856523530794481,
+        "residual_point_sd_mean_mm": 1.7604526989749474,
+        "effective_temperature_coefficient_mm_m_K": 0.005680960460294049,
+        "raw_gradient_rms_mm_100m": 6.122518210338633,
+        "detrended_gradient_rms_mm_100m": 3.2680044781759423,
+        "corrected_gradient_rms_mm_100m": 1.3302653592603058
+      },
+      {
+        "dataset": "2014-2023 processing",
+        "building": "Montevideo",
+        "n": 1372,
+        "height_mean_m": 31.899664846938773,
+        "height_sd_m": 15.404246684538762,
+        "height_p10_m": 13.929722000000003,
+        "height_p90_m": 55.44497600000001,
+        "rate_mean_mm_year": -1.2211410209668017,
+        "rate_sd_mm_year": 0.3530437919384094,
+        "rate_p10_mm_year": -1.6405151606284498,
+        "rate_p90_mm_year": -0.70614706494859,
+        "residual_point_sd_mean_mm": 1.9931849920326332,
+        "effective_temperature_coefficient_mm_m_K": 0.004172983205818246,
+        "raw_gradient_rms_mm_100m": 3.4305241865377107,
+        "detrended_gradient_rms_mm_100m": 2.6618486890657236,
+        "corrected_gradient_rms_mm_100m": 1.5094444461725693
+      },
+      {
+        "dataset": "2014-2023 processing",
+        "building": "New Orleans",
+        "n": 1188,
+        "height_mean_m": 35.75109890572391,
+        "height_sd_m": 17.121205703554132,
+        "height_p10_m": 11.782867999999999,
+        "height_p90_m": 58.915020000000005,
+        "rate_mean_mm_year": -2.3169853182332236,
+        "rate_sd_mm_year": 0.5361601205041739,
+        "rate_p10_mm_year": -2.8244509878452,
+        "rate_p90_mm_year": -1.84673847454743,
+        "residual_point_sd_mean_mm": 1.7927758023173253,
+        "effective_temperature_coefficient_mm_m_K": 0.0063371684041537086,
+        "raw_gradient_rms_mm_100m": 4.427501131352586,
+        "detrended_gradient_rms_mm_100m": 3.686937386460667,
+        "corrected_gradient_rms_mm_100m": 1.5776428330376606
+      },
+      {
+        "dataset": "2014-2023 processing",
+        "building": "World Port Center",
+        "n": 884,
+        "height_mean_m": 28.85703998868778,
+        "height_sd_m": 14.689805447472311,
+        "height_p10_m": 10.192192999999996,
+        "height_p90_m": 51.968132,
+        "rate_mean_mm_year": -0.8856720523935991,
+        "rate_sd_mm_year": 0.21656620668729562,
+        "rate_p10_mm_year": -1.11908074800167,
+        "rate_p90_mm_year": -0.67362425554247,
+        "residual_point_sd_mean_mm": 1.9866550626949322,
+        "effective_temperature_coefficient_mm_m_K": 0.004543687860318615,
+        "raw_gradient_rms_mm_100m": 2.9878198638254316,
+        "detrended_gradient_rms_mm_100m": 2.931544089441009,
+        "corrected_gradient_rms_mm_100m": 1.7007120594349454
+      },
+      {
+        "dataset": "2020-2026 processing",
+        "building": "De Rotterdam",
+        "n": 2776,
+        "height_mean_m": 37.47223369236312,
+        "height_sd_m": 20.989540868415368,
+        "height_p10_m": 13.097760000000001,
+        "height_p90_m": 66.84728,
+        "rate_mean_mm_year": -1.6128170028818445,
+        "rate_sd_mm_year": 0.5558462328810866,
+        "rate_p10_mm_year": -2.3,
+        "rate_p90_mm_year": -0.825,
+        "residual_point_sd_mean_mm": 1.620934023563198,
+        "effective_temperature_coefficient_mm_m_K": 0.005549155970403965,
+        "raw_gradient_rms_mm_100m": 5.701799058981629,
+        "detrended_gradient_rms_mm_100m": 3.1565717257094326,
+        "corrected_gradient_rms_mm_100m": 1.2050923349156075
+      },
+      {
+        "dataset": "2020-2026 processing",
+        "building": "Montevideo",
+        "n": 1072,
+        "height_mean_m": 27.119133992537314,
+        "height_sd_m": 12.100639391634816,
+        "height_p10_m": 11.547060000000002,
+        "height_p90_m": 42.370537,
+        "rate_mean_mm_year": -0.2901492537313433,
+        "rate_sd_mm_year": 0.2840782366812562,
+        "rate_p10_mm_year": -0.58,
+        "rate_p90_mm_year": 0.11,
+        "residual_point_sd_mean_mm": 1.816449240263233,
+        "effective_temperature_coefficient_mm_m_K": 0.003918011054603725,
+        "raw_gradient_rms_mm_100m": 3.1280225553117122,
+        "detrended_gradient_rms_mm_100m": 2.5806987349644905,
+        "corrected_gradient_rms_mm_100m": 1.5568046152100312
+      },
+      {
+        "dataset": "2020-2026 processing",
+        "building": "New Orleans",
+        "n": 851,
+        "height_mean_m": 31.057413713278493,
+        "height_sd_m": 14.334787976219419,
+        "height_p10_m": 11.513280000000002,
+        "height_p90_m": 48.93308,
+        "rate_mean_mm_year": -1.150458284371328,
+        "rate_sd_mm_year": 0.3196975064192716,
+        "rate_p10_mm_year": -1.4300000000000002,
+        "rate_p90_mm_year": -0.7200000000000001,
+        "residual_point_sd_mean_mm": 1.5706004198927301,
+        "effective_temperature_coefficient_mm_m_K": 0.005849527998002314,
+        "raw_gradient_rms_mm_100m": 3.841195291622891,
+        "detrended_gradient_rms_mm_100m": 3.4218494884904778,
+        "corrected_gradient_rms_mm_100m": 1.5015573795579764
+      },
+      {
+        "dataset": "2020-2026 processing",
+        "building": "World Port Center",
+        "n": 784,
+        "height_mean_m": 30.033747895408165,
+        "height_sd_m": 15.394682810861847,
+        "height_p10_m": 10.751193999999996,
+        "height_p90_m": 55.224014999999994,
+        "rate_mean_mm_year": -0.04411989795918367,
+        "rate_sd_mm_year": 0.1759723678296706,
+        "rate_p10_mm_year": -0.24000000000000002,
+        "rate_p90_mm_year": 0.17,
+        "residual_point_sd_mean_mm": 1.7038040704130912,
+        "effective_temperature_coefficient_mm_m_K": 0.004474772098541459,
+        "raw_gradient_rms_mm_100m": 2.901851431817596,
+        "detrended_gradient_rms_mm_100m": 2.834194016357006,
+        "corrected_gradient_rms_mm_100m": 1.589915614087079
+      }
+    ],
+    "maximum_reference_slope_change_mm_100m": 1.0801733614997434e-14,
+    "maximum_naive_coefficient_range_mm_m_K": 0.0019341824703232157,
+    "reference_variants": [
+      "processor",
+      "shared_499",
+      "own_0_to_5m",
+      "shared_west",
+      "shared_east"
+    ],
+    "bin_support": [
+      {
+        "dataset": 0,
+        "building": "De Rotterdam",
+        "width_m": 10,
+        "supported_bins": 8,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "De Rotterdam",
+        "width_m": 20,
+        "supported_bins": 4,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "Montevideo",
+        "width_m": 10,
+        "supported_bins": 6,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "Montevideo",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "New Orleans",
+        "width_m": 10,
+        "supported_bins": 6,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "New Orleans",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "World Port Center",
+        "width_m": 10,
+        "supported_bins": 6,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 0,
+        "building": "World Port Center",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "De Rotterdam",
+        "width_m": 10,
+        "supported_bins": 9,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "De Rotterdam",
+        "width_m": 20,
+        "supported_bins": 4,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "Montevideo",
+        "width_m": 10,
+        "supported_bins": 5,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "Montevideo",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "New Orleans",
+        "width_m": 10,
+        "supported_bins": 6,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "New Orleans",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "World Port Center",
+        "width_m": 10,
+        "supported_bins": 6,
+        "minimum_points": 20
+      },
+      {
+        "dataset": 1,
+        "building": "World Port Center",
+        "width_m": 20,
+        "supported_bins": 3,
+        "minimum_points": 20
+      }
+    ],
+    "leave_one_building_out": [
+      {
+        "dataset": 0,
+        "omitted_building": "De Rotterdam",
+        "rms_change_mm_per_100m": 0.27913628218905134,
+        "all_buildings_gradient_rms_mm_per_100m": 1.192097156387376
+      },
+      {
+        "dataset": 0,
+        "omitted_building": "Montevideo",
+        "rms_change_mm_per_100m": 0.32159059221417857,
+        "all_buildings_gradient_rms_mm_per_100m": 1.192097156387376
+      },
+      {
+        "dataset": 0,
+        "omitted_building": "New Orleans",
+        "rms_change_mm_per_100m": 0.3269853980364085,
+        "all_buildings_gradient_rms_mm_per_100m": 1.192097156387376
+      },
+      {
+        "dataset": 0,
+        "omitted_building": "World Port Center",
+        "rms_change_mm_per_100m": 0.3575706840344934,
+        "all_buildings_gradient_rms_mm_per_100m": 1.192097156387376
+      },
+      {
+        "dataset": 1,
+        "omitted_building": "De Rotterdam",
+        "rms_change_mm_per_100m": 0.24165634665727898,
+        "all_buildings_gradient_rms_mm_per_100m": 1.0917474721650642
+      },
+      {
+        "dataset": 1,
+        "omitted_building": "Montevideo",
+        "rms_change_mm_per_100m": 0.3882379755725725,
+        "all_buildings_gradient_rms_mm_per_100m": 1.0917474721650642
+      },
+      {
+        "dataset": 1,
+        "omitted_building": "New Orleans",
+        "rms_change_mm_per_100m": 0.31533787679801306,
+        "all_buildings_gradient_rms_mm_per_100m": 1.0917474721650642
+      },
+      {
+        "dataset": 1,
+        "omitted_building": "World Port Center",
+        "rms_change_mm_per_100m": 0.3517675635384638,
+        "all_buildings_gradient_rms_mm_per_100m": 1.0917474721650642
+      }
+    ],
+    "provenance": {
+      "fullpixel_rotterdam_tsx_dsc_v15_20250530194345.csv": "48532dc6629d21df4832fc8b9b677ff75e8219c079204230368918545c655d01",
+      "fullpixel_20260921155333.csv": "9b515e197614301967d6fb41b31c5a5bd5a8c70337c80608ec4231c5de0cb237",
+      "pand-kop-van-zuid.json": "bb7f4bc758d3b00a6c0a289bc8d0c4177cd8bae87023cee320968ebcae013c6c",
+      "rotterdam-344-daily-2014-2023.txt": "36d8223909210cc5478152c6fb7131082cfcf25053431f7616f84d32bd4fa6ae"
+    },
+    "limitations": [
+      "Real export sign and height datum remain unconfirmed",
+      "Building assignments use existing footprint + 10 m facade buffer",
+      "Fixed complete masks and coherence-squared weights within each variant",
+      "Shared ground is a composite operational reference, not stable surveyed ground",
+      "Building samples differ between processings; no matched-building validation claimed",
+      "Uncertainty in the spatially correlated residual is not sqrt(n) independent-point precision",
+      "No absolute refractivity or observed humidity profile is recovered"
+    ]
+  },
+  "synthetic": {
+    "summaries": [
+      {
+        "rho": 0.0,
+        "fit": "all_dates",
+        "seeds": 100,
+        "gain_median": 1.0,
+        "gain_p05": 0.9999999999999998,
+        "gain_p95": 1.0000000000000002,
+        "rmse_N_median": 2.5171000378544575,
+        "beta_bias_median": 2.3338219617263095e-06
+      },
+      {
+        "rho": 0.0,
+        "fit": "held_out_last_third",
+        "seeds": 100,
+        "gain_median": 1.080061083884521,
+        "gain_p05": 1.0097991501493504,
+        "gain_p95": 1.3794501386963383,
+        "rmse_N_median": 4.873301065186664,
+        "beta_bias_median": -2.3861478116391117e-05
+      },
+      {
+        "rho": 0.5,
+        "fit": "all_dates",
+        "seeds": 100,
+        "gain_median": 0.7499999999999999,
+        "gain_p05": 0.749999999999999,
+        "gain_p95": 0.750000000000001,
+        "rmse_N_median": 4.7260758249301,
+        "beta_bias_median": -0.0008820051936575838
+      },
+      {
+        "rho": 0.5,
+        "fit": "held_out_last_third",
+        "seeds": 100,
+        "gain_median": 0.8623550705170722,
+        "gain_p05": 0.760126926157833,
+        "gain_p95": 1.0796140611055027,
+        "rmse_N_median": 5.839720698191368,
+        "beta_bias_median": -0.0008974248212648269
+      },
+      {
+        "rho": 0.9,
+        "fit": "all_dates",
+        "seeds": 100,
+        "gain_median": 0.18999999999999984,
+        "gain_p05": 0.18999999999999878,
+        "gain_p95": 0.19000000000000117,
+        "rmse_N_median": 7.62730573190658,
+        "beta_bias_median": -0.0015894764061530333
+      },
+      {
+        "rho": 0.9,
+        "fit": "held_out_last_third",
+        "seeds": 100,
+        "gain_median": 0.2215835701363116,
+        "gain_p05": 0.05100844902974772,
+        "gain_p95": 0.36739786646876776,
+        "rmse_N_median": 7.33347119396854,
+        "beta_bias_median": -0.001586684355920995
+      },
+      {
+        "rho": 1.0,
+        "fit": "all_dates",
+        "seeds": 100,
+        "gain_median": 2.0497204192584848e-16,
+        "gain_p05": -1.7694088902792212e-15,
+        "gain_p95": 1.3596661611946026e-15,
+        "rmse_N_median": 8.386643710726421,
+        "beta_bias_median": -0.001766344209276894
+      },
+      {
+        "rho": 1.0,
+        "fit": "held_out_last_third",
+        "seeds": 100,
+        "gain_median": 2.0214328371938728e-16,
+        "gain_p05": -8.407818009365423e-16,
+        "gain_p95": 1.2065847602526541e-15,
+        "rmse_N_median": 7.745023329094926,
+        "beta_bias_median": -0.0017627841575278695
+      }
+    ],
+    "diagnostics": {
+      "gauge_difference_max_N": 0.0,
+      "oracle_layer_recovery_max_error_N": 1.9539925233402755e-14,
+      "layer_design_condition": 3.829858958021943,
+      "zero_mean_absolute_anchor_bias_N": [
+        -315.0,
+        -308.0,
+        -301.0
+      ],
+      "linear_atmosphere_gain_after_detrending": -4.229428312745636e-16,
+      "unmodelled_quadratic_thermal_apparent_N_rms": 10.034022694964237,
+      "conditional_vapour_example": {
+        "truth_e_hPa": 12.0,
+        "assumed_N": 326.9113425925926,
+        "T_plus_1K_e_hPa": 12.294957224332244,
+        "P_plus_1hPa_e_hPa": 11.940083646112603,
+        "N_plus_10_e_hPa": 14.223699731903487
+      }
+    },
+    "parameters": {
+      "seeds": 100,
+      "dates": 122,
+      "points": 160,
+      "height_range_m": [
+        5,
+        83
+      ],
+      "temperature_proxy": "analytic seasonal + nonseasonal",
+      "atmosphere_rms_N": 8,
+      "point_noise_sd_mm": 0.8,
+      "alpha_per_K": 1e-05,
+      "incidence_deg": 23,
+      "sign": "synthetic range-increase-positive; not asserted for the real CSV"
+    }
+  },
+  "publication": {
+    "minimum_real_group_size": 20,
+    "allowed_figures": [
+      "37-building-estimation-stages.png",
+      "38-synthetic-signal-retention.png",
+      "39-reference-profile-ambiguity.png"
+    ],
+    "no_point_identifiers_coordinates_or_individual_series": true,
+    "analysis_code_sha256": "6d95d3d0ca1e381a9539d0017215ee7297f34bb33f2b8aed5c881d6d0f6b9764"
+  }
+}

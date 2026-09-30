@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing the estimation · Virtual Radiosonde</title>
+<meta name="description" content="A four-building test separates spatial-reference robustness from the harder question of preserving atmospheric signals during thermal correction.">
+<link rel="stylesheet" href="style.css?v=20260917g">
+</head><body><header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
+</div></header>
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Can the corrections preserve the atmosphere?</h1>
+<p class="lead">The spatial reference can be handled consistently. Separating building expansion from temperature-correlated atmosphere is still the harder problem.</p>
+<p>Analysis dated 30 September 2026. These are diagnostic experiments, not a validated atmospheric retrieval.</p>
+
+<h2 id="reference" data-short="The reference">The reference changes the zero, not every height contrast</h2>
+<p>We compared two TerraSAR-X processings on the same <b>122 dates</b>, from January 2020 to December 2023. A local reference uses <b>499 unique matched ground pairs</b>. Four alternatives use the original processor reference, each processing's own 0–5 m points, and the western and eastern halves of the shared ground set.</p>
+<p>The complete contrast-based correction changes the final height gradient by less than <b>0.00000001 mm per 100 m</b> across these choices. It retains a free spatial intercept and the same points and weights. A deliberately naive fit, without that protection, changes its temperature coefficient by up to <b>0.001934 mm/m/K</b>.</p>
+<p>This does not identify the original reference point or make the ground stable. It shows that a spatially uniform reference signal cancels from the tested height contrast. The ground selection includes low scatterers, not a surveyed zero at a single elevation.</p>
+
+<h2 id="buildings" data-short="Four buildings">What the building corrections remove</h2>
+<p>For each building we first remove point offsets and a building-specific time trend, including a height-dependent rate. We then estimate one temperature response from the height contrast. The baseline uses a 5 m height exclusion, a linear trend and a five-day temperature response time. The fitted coefficient is an effective response, not a measured material expansion constant.</p>
+<figure><img src="figures/37-building-estimation-stages.png" width="2070" height="1619" alt="Four buildings, each with input, detrended and temperature-corrected height gradients; two processings use the same dates but different building samples." loading="lazy">
+<figcaption><b>Figure 37.</b> Height-gradient diagnostics, with a separate vertical scale in each panel. Each line aggregates hundreds or thousands of scatterers; none shows an individual point. The all-date fits make the residual smaller but do not prove it is atmospheric.</figcaption></figure>
+<div class="tbl"><table><thead><tr><th>Processing</th><th>Building</th><th>Points</th><th>Detrended RMS</th><th>Corrected RMS</th><th>Point SD</th></tr></thead><tbody><tr><td>2014-2023</td><td>De Rotterdam</td><td>2510</td><td>3.27</td><td>1.33</td><td>1.76</td></tr>
+<tr><td>2014-2023</td><td>Montevideo</td><td>1372</td><td>2.66</td><td>1.51</td><td>1.99</td></tr>
+<tr><td>2014-2023</td><td>New Orleans</td><td>1188</td><td>3.69</td><td>1.58</td><td>1.79</td></tr>
+<tr><td>2014-2023</td><td>World Port Center</td><td>884</td><td>2.93</td><td>1.70</td><td>1.99</td></tr>
+<tr><td>2020-2026</td><td>De Rotterdam</td><td>2776</td><td>3.16</td><td>1.21</td><td>1.62</td></tr>
+<tr><td>2020-2026</td><td>Montevideo</td><td>1072</td><td>2.58</td><td>1.56</td><td>1.82</td></tr>
+<tr><td>2020-2026</td><td>New Orleans</td><td>851</td><td>3.42</td><td>1.50</td><td>1.57</td></tr>
+<tr><td>2020-2026</td><td>World Port Center</td><td>784</td><td>2.83</td><td>1.59</td><td>1.70</td></tr></tbody></table></div>
+<p>RMS columns are mm LOS per 100 m height; point SD is the within-building residual spread in mm, averaged over dates. It is not an error bar for the estimated atmosphere. <a href="data/estimation-pilot.json">The aggregate data</a> also give height spread and rate SD/percentiles. Rate metadata describe each source's full record, not a common-period comparison.</p>
+<p>The building samples differ between processings. Too few tall-building points match uniquely for a strong point-for-point validation. The common dates and shared ground reference do not remove that limitation.</p>
+
+<h2 id="holdout" data-short="Held-out dates">Test on dates that were not used to fit</h2>
+<p>We trained on 63 dates in 2020–2021 and evaluated the remaining 59 dates in 2022–2023. Baseline residual-gradient RMS is <b>1.71–2.21 mm/100 m</b>. Alternative cutoffs (3/5/10 m), temperature response times (0/5/15 days), linear/quadratic trends and pointwise/building-constrained trends test sensitivity. A quadratic five-day case reaches 5.76 mm/100 m on withheld dates. More flexible detrending can extrapolate poorly.</p>
+<p>Omitting one of the four buildings changes their equally weighted mean corrected gradient by <b>0.24–0.39 mm/100 m RMS</b>. This is a sensitivity range, not a confidence interval. Ten-metre bins retain 5–9 supported bins per building and processing, each with at least twenty points. Bin differences remain conditional delay-gradient estimates; the radar export's sign and height datum still need confirmation.</p>
+
+<h2 id="injection" data-short="Does the air survive?">A known atmosphere can disappear into the thermal fit</h2>
+<p>A synthetic experiment makes this test possible: add a known atmospheric signal to building motion and noise, run the correction, and measure how much of the injected pattern survives. We used 100 noise realisations at four controlled correlations between temperature and atmosphere after detrending.</p>
+<figure><img src="figures/38-synthetic-signal-retention.png" width="1445" height="850" alt="Recovered projection gain falls from 100 percent to zero as synthetic atmospheric correlation with temperature rises; withheld-date outcomes show additional spread." loading="lazy">
+<figcaption><b>Figure 38.</b> Fully synthetic. The vertical axis is projection gain onto the injected pattern, not total RMS amplitude or a confidence in real-data recovery. Shading shows the 5th–95th percentiles across synthetic trials. Held-out gain can exceed 100% because extrapolation can amplify the pattern.</figcaption></figure>
+<p>At correlation 0.9, the in-sample gain is only <b>19%</b>; the withheld-date median is <b>22.2%</b>. Perfectly temperature-correlated atmosphere is removed entirely. Detrending also removes a linear atmospheric trend. A separate, deliberately unmodelled nonlinear expansion term produces a false atmospheric residual even when there is no varying atmosphere.</p>
+<p>These experiments expose estimator limitations. They do not establish the atmospheric correlation or bias in Rotterdam. The next useful comparison is an independently constrained expansion model or a joint atmospheric/thermal model, tested against these same failure cases.</p>
+
+<h2 id="absolute" data-short="Absolute profiles">Averaging differences does not determine an absolute profile</h2>
+<p>For a temporal difference, <code>ΔN(t) = N(t) − N(reference)</code>. Its average is <code>mean(N) − N(reference)</code>. Unless the mean or one absolute profile is supplied independently, the reference profile remains undetermined.</p>
+<figure><img src="figures/39-reference-profile-ambiguity.png" width="1700" height="765" alt="Two distinct absolute refractivity profiles produce identical temporal differences in all three synthetic height layers." loading="lazy">
+<figcaption><b>Figure 39.</b> Fully synthetic. Adding a fixed vertical profile to every date leaves every temporal difference unchanged. An ideal three-layer inversion recovers the differences, but cannot choose between the absolute profiles.</figcaption></figure>
+<p>Pressure and temperature assumptions therefore cannot yet turn this pilot into an observed humidity profile. A synthetic sensitivity calculation illustrates the dependence: with an assumed absolute refractivity, changing the temperature assumption by 1 K shifts inferred vapour pressure by about 0.295 hPa; changing the refractivity anchor by 10 N-units shifts it by about 2.224 hPa for that chosen example.</p>
+
+<h2 id="reproduce" data-short="Reproduce">Reproduce and inspect</h2>
+<p><a href="https://github.com/vrs-tudelft/virtual-radiosonde/blob/main/01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md">Methods, numerical results and limitations</a> · <a href="https://github.com/vrs-tudelft/virtual-radiosonde/tree/main/03_notebooks/04_estimation_reference_pilot">VS Code workspace and notebook</a> · <a href="https://github.com/vrs-tudelft/virtual-radiosonde/blob/main/04_python/tsx/estimation_pilot.py">Analysis code</a> · <a href="data/estimation-pilot.json">Aggregate results</a>.</p>
+<p>The synthetic experiments run without radar access. The real-data run requires the authorised course datasets. Published real results include group sizes and spread; raw observations, point identifiers, coordinates and individual series remain excluded.</p>
+</main></div><footer data-shared></footer><script src="js/nav.js?v=20260917g"></script></body></html>

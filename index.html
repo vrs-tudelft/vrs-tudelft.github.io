@@ -100,11 +100,16 @@
       <div class="stat"><span class="v">0.56</span><span class="k">how well the <span class="t" data-tip="Over 287 consecutive pairs of passes, against a balloon launched at midnight 50 km away whose first archived reading is about 650 m up.">balloon 50 km away<i class="info">i</i></span> predicts it, pass by pass</span></div>
     </div>
 
+<!-- estimation-pilot:start -->
+    <h2 id="estimation-test">Testing the corrections</h2>
+    <p>A new <a href="estimation.html">four-building estimation test</a> distinguishes two problems: spatial-reference shifts cancel in the corrected height contrast, but temperature regression can remove the atmospheric signal itself. The tests use two processings, 122 shared dates and synthetic signal injection. They also show why an absolute profile requires an external reference.</p>
+<!-- estimation-pilot:end -->
+
     <h2 id="found">What we have found</h2>
     <ul class="cols">
       <li>There is a height-dependent signal on 97 % of the passes. Most of it is the buildings: a slow tilt from the north-east towers sinking, and a yearly wave from thermal expansion.</li>
       <li>What is left is scene-wide and truly about height. Two halves of the scene agree on it, and <span class="t" data-tip="Pairs of points 16 m apart give 82 % of the scene-wide gradient, with a correlation of 0.95. A horizontal gradient is not masquerading as a vertical one.">neighbouring points agree too</span>.</li>
-      <li>Buildings and air can be told apart: temperature at 0.62 and refractivity at 0.064 mm per 100 m, against <span class="t" data-tip="0.92 mm per 100 m per kelvin for thermal expansion, 0.109 mm per 100 m per N-unit for the air. Both measured terms fall a third short, and why is open.">0.92 and 0.109 predicted</span>.</li>
+      <li>A joint fit finds separate associations with temperature and refractivity, without proving unique physical separation: temperature at 0.62 and refractivity at 0.064 mm per 100 m, against <span class="t" data-tip="0.92 mm per 100 m per kelvin for thermal expansion, 0.109 mm per 100 m per N-unit for the air. Both measured terms fall a third short, and why is open.">0.92 and 0.109 predicted</span>.</li>
       <li>The balloon agrees on size and, pass by pass, on timing: it predicts 1.18 mm per 100 m of 11-day change where we measure 1.69.</li>
       <li>The retrieval is one number per pass, not yet a profile. A straight line explains two thirds of the binned height differences; <span class="t" data-tip="A parabola explains 78 %, and the departure from the line has a fixed shape, a kink around 20 to 30 m, the same on every pass.">a curve adds little</span>.</li>
       <li>The ground is not a clean zero. The open quays breathe with the seasons in the opposite phase to the buildings, by 0.5 to 0.8 mm, peaking in February. Why is open.</li>
