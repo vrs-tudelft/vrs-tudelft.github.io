@@ -486,7 +486,7 @@
             D.text(ctx, sr.label + ": n = " + g.n + ", " + g.annual.amp.toFixed(2) + " mm peaking day " + Math.round(g.annual.peak_doy), 26, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
             ly += 15;
           });
-          D.text(ctx, "dotted grey, inner: air temperature (KNMI 344 monthly mean 2014-2023, " + tmin.toFixed(0) + " to " + tmax.toFixed(0) + " °C)", 10, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, "dotted grey, inner: air temperature (KNMI 344 monthly mean " + ((Y.air.label.match(/over (\d{4}-\d{4})/) || [0, "2014-2023"])[1]) + ", " + tmin.toFixed(0) + " to " + tmax.toFixed(0) + " °C)", 10, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
           D.text(ctx, "dots: one pass each, mean of the group after removing offset, trend and curvature per point; line: monthly mean", 10, 14, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
         }
       }).addCheck("also show the ground at the towers' feet", false, function (v) { showFeet = v; });
@@ -576,7 +576,8 @@
     return c / x.length / (sx.sd * sy.sd);
   }
   function fill(gen) {
-    var need = [L.json(DATA + "epochs.json"), L.json(DATA + "bands.json"), L.json(DATA + "yearclock.json"), L.json(DATA + "profile.json")];
+    var need = [L.json(DATA + "epochs.json"), L.json(DATA + "bands.json"), L.json(DATA + "yearclock.json"), L.json(DATA + "profile.json"),
+                DS.unavailable.joint ? Promise.resolve(null) : L.json(DATA + "joint.json")];
     Promise.all(need).then(function (r) {
       if (gen !== GEN) return;
       var ep = r[0], B = r[1].fine, Y = r[2], P = r[3], g = Y.groups, ns = Object.keys(g).map(function (k) { return g[k].n; });
@@ -594,6 +595,12 @@
         airPeak: Math.round(Y.air.annual.peak_doy),
         hTop: P.h_top_m || DS.hTop, corr: corr(P.s_fast, P.debilt.dlos11_mm_per_100m).toFixed(2)
       };
+      var J = r[4];
+      if (J) {
+        v.jPairs = J.full.fit_diff.n;
+        v.jT = Math.round(100 * J.full.fit_diff.bT / J.expected.bT);
+        v.jN = Math.round(100 * J.full.fit_diff.bN / J.expected.bN);
+      }
       document.querySelectorAll("[data-fill]").forEach(function (el) {
         var k = el.getAttribute("data-fill");
         if (v[k] !== undefined) el.textContent = String(v[k]);

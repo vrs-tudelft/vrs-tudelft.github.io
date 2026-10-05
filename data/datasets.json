@@ -11,9 +11,7 @@
       "h_top_m": 89,
       "rate_lim_mm_yr": 2,
       "archived": false,
-      "unavailable": {
-        "joint": "Not built for this data set: the Rotterdam daily temperatures on hand end in December 2023, so the fit would cover only the first four of its six and a half years."
-      }
+      "unavailable": {}
     },
     "2014-2023-processor": {
       "path": "",
