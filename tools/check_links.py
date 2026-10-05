@@ -6,6 +6,7 @@ strips ?query, and checks that the file exists and, for #fragments, that the tar
 has an element with that id. Also flags em dashes in page text.
 Run from the repository root:  python tools/check_links.py   (exit code 0 means clean)
 """
+import json
 import re
 import sys
 from pathlib import Path
@@ -44,6 +45,21 @@ def main() -> int:
         for href in re.findall(r'href: "([^"]+)"', (ROOT / js).read_text(encoding="utf-8")):
             if not (ROOT / href).exists():
                 problems.append(f"{js}: nav entry {href} missing")
+    # visible text also comes from scripts, the data-input list and the docs
+    texts = [*ROOT.glob("js/*.js"), *ROOT.glob("3d/*.js"), *ROOT.glob("tools/*.py"), *ROOT.glob("*.md"),
+             ROOT / "style.css", ROOT / "3d" / "3d.css", ROOT / "data" / "datasets.json"]
+    for f in texts:
+        if f.exists() and "\u2014" in f.read_text(encoding="utf-8"):
+            problems.append(f"{f.relative_to(ROOT)}: contains an em dash")
+    # every file the Explore pages fetch for each data input exists (or the view says why not)
+    cfg = json.loads((ROOT / "data" / "datasets.json").read_text(encoding="utf-8"))
+    for sid, spec in cfg["sets"].items():
+        for view, need in cfg["views"].items():
+            if view in spec.get("unavailable", {}):
+                continue
+            for name in need:
+                if not (ROOT / "data" / spec["path"] / name).exists():
+                    problems.append(f"data/datasets.json: {sid} view {view} fetches data/{spec['path']}{name}, missing")
     for p in problems:
         print("PROBLEM", p)
     print(f"{len(problems)} problems in {len(pages)} pages")

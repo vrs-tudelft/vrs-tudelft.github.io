@@ -1,0 +1,37 @@
+{
+  "note": "The data inputs of the Explore pages (animations.html, 3d/index.html). Paths are relative to data/. Every set is aggregates only: means over at least 20 radar points with their spread; tools/check_data.py checks each set and that every view has its files unless it is listed as unavailable.",
+  "default": "2020-2026-ground",
+  "order": ["2020-2026-ground", "2014-2023-processor"],
+  "sets": {
+    "2020-2026-ground": {
+      "path": "2020-2026-ground/",
+      "button": "2020-2026, ground",
+      "name": "2020-2026, ground reference",
+      "about": "TerraSAR-X, the newer processing. Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.",
+      "h_top_m": 89,
+      "rate_lim_mm_yr": 2,
+      "archived": false,
+      "unavailable": {
+        "joint": "Not built for this data set: the Rotterdam daily temperatures on hand end in December 2023, so the fit would cover only the first four of its six and a half years."
+      }
+    },
+    "2014-2023-processor": {
+      "path": "",
+      "button": "2014-2023, processor",
+      "name": "2014-2023, processor reference (archived September view)",
+      "about": "TerraSAR-X, the older processing, in the processor's own reference frame, as published in September 2026, before the shared-ground reference and the estimation pilot. Rates are relative to an unknown reference point. Where its readings differ from the Reference and Estimation pages, those pages hold; figure numbers refer to the retired September pages.",
+      "h_top_m": 83,
+      "archived": true,
+      "unavailable": {}
+    }
+  },
+  "views": {
+    "scene": ["cells.json", "cells.bin", "cells-sd.bin", "outlines.json", "epochs.json"],
+    "bands": ["bands.json", "epochs.json"],
+    "decomp": ["epochs.json"],
+    "joint": ["joint.json", "epochs.json"],
+    "yearclock": ["yearclock.json"],
+    "balloon": ["profile.json", "epochs.json"],
+    "3d": ["buildings.json", "cells.json", "cells.bin", "cells-sd.bin", "epochs.json", "bands.json", "outlines.json"]
+  }
+}
