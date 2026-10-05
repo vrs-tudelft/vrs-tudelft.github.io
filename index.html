@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Virtual Radiosonde</title>
-<meta name="description" content="Reading the lowest hundred metres of the air above Rotterdam from satellite radar, using the buildings as the measuring stick. A TU Delft team project, 2026.">
-<link rel="stylesheet" href="style.css?v=20260917g">
+<meta name="description" content="Reading the lowest hundred metres of the air above Rotterdam from satellite radar, using the buildings as the measuring stick. A TU Delft student team project, 2026.">
+<link rel="stylesheet" href="style.css?v=20261005">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -18,20 +18,20 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
 </div></header>
 
-<div class="shell solo">
-  <main>
-    <h1>A weather balloon that never launches</h1>
-    <p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>A weather balloon that never launches</h1>
+<p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
+<p class="asof">Status on 5 October 2026. The project runs until 22 October 2026.</p>
 
-    <p>A <span class="t" data-tip="The instrument on a weather balloon: pressure, temperature, humidity and position, sent back once a second on the way up.">radiosonde</span> measures pressure, temperature and humidity all the way up. It is the reference measurement of the atmosphere, and it is rare. The Netherlands launches one a day, from De Bilt, around midnight, and never over a city. Cities are where the air near the ground is most disturbed and where knowing it matters most: heat, air quality, weather models.</p>
+<h2 id="idea" data-short="The idea">The idea</h2>
+<p>A <span class="t" data-tip="The instrument on a weather balloon: pressure, temperature, humidity and position, sent back on the way up.">radiosonde</span> measures pressure, temperature and humidity on its way up through the air. The Netherlands launches them from De Bilt, never over a city, and the archived records say little about the lowest few hundred metres. Cities are where that layer matters most: heat, air quality and weather models all depend on it.</p>
+<p>Radar satellites see thousands of fixed points on building facades and measure changes in their distance to about a millimetre. The air slows the radar signal down a little. A point high on a tower looks through less of the lowest air than a point near the street. Compare the two, and compare one pass of the satellite with an earlier one, and what is left is mostly the change in the layer of air between the two heights, plus whatever the buildings themselves did.</p>
 
-    <p>Radar satellites see thousands of fixed points on building facades, and <span class="t" data-tip="Interferometric synthetic aperture radar: comparing the phase of the echoes from many passes gives the change in distance to each point to a fraction of the 3.1 cm wavelength.">interferometry</span> measures their motion to a millimetre. The air the signal travels through delays it, and a point high on a tower looks through less of the lowest air than a point near the street. Take the difference between the two, and again between one pass and the first, and only the layer between the two heights is left. Everything above both points cancels. In the geodetic use of radar this height-dependent delay is an error that gets removed. Here it is the product.</p>
-
-    <figure class="diagram">
-      <svg data-svg="d7" viewBox="0 0 760 420" width="100%" role="img" aria-labelledby="d7t d7d" xmlns="http://www.w3.org/2000/svg">
+<figure class="diagram">
+<svg data-svg="d7" viewBox="0 0 760 420" width="100%" role="img" aria-labelledby="d7t d7d" xmlns="http://www.w3.org/2000/svg">
   <title id="d7t">Two radar points at different heights, and the layer of air between them</title>
   <desc id="d7d">A tall building carries radar point A about 50 m up; a low building carries point B near the street. The satellite, to the upper right, sends parallel rays to both. The ray to the low point crosses extra air between the two heights, and that layer is shaded. The difference of the two delays measures that layer, plus whatever the buildings did.</desc>
   <defs><marker id="d7arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
@@ -83,58 +83,63 @@
   <text x="380" y="390" class="svg-eq" text-anchor="middle">delay(B) − delay(A)  =  the air in the shaded layer  +  what the buildings did</text>
   <text x="380" y="408" class="svg-small" text-anchor="middle">everything above both points, and everything common to the whole scene, cancels in the difference</text>
 </svg>
-      <figcaption>The idea in one drawing. Two radar points, one high and one low; the difference of their delays measures the layer of air between them, plus whatever the buildings did in the meantime.</figcaption>
-    </figure>
+<figcaption>The idea in one drawing. Two radar points, one high and one low; the difference of their delays measures the layer of air between them, plus whatever the buildings did in the meantime.</figcaption>
+</figure>
 
-    <p>That last clause is the whole difficulty. Buildings sink, and the newest towers on the pier still sink at 4 mm a year. Buildings grow when warm and shrink when cold, and a tall building grows more, so <span class="t" data-tip="A warm day thins the air, which shortens the delay to the high point by about 0.1 mm per kelvin per 100 m, and warms the building, which lengthens it by about 1 mm. Same driver, opposite sign, and the building term is eight times larger.">thermal expansion</span> looks exactly like a height-dependent air signal. The two have to be fitted together, and the <a href="findings.html">findings</a> show how far that has come.</p>
+<p>That last part is the hard part. Buildings settle, and they grow a little when warm and shrink when cold. A tall building grows more, so its expansion looks like a height-dependent air signal. Most of the current work is about telling the two apart honestly, and about knowing where the zero of the measurement is.</p>
 
-    <p>What comes out is not a temperature profile and not a forecast. It is the <span class="t" data-tip="Refractivity N: the refractive index of air minus one, times a million. One number for pressure, temperature and humidity together, about 300 near the ground; humidity carries most of the variation.">refractivity</span> of a layer of air, one number for humidity and temperature together, once every 11 days, over districts with tall buildings, for as long as the satellite keeps passing. Ten years so far.</p>
-
-    <h2 id="numbers">Five numbers</h2>
-    <p>Our first data set covers Kop van Zuid in Rotterdam. Hover a number for the catch that comes with it.</p>
-    <div class="stats">
-      <div class="stat"><span class="v">20 594</span><span class="k"><span class="t" data-tip="Persistent scatterers: pieces of facade, roof edge or pavement that returned a stable echo on every pass. The 11 818 with coherence above 0.6 carry the analysis.">radar points<i class="info">i</i></span>, 288 passes over ten years</span></div>
-      <div class="stat"><span class="v">11 <span class="u">days</span></span><span class="k">between passes: a long-term record, <span class="t" data-tip="Verified from the 288 dates, 10 January 2014 to 30 December 2023. The hour of the pass is not in the file; from the dawn-dusk orbit it should be early morning, but that is our arithmetic.">never an hourly product<i class="info">i</i></span></span></div>
-      <div class="stat"><span class="v">83 <span class="u">m</span></span><span class="k">the <span class="t" data-tip="No radar point sits higher, although 150 m towers stand in the scene. A processing limit, layover, or facade orientation; the answer decides whether the ceiling of the method here is 83 m or 150 m.">highest radar point<i class="info">i</i></span>, though 150 m towers stand in the scene</span></div>
-      <div class="stat"><span class="v">1.69 <span class="u">mm</span></span><span class="k">per 100 m of height from one pass to the next: the <span class="t" data-tip="Three times the noise of the fit, and about 16 N-units of refractivity if it is all air. Any unmodelled building motion that varies with height would give the same number.">candidate air signal<i class="info">i</i></span></span></div>
-      <div class="stat"><span class="v">0.56</span><span class="k">how well the <span class="t" data-tip="Over 287 consecutive pairs of passes, against a balloon launched at midnight 50 km away whose first archived reading is about 650 m up.">balloon 50 km away<i class="info">i</i></span> predicts it, pass by pass</span></div>
-    </div>
-
-<!-- estimation-pilot:start -->
-    <h2 id="estimation-test">Testing the corrections</h2>
-    <p>A new <a href="estimation.html">four-building estimation test</a> distinguishes two problems: spatial-reference shifts cancel in the corrected height contrast, but temperature regression can remove the atmospheric signal itself. The tests use two processings, 122 shared dates and synthetic signal injection. They also show why an absolute profile requires an external reference.</p>
-<!-- estimation-pilot:end -->
-
-    <h2 id="found">What we have found</h2>
-    <ul class="cols">
-      <li>There is a height-dependent signal on 97 % of the passes. Most of it is the buildings: a slow tilt from the north-east towers sinking, and a yearly wave from thermal expansion.</li>
-      <li>What is left is scene-wide and truly about height. Two halves of the scene agree on it, and <span class="t" data-tip="Pairs of points 16 m apart give 82 % of the scene-wide gradient, with a correlation of 0.95. A horizontal gradient is not masquerading as a vertical one.">neighbouring points agree too</span>.</li>
-      <li>A joint fit finds separate associations with temperature and refractivity, without proving unique physical separation: temperature at 0.62 and refractivity at 0.064 mm per 100 m, against <span class="t" data-tip="0.92 mm per 100 m per kelvin for thermal expansion, 0.109 mm per 100 m per N-unit for the air. Both measured terms fall a third short, and why is open.">0.92 and 0.109 predicted</span>.</li>
-      <li>The balloon agrees on size and, pass by pass, on timing: it predicts 1.18 mm per 100 m of 11-day change where we measure 1.69.</li>
-      <li>The retrieval is one number per pass, not yet a profile. A straight line explains two thirds of the binned height differences; <span class="t" data-tip="A parabola explains 78 %, and the departure from the line has a fixed shape, a kink around 20 to 30 m, the same on every pass.">a curve adds little</span>.</li>
-      <li>The ground is not a clean zero. The open quays breathe with the seasons in the opposite phase to the buildings, by 0.5 to 0.8 mm, peaking in February. Why is open.</li>
-    </ul>
-    <p>The plots behind each of these are on the <a href="findings.html">findings</a> page. The data, the method, the paper's outline and the open questions are on <a href="method.html">data and method</a>. The <a href="animations.html">animations</a> and the <a href="3d/index.html">3D view</a> show the same numbers in motion.</p>
-
-    <h2 id="about">About</h2>
-    <p>A student team project of the course Applied Space Geodesy at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). Twelve MSc students from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science: Sander da Costa, Jaap de Ruiter, Dirk van Dale, Alejandro Giner Gil, Phoebe Smirk, Quinten Uivel, Lars van Dijk, Rosalyn van Hemert, Shaquille Huiswoud, Akhil Veeranki, Jihun Yoo and Oula Zhu. The paper is written by the whole team and is not on this site.</p>
-
-    <details>
-      <summary>Who made what is on this site</summary>
-      <p>The analysis code, the figures and this site: Quinten Uivel, with an AI coding assistant (Claude Code) for the repositories, the plotting libraries, the site itself and the drafting of captions from the numbers the scripts produced. No number was invented; every figure regenerates from a script in the <a href="https://github.com/vrs-tudelft/virtual-radiosonde">team repository</a>, and every interpretation here is a hypothesis and says so. The ground-minus-roof check against surface weather is Jaap de Ruiter's; the radiosonde work is Sander da Costa's; the data set, the idea and the questions that shaped the findings are Ramon Hanssen's.</p>
-    </details>
-    <details>
-      <summary>What is on this site, and what is not</summary>
-      <p>The TerraSAR-X point set was provided for the course and may not be passed on. No radar point, position or single time series is here. Everything drawn from the radar data is a mean over at least 20 points: a cell on a fixed grid of 10 m, or 25 m for ground points only, a building, a 10 m slab of a building, a height band, or the whole scene. A script checks every published file against that rule. The draft text of the paper is not here either.</p>
-    </details>
-    <details>
-      <summary>Sources and licences</summary>
-      <p>Weather: KNMI station 344 Rotterdam (CC BY 4.0) and the NOAA IGRA2 archive of De Bilt soundings. Buildings: the BAG register via PDOK (CC0) and the 3DBAG (CC BY 4.0). Aerial imagery: Esri in the static figures, PDOK (CC BY 4.0) in the 3D view. Viewer: three.js (MIT). The text, drawings and figures of this site: CC BY 4.0, Virtual Radiosonde team, TU Delft, 2026.</p>
-    </details>
-
-    <footer data-shared></footer>
-  </main>
+<div class="tech">
+<p>TerraSAR-X persistent scatterers over Kop van Zuid, Rotterdam, descending track, 11-day repeat. For two scatterers at different heights the interferometric double difference (point minus point, pass minus reference pass) cancels everything the two share, including the air above both of them. What remains is the change of the integrated delay <code>d = 10<sup>-6</sup> &int; N ds</code> through the layer between the two heights, plus differential deformation and noise. The target product is the refractivity <i>N</i> of near-surface layers; pressure, temperature and humidity separately are a stretch goal. Every result is relative in space and in time: an absolute profile needs an external reference.</p>
 </div>
-<script defer src="js/nav.js?v=20260917g"></script>
+<!-- Sources: ASG Project 01_reference/checked-numbers.md (method, N success criterion, P/T/e stretch, 11-day revisit); 01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md (absolute profile needs an external reference). -->
+
+<h2 id="status" data-short="Where it stands">Where the project stands</h2>
+<p>The work follows one chain, from the inputs to the paper. Each stage has its own page.</p>
+<ol class="steps">
+  <li><a class="name" href="data.html">Data</a><span class="badge done">in hand</span>
+    <p>Two radar processings of the same district, building heights, balloon soundings, weather stations and two measurement towers.</p></li>
+  <li><a class="name" href="low-level.html">Air near the ground</a><span class="badge done">first version, 1 Oct</span>
+    <p>A reconstruction of the lowest 200 m of air from soundings, surface weather and a weather model, checked against two towers.</p></li>
+  <li><a class="name" href="simulation.html">Simulation</a><span class="badge pending">being rebuilt</span>
+    <p>A known atmosphere pushed through the radar geometry and back, to see what can be recovered. The model is being updated.</p></li>
+  <li><a class="name" href="reference.html">Reference</a><span class="badge open">proposal, 29 Sep</span>
+    <p>Where the zero of the measurement sits. Proposal: tie both processings to the ground points they share. Not yet adopted by the team.</p></li>
+  <li><a class="name" href="estimation.html">Estimation</a><span class="badge open">pilot, 30 Sep</span>
+    <p>Removing what the buildings do. The reference is handled; separating building expansion from temperature-linked air is not solved.</p></li>
+  <li><a class="name" href="paper.html">Paper</a><span class="badge pending">due 22 Oct</span>
+    <p>One manuscript by the whole team. The draft is not on this site.</p></li>
+</ol>
+
+<h2 id="claims" data-short="What holds">What holds so far, and what does not yet</h2>
+<p>There is no observed refractivity or humidity profile on this site yet. What the analyses so far do support:</p>
+<ul>
+  <li>The two radar processings disagree on how fast every point moves by a near-constant amount. Tying both to the ground points they share removes most of it, from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="reference.html">Reference</a></li>
+  <li>Changing the reference does not change the height contrast the method relies on, to numerical round-off. <a href="estimation.html#reference">Estimation</a></li>
+  <li>The correction for building expansion can also remove the air signal when the air follows temperature. In a synthetic test with correlation 0.9, only <b>19 %</b> of a known air pattern survives. <a href="estimation.html#injection">Estimation</a></li>
+  <li>Changes over time alone cannot give an absolute profile; one external reference profile is needed. <a href="estimation.html#absolute">Estimation</a></li>
+  <li>Between the lowest and highest sensor of the Brasschaat tower (0.1 and 32.8 m), the low-level temperature shape predicts the eight withheld levels better than a straight line between the two: error <b>0.522 to 0.357 K</b>. <a href="low-level.html">Air near the ground</a></li>
+</ul>
+<!-- Sources: 01_reference/notes/2026-09-29-unique-pair-ground-reference.md (+0.60 to +0.11 mm/yr, 752 pairs, 499 ground pairs, 122 dates); 2026-09-30-reference-aware-estimation-pilot.md (1.09e-14 mm/100 m; 19 % at rho 0.9; absolute profile); 2026-10-01-annual-low-level-brasschaat.md and 03_notebooks/05_annual_low_level_reconstruction/05_results/19_annual_low_level_reconstruction/brasschaat/heldout_paired_scores.csv (0.522 K linear baseline to 0.357 K model). -->
+
+<h2 id="about" data-short="About">About</h2>
+<p>A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). The team is listed on <a href="paper.html#team">Paper and team</a>.</p>
+<details>
+  <summary>Who made what is on this site</summary>
+  <!-- DECISION NEEDED: confirm this credit paragraph with the people named before publishing. -->
+  <p>Each page names the analysis it summarises and when it was done. The site, its figures from the radar data and the reference and estimation analyses were prepared by Quinten Uivel, with an AI coding assistant (Claude Code) for code, plotting and drafting text from the numbers the scripts produced. The low-level reconstruction and tower validation are Sander da Costa's. The data set, the idea and the questions that shaped the work are Ramon Hanssen's. No number on this site is invented: each one comes from a dated note in the team repository.</p>
+</details>
+<details>
+  <summary>What is on this site, and what is not</summary>
+  <p>The TerraSAR-X point sets were provided for the course and may not be passed on. No radar point, position or single time series is here. Everything drawn from the radar data is a mean over at least 20 points, shown with the spread of the points behind it, or comes from fully synthetic tests. A script checks every published data file against that rule. The draft text of the paper is not here either. The full rule is on the <a href="data.html#rule">data page</a>.</p>
+</details>
+<details>
+  <summary>Sources and licences</summary>
+  <p>Weather: KNMI station 344 Rotterdam and KNMI Cabauw tower data (CC BY 4.0), the NOAA IGRA2 archive of De Bilt and Beauvechain soundings, ICOS Brasschaat tower data (ICOS CC BY 4.0 licence), ICON-D2 weather model values through Open-Meteo. Buildings: the BAG register via PDOK (CC0) and the 3DBAG (CC BY 4.0). Aerial imagery: PDOK (CC BY 4.0) in the 3D view. Viewer: three.js (MIT). The text, drawings and figures of this site: CC BY 4.0, Virtual Radiosonde team, TU Delft, 2026.</p>
+</details>
+<!-- Sources: ASG Project README.md (course, dates); 03_notebooks/05_annual_low_level_reconstruction/docs/DATA_SOURCES.md (ICOS, Cabauw, ICON-D2, IGRA, licences). -->
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
 </body>
 </html>

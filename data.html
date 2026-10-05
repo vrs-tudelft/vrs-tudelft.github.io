@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data · Virtual Radiosonde</title>
+<meta name="description" content="The inputs of the Virtual Radiosonde project: two TerraSAR-X processings of Kop van Zuid, building heights from 3DBAG and AHN, balloon soundings, weather stations and measurement towers.">
+<link rel="stylesheet" href="style.css?v=20261005">
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+</div></header>
+
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Data</h1>
+<p class="lead">Radar measurements of one Rotterdam district, the heights of its buildings, and the balloon, station and tower measurements we compare them with.</p>
+
+<h2 id="radar" data-short="Radar">Radar: two processings of Kop van Zuid</h2>
+<p>The radar satellite TerraSAR-X passes over Rotterdam every 11 days. From its images, thousands of fixed points on facades, roof edges and pavement are tracked over the years. We have two processings of the same district, Kop van Zuid, made at different times. They overlap for four years, which lets us check one against the other.</p>
+<div class="tbl"><table>
+<thead><tr><th>Processing</th><th>Radar points</th><th>Passes</th><th>Period</th></tr></thead>
+<tbody>
+<tr><td>Older</td><td class="num">20 594</td><td class="num">288</td><td>10 January 2014 to 30 December 2023</td></tr>
+<tr><td>Newer</td><td class="num">22 118</td><td class="num">213</td><td>2020 to 2026</td></tr>
+<tr><td>Shared</td><td>752 points matched one to one</td><td class="num">122</td><td>8 January 2020 to 30 December 2023, identical dates</td></tr>
+</tbody></table></div>
+<!-- Sources: 01_reference/notes/2026-09-29-ground-reference-seasonality.md (20,594 points / 288 dates; 22,118 points / 213 dates; 122 identical dates 2020-01-08 to 2023-12-30); 2026-09-29-unique-pair-ground-reference.md (752 unique mutual-nearest pairs); 01_reference/checked-numbers.md (dates of the older set). -->
+<div class="tech">
+<p>Descending track, X band, incidence about 23 degrees. The older set was verified at 288 epochs with an 11-day step (largest gap 44 days); epoch 0 is exactly zero for every point, so all series are differences from 10 January 2014. The local hour of the pass is not in either file. Each processing refers its displacements to a reference point that is not in the file; see <a href="reference.html">Reference</a>. Of the older set, 11 818 points have coherence above 0.6. Its scatterers sit at a median of 14.7 m above ground with an interquartile span of 31.2 m and a ceiling of 83.2 m, although roofs in the scene reach 158 m. Kop van Zuid is a high-rise best case, not a city average.</p>
+</div>
+<!-- Sources: checked-numbers.md (11 days, 288 epochs, largest gap 44 days, overpass time unknown; median 14.7 m, IQR 31.2 m, ceiling 83.2 m; high-rise best case); notes/2026-09-17-reference-point-search.md (epoch 0 exactly zero, 2014-01-10); notes/2026-09-16-site-export-and-figures.md and figure 30 legend (11 818 coherent points, roofs to 158 m); notes/2026-09-30-reference-aware-estimation-pilot.md (23-degree geometry). -->
+
+<figure><img src="figures/31-pass-calendar.png" width="1734" height="601" alt="A calendar of the 288 passes of the older processing from 2014 to 2023, one square per pass, coloured by the daily mean air temperature at KNMI Rotterdam." loading="lazy">
+<figcaption><b>Figure 31.</b> The 288 passes of the older processing, one square each, coloured by that day's mean air temperature at KNMI station 344 Rotterdam. Every season is covered in every year. Contains no radar values.</figcaption></figure>
+
+<h2 id="heights" data-short="Heights">Building heights</h2>
+<p>The method needs to know how high each radar point is, and where the ground is. Heights come from the public 3D building register 3DBAG, which is built from the national elevation model AHN. The pier is flat: the ground sits at about 3.2 m above Dutch sea level (NAP) everywhere.</p>
+<div class="tech">
+<p>Area: RD New box (92600, 435200) to (93450, 435950), 46 buildings. Two independent routes give the ground level: the radar product's own elevation model minus its geoid, median 3.20 m NAP with 0.18 m spread over 20 594 pixels, and 3DBAG's ground height, median 3.34 m NAP over 45 buildings. The 0.14 m agreement supports the inferred conversion to NAP and to height above ground. Height model: AHN5 (AHN6 does not yet cover Rotterdam). Roofs in the box reach 158 m; radar points stop at 83 m.</p>
+</div>
+<!-- Sources: notes/2026-09-17-ahn5-height-input.md (box, 46 buildings, 3.20 m NAP sd 0.18 m n=20 594; 3.34 m NAP n=45; 0.14 m); checked-numbers.md (AHN5 not AHN6); figure 30 (roofs to 158 m, points to 83 m). -->
+<figure><img src="figures/30-roof-vs-scatterer-heights.png" width="2073" height="813" alt="Left: for each building with at least 20 radar points, the 95th percentile height of its points against its roof height. Right: histograms of roof heights and of radar point heights; points stop at 83 m while roofs reach 158 m." loading="lazy">
+<figcaption><b>Figure 30.</b> Three heights kept apart: the terrain, the roofs (3DBAG) and the radar points. Left, one circle per building with at least 20 points. Right, how many points and roofs sit at each height. Whether the 83 m ceiling is a processing limit, layover or facade orientation is still open.</figcaption></figure>
+
+<h2 id="soundings" data-short="Soundings">Balloon soundings</h2>
+<p>Two radiosonde stations frame the region: De Bilt in the Netherlands and Beauvechain in Belgium. Their archived records are the reference for what the air does, but they keep few readings close to the ground. That is why the team reconstructs the lowest 200 m separately; see <a href="low-level.html">Air near the ground</a>.</p>
+<div class="tech">
+<p>Source: NOAA IGRA2. In 2025 the archive holds 453 De Bilt reports on 358 dates and 331 Beauvechain reports on 329 dates. A large fraction of archived records has no reported height, and most 50 m bins near the surface have a median of zero recorded levels per launch: a property of what the archive retains, not of the flight. In the archive used for the September analyses, the first De Bilt level sits at about 650 m above ground, so any De Bilt value for the lowest 83 m is an interpolation.</p>
+</div>
+<!-- Sources: 05_results/06_radiosonde_annual_2025/annual_findings.md (453/358, 331/329, archive retention); checked-numbers.md point 5 (first IGRA2 De Bilt level ~650 m). -->
+
+<h2 id="weather" data-short="Weather and towers">Weather stations, towers and a weather model</h2>
+<p>Ground stations give the temperature on each pass day, two towers give measured temperature at several heights, and a weather model fills in between.</p>
+<ul>
+  <li><b>KNMI station 344, Rotterdam</b>: daily air temperature, used as the stand-in for building temperature in the estimation tests.</li>
+  <li><b>Brasschaat tower (ICOS, Belgium)</b>: temperature at ten levels from 0.1 to 32.8 m in 2025; the nearby check for Beauvechain.</li>
+  <li><b>Cabauw tower (KNMI)</b>: temperature and humidity from 1.5 to 200 m; the check for De Bilt, for the 2025 months available (January to April, July and August).</li>
+  <li><b>ICON-D2 weather model</b>, through the Open-Meteo archive: the background the low-level reconstruction starts from.</li>
+</ul>
+<!-- Sources: notes/2026-09-30-reference-aware-estimation-pilot.md (KNMI 344 daily temperature as proxy); notes/2026-10-01-annual-low-level-brasschaat.md and 03_notebooks/05_annual_low_level_reconstruction/README.md (Brasschaat 0.1-32.8 m ten levels; Cabauw 1.5-200 m, months); docs/DATA_SOURCES.md (ICOS licence, ICON-D2 via Open-Meteo). -->
+
+<h2 id="rule" data-short="What is published">What may appear on this site</h2>
+<p>This site is public. The radar point sets were given to us for the course and may not be passed on, so the rule is strict.</p>
+<ul>
+  <li>Everything drawn from the radar data is a mean over <b>at least 20 radar points</b> (a grid cell, a building, a 10 m slab of a building, a height band, the scene), published together with the <b>spread of the points behind it</b>.</li>
+  <li>No radar point, point position, point identifier or single point's time series appears here, in figures or in data files.</li>
+  <li>Fully synthetic tests and figures may appear, marked as synthetic.</li>
+  <li>Public inputs (soundings, weather, towers, buildings) may appear with their licence.</li>
+  <li>The draft text of the paper does not appear until it is submitted.</li>
+</ul>
+<p class="small">The exporter in the team repository refuses anything else, and <code>tools/check_data.py</code> in the site repository checks every data file before publication.</p>
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
+</body>
+</html>

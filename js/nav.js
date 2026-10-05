@@ -2,10 +2,13 @@
 (function () {
   var pages = [
     { href: "index.html", label: "Home" },
-    { href: "findings.html", label: "Findings" },
-    { href: "method.html", label: "Data and method" },
-    { href: "animations.html", label: "Animations" },
-    { href: "3d/index.html", label: "3D" }
+    { href: "data.html", label: "Data" },
+    { href: "low-level.html", label: "Air near the ground" },
+    { href: "simulation.html", label: "Simulation" },
+    { href: "reference.html", label: "Reference" },
+    { href: "estimation.html", label: "Estimation" },
+    { href: "paper.html", label: "Paper and team" },
+    { href: "animations.html", label: "Explore" }
   ];
   var root = document.documentElement.getAttribute("data-root") || "";
   var here = location.pathname.replace(/\/+$/, "").split("/").pop() || "index.html";
@@ -22,7 +25,7 @@
       var a = document.createElement("a");
       a.href = root + p.href;
       a.textContent = p.label;
-      if (p.href === "3d/index.html" ? in3d : (!in3d && p.href === here)) a.setAttribute("aria-current", "page");
+      if (p.href === "animations.html" ? (in3d || here === p.href) : (!in3d && p.href === here)) a.setAttribute("aria-current", "page");
       nav.appendChild(a);
     });
     inner.appendChild(nav);
@@ -67,8 +70,8 @@
   if (footer && !footer.innerHTML.trim()) {
     footer.innerHTML =
       "<p>Virtual Radiosonde, a student team project of the course Applied Space Geodesy, TU Delft, 2026. " +
-      "Radar: TerraSAR-X point set provided for the course by R.F. Hanssen; the point data is not public and nothing on this site is a single point. " +
-      "Weather: KNMI (CC BY 4.0), NOAA IGRA2. Buildings: BAG via PDOK (CC0), 3DBAG (CC BY 4.0). " +
+      "Radar: two TerraSAR-X point sets provided for the course by R.F. Hanssen; the point data is not public and nothing on this site is a single point. " +
+      "Weather and soundings: KNMI (CC BY 4.0), NOAA IGRA2, ICOS (CC BY 4.0). Buildings: BAG via PDOK (CC0), 3DBAG (CC BY 4.0). " +
       "Work in progress; nothing here is a validated result unless it says so. " +
       "<a href=\"" + root + "index.html#about\">About and licences</a> · <a href=\"https://github.com/vrs-tudelft\">GitHub</a></p>";
   }

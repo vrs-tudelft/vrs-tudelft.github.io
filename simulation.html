@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulation · Virtual Radiosonde</title>
+<meta name="description" content="The end-to-end simulation of the Virtual Radiosonde project is being rebuilt. This page will describe the updated model once it is published.">
+<link rel="stylesheet" href="style.css?v=20261005">
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+</div></header>
+
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Simulation: model update pending</h1>
+<p class="lead">A simulation starts from an atmosphere we choose, works out what the radar would measure, and then tries to get the atmosphere back. Because the answer is known, it shows what the method can and cannot recover.</p>
+<p class="asof">Status on 5 October 2026: being rebuilt. Nothing on this page describes the final model.</p>
+
+<h2 id="purpose" data-short="What it is for">What the simulation is for</h2>
+<p>The real radar data mix the air with building movement, noise and an unknown reference. A simulation lets the team switch each of those on and off. It answers questions the real data cannot: how many radar points and which spread of heights are needed, and at which noise level an air signal still comes through.</p>
+<div class="tech">
+<p>The chain: pressure, temperature and humidity at a set of heights; refractivity; the cumulative delay from the ground up; the delay at each scatterer height; line-of-sight phase; added nuisances (deformation, thermal expansion, noise); double differences; inversion back to refractivity; comparison with the input. The forward part follows the theory section of the paper.</p>
+</div>
+<!-- Source: ASG Project 06_simulation/README.md (purpose and chain, steps 0 to 10). The September code there is a draft with steps marked as pass; do not present it as the current model. -->
+
+<div class="placeholder">
+<h2 id="update" data-short="Model update">Simulation: model update pending</h2>
+<p>The simulation is being rebuilt with an improved model and new inputs, among them measured and reconstructed profiles of the low-level air (see <a href="low-level.html">Air near the ground</a>). The version in the team repository from September is not the current model and is not described here.</p>
+<p>This section will describe the updated model, its inputs and settings, and what it recovers, once that work is published in the team repository.</p>
+</div>
+<!-- PLACEHOLDER: fill from the updated model once it is on GitHub. Do not quote unpublished results. -->
+
+<h2 id="questions" data-short="Questions">Questions it is meant to answer</h2>
+<ul>
+  <li>With the real building heights of Kop van Zuid, how many radar points are needed per height layer?</li>
+  <li>How do noise, building movement and thermal expansion affect the estimated refractivity?</li>
+  <li>Can the building correction tested on the <a href="estimation.html">estimation page</a> keep a realistic air signal, and how much of it?</li>
+</ul>
+<!-- Sources: questions as listed for section 3.1 in the paper outline (vrs-paper 300_methodology / ASG Project 07_paper) and the pilot note 2026-09-30 (next scientific step). -->
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper and team · Virtual Radiosonde</title>
+<meta name="description" content="The manuscript the Virtual Radiosonde team is writing, how it is organised, and who is on the team.">
+<link rel="stylesheet" href="style.css?v=20261005">
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+</div></header>
+
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Paper and team</h1>
+<p class="lead">The whole team writes one manuscript. Its draft is not on this site until it is submitted; this page says what it is about and how it is organised.</p>
+
+<h2 id="paper" data-short="The paper">The paper</h2>
+<p><b>Reconstruction of the near-surface atmospheric refractivity profile from satellite InSAR: potential and limitations.</b> Submission and final presentation: 22 October 2026.</p>
+<p>The success criterion is the refractivity of the near-surface air, one number that combines pressure, temperature and humidity. Separating pressure, temperature and humidity is the stretch goal.</p>
+<!-- Sources: vrs-paper main.tex (title, chapter inputs), commit 2b4a7eb of 02-10-2026; ASG Project README.md (22 October 2026); 01_reference/checked-numbers.md (N success criterion, P/T/e stretch goal). The abstract in main.tex is a placeholder from the skeleton and is NOT used here. -->
+
+<h2 id="outline" data-short="Outline">How it is organised</h2>
+<div class="tbl"><table>
+<thead><tr><th>Chapter</th><th>What it covers</th></tr></thead>
+<tbody>
+<tr><td>1 Introduction</td><td>Why cities need repeated profiles of the lowest air; what radiosondes observe today; the urban heat island; weather forecasting</td></tr>
+<tr><td>2 Theory</td><td>Radar phase and propagation delay; refractivity of moist air and its sensitivity to humidity and temperature; surface delay models; the temperature effect; from an integrated delay to a profile</td></tr>
+<tr><td>3 Methodology</td><td>The end-to-end simulation; refractivity and delay; making residuals; temporal double differences; reference choices for the radar time series (draft); separating refractivity from building movement</td></tr>
+<tr><td>4 Results</td><td>Radiosonde reference results; joint atmospheric estimation; comparison with GNSS</td></tr>
+<tr><td>5 to 7</td><td>Discussion and future research questions; impact and limitations; conclusions</td></tr>
+<tr><td>Appendix</td><td>Background on radio-wave propagation</td></tr>
+</tbody></table></div>
+<p class="small">Chapter structure as of 2 October 2026; it may still change.</p>
+<!-- Source: vrs-paper sections/ file names and headings (110 to 810), commit 2b4a7eb; 331_reference_choices.tex added in local commit 2401b55 (not pushed). -->
+
+<h2 id="team" data-short="Team">Team</h2>
+<!-- DECISION NEEDED: confirm the student list (all twelve still active?) before publishing. Source: vrs-paper sections/010_authors.tex, commit 2b4a7eb. -->
+<p>Twelve MSc students of Delft University of Technology, from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science:</p>
+<ul class="cols">
+  <li>Sander da Costa</li>
+  <li>Jaap de Ruiter</li>
+  <li>Dirk van Dale</li>
+  <li>Alejandro Giner Gil</li>
+  <li>Phoebe Smirk</li>
+  <li>Quinten Uivel</li>
+  <li>Lars van Dijk</li>
+  <li>Rosalyn van Hemert</li>
+  <li>Shaquille Huiswoud</li>
+  <li>Akhil Veeranki</li>
+  <li>Jihun Yoo</li>
+  <li>Oula Zhu</li>
+</ul>
+<p>Supervision: Ramon Hanssen and Freek van Leijen (TU Delft), with Hanno Maljaars (SkyGeo).</p>
+
+<h2 id="course" data-short="The course">The course</h2>
+<p>Applied Space Geodesy (AESM5240C), TU Delft, 31 August to 22 October 2026: a coached team project that goes from an idea through research to a scientific paper and a working prototype in about eight weeks.</p>
+<p>Repositories: <a href="https://github.com/vrs-tudelft">github.com/vrs-tudelft</a>. The analysis repository and the paper repository are private to the team; this site is the public part.</p>
+<!-- Source: ASG Project README.md (course, dates); repository visibility on 5 October 2026 (virtual-radiosonde, vrs-paper, vrs-data private; site public). -->
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
+</body>
+</html>

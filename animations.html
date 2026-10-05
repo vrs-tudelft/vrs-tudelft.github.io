@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Animations · Virtual Radiosonde</title>
+<title>Explore · Virtual Radiosonde</title>
 <meta name="description" content="Six animations of the TerraSAR-X record over Kop van Zuid, drawn in the browser from averages: the scene pass by pass, the height gradient, its decomposition, buildings against air, the year clock, and a virtual balloon.">
-<link rel="stylesheet" href="style.css?v=20260918f">
+<link rel="stylesheet" href="style.css?v=20261005">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -18,13 +18,16 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="findings.html">Findings</a> <a href="method.html">Data and method</a> <a href="animations.html">Animations</a> <a href="3d/index.html">3D</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
 </div></header>
 
 <div class="shell">
   <nav class="side" aria-label="On this page"></nav>
   <main>
-    <h1>Animations</h1>
+    <h1>Explore: animations</h1>
+    <div class="banner">
+      <p><b>Archived exploratory views, September 2026.</b> These animations and the <a href="3d/index.html">3D view</a> were built from the older processing (2014 to 2023) in the processor's own reference frame, before the <a href="reference.html">shared-ground reference</a> and the <a href="estimation.html">estimation pilot</a>. Every colour is still a mean over at least 20 points, shown with its spread. Where their readings of rates, of the ground's yearly cycle or of a "candidate air signal" differ from those two pages, the newer pages hold. Figure numbers mentioned below refer to the retired September pages.</p>
+    </div>
     <p class="lead">Six players, drawn in the browser from small tables of averages. Each moves through the 288 passes, or through one year; the line under each one says which pass you are looking at and what the weather was.</p>
     <p class="small">Every colour and every dot is a mean over at least 20 radar points. Play, pause and step with the buttons, drag the slider to scrub, or focus a player and use the arrow keys and the space bar. The players pause when scrolled out of view.</p>
 
@@ -61,7 +64,7 @@
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="js/nav.js?v=20260918f"></script>
+<script defer src="js/nav.js?v=20261005"></script>
 <script defer src="js/player.js?v=20260918f"></script>
 <script defer src="js/animations.js?v=20260918f"></script>
 </body>

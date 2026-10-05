@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air near the ground · Virtual Radiosonde</title>
+<meta name="description" content="A reconstruction of the lowest 200 m of air at De Bilt and Beauvechain for 2025 from soundings, surface weather and a weather model, checked against the Brasschaat and Cabauw towers.">
+<link rel="stylesheet" href="style.css?v=20261005">
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+</div></header>
+
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>The air near the ground</h1>
+<p class="lead">Weather balloons keep few readings in the lowest 200 metres, exactly the layer the radar method looks at. So the team rebuilt that layer from what is measured around it, and checked the result against two measurement towers.</p>
+<p class="asof">Analysis package of 1 October 2026, by Sander da Costa. Year covered: 2025.</p>
+<!-- Sources for this page: 01_reference/notes/2026-10-01-annual-low-level-brasschaat.md; 03_notebooks/05_annual_low_level_reconstruction/README.md; its 05_results/19_annual_low_level_reconstruction/README.md, method.json and brasschaat/method.json, brasschaat/heldout_paired_scores.csv. -->
+
+<h2 id="why" data-short="Why">Why reconstruct it</h2>
+<p>The radar compares points between street level and about 80 m. To know what it should see, and to give its measurements an absolute level, we need to know what the air did in that layer. The balloon archives hold the measurements, but keep few of the low readings. The reconstruction combines the readings that are kept, the weather at the ground and a weather model into a full profile every 10 m from the ground to 200 m.</p>
+
+<h2 id="model" data-short="The model">What the model does</h2>
+<p>It starts from the weather model's forecast for the balloon's time and place, and corrects it towards what was actually measured at the ground and on the balloon. Pressure follows from the weight of the air above; refractivity follows from pressure, temperature and humidity.</p>
+<div class="tech">
+<p>A Gaussian model of the discrepancy between the ICON-D2 weather background and observations, conditioned on surface and native sounding temperature and log vapour pressure; hydrostatic pressure; refractivity derived from P, T and e. Stations: De Bilt and Beauvechain, nominal 2025 reports. Output on a 10 m grid from 0 to 200 m, with 2,048 joint draws per profile for uncertainty. Training, tuning and test use different days of each month (days 1 to 14 training, 15 to 20 length validation, 21 to the end test). The 0 to 200 m zenith delay in the output is a partial layer contribution only.</p>
+</div>
+
+<h2 id="soundings" data-short="Against soundings">Checked against withheld balloon readings</h2>
+<p>All balloon readings between 2 and 200 m were held back on the test days and then predicted. The reconstruction is much closer to them than a straight line drawn between the readings that remain, and somewhat closer than the weather model on its own.</p>
+<div class="tbl"><table>
+<thead><tr><th>Station</th><th>Quantity</th><th>Error reduction against a straight line between readings</th><th>Error reduction against the weather model alone</th></tr></thead>
+<tbody>
+<tr><td>Beauvechain</td><td>temperature</td><td class="num">59 %</td><td class="num">29 %</td></tr>
+<tr><td>Beauvechain</td><td>vapour pressure</td><td class="num">20 %</td><td class="num">38 %</td></tr>
+<tr><td>De Bilt</td><td>temperature</td><td class="num">82 %</td><td class="num">9 %</td></tr>
+<tr><td>De Bilt</td><td>vapour pressure</td><td class="num">46 %</td><td class="num">9 %</td></tr>
+</tbody></table></div>
+<p class="small">Reduction of RMSE on the withheld native sounding levels of the test days: 89 levels on 80 days at Beauvechain, 114 levels on 91 days at De Bilt. The weather model itself assimilates observations, so this is not fully independent forecast validation; the intervals per method are not paired significance tests.</p>
+<!-- Sources: 03_notebooks/05_annual_low_level_reconstruction/README.md, "Results and what they establish" (59 %, 82 %, 20 %, 46 %); the baselines and the weather-model-only column are computed from 05_results/19_annual_low_level_reconstruction/native_reconstruction_scores.csv, split=test: 1 - rmse(background_conditioned)/rmse(linear_observations) gives 58.9/20.3/81.7/46.3 %, against background_only 29.4/37.8/8.5/9.4 %. CHECK WITH SANDER that this reading of the README numbers is right. -->
+
+<h2 id="brasschaat" data-short="Brasschaat tower">Checked against the Brasschaat tower</h2>
+<p>The Brasschaat tower in Belgium measures temperature at ten heights between 0.1 and 32.8 m. The test keeps only the bottom and top sensor and predicts the eight in between. The reconstructed shape does better than a straight line between the two ends, on test days the model never saw.</p>
+<div class="stats">
+  <div class="stat"><span class="v">0.522 <span class="u">to</span> 0.357 <span class="u">K</span></span><span class="k">temperature error, straight line versus model shape (31.7 % lower)</span></div>
+  <div class="stat"><span class="v">114 <span class="u">days</span></span><span class="k">held-out test days, 5,331 complete half-hour profiles</span></div>
+  <div class="stat"><span class="v">0.129 <span class="u">to</span> 0.202 <span class="u">K</span></span><span class="k">95 % paired day-bootstrap interval of the gain</span></div>
+</div>
+<div class="tech">
+<p>Predictors: only the measured temperature at 0.1 and 32.8 m and the time of day and year; no interior temperature or humidity. Score: mean squared error over the eight interior levels per profile, equal weight per UTC day, 2,000 paired day-bootstrap draws. Some monthly gain intervals include zero; January has no complete ten-level profile, and missing values are not filled.</p>
+</div>
+<!-- Sources: notes/2026-10-01-annual-low-level-brasschaat.md (0.522 to 0.357 K, 31.7 %, 114 days, 5,331 profiles, 0.129-0.202 K, January); brasschaat/method.json (predictors, score, 2000 draws); brasschaat/heldout_paired_scores.csv (baseline is linear interpolation between endpoints). -->
+
+<h2 id="limits" data-short="Limits">What this does not show</h2>
+<ul>
+  <li>Brasschaat is a forest site about 65 km from Beauvechain; that the result carries over to Beauvechain, or to a city, is not tested.</li>
+  <li>The tower stops at 32.8 m, so there is no check of the full 200 m from this tower, and none for humidity (public humidity exists at only two heights, the lower sensor in a separate place).</li>
+  <li>Cabauw (1.5 to 200 m, temperature and humidity) is the separate check for De Bilt, but only for the 2025 months available: January to April, July and August.</li>
+  <li>It is a retrospective test on one year, not a forecast for a future year.</li>
+</ul>
+<!-- Sources: notes/2026-10-01-annual-low-level-brasschaat.md; 03_notebooks/05_annual_low_level_reconstruction/README.md; brasschaat/method.json limitations. -->
+
+<h2 id="role" data-short="Its role">Its role in the project</h2>
+<p>The reconstruction gives the project what the radar cannot supply itself: a realistic picture of the lowest layer, to feed the simulation and to fix the absolute level that radar changes lack. The package already exports profiles in the format the simulation reads. How exactly it enters the rebuilt simulation and the paper is still being worked out.</p>
+<!-- Source: 05_results/19_annual_low_level_reconstruction/E2E_annual_low200_100m.csv and 04_python/radiosonde_e2e_handoff.py exist in the package; estimation note: absolute profile requires external reference. -->
+
+<div class="placeholder">
+<p>Figure slot. The package contains comparison figures (for example the annual reconstruction and the Brasschaat comparison) made only from public inputs. They can go here once their author agrees and the licences (ICOS, KNMI, IGRA, Open-Meteo) are credited in the caption.</p>
+</div>
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · Virtual Radiosonde</title>
+<meta name="description" content="Where the zero of the radar measurement sits, why the two processings disagree, and the proposal to tie both to the ground points they share.">
+<link rel="stylesheet" href="style.css?v=20261005">
+</head>
+<body>
+<header class="top"><div class="top-inner">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
+      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
+      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
+    </svg>
+    Virtual Radiosonde
+  </a>
+  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+</div></header>
+
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Where the zero sits</h1>
+<p class="lead">Every radar movement is measured against some fixed point. Neither data set says which point that was, and the two processings disagree because of it. The proposal: measure everything against the ground the two share.</p>
+<p class="asof">Analysis of 29 September 2026. The shared ground is the proposed working reference; the team has not formally adopted it. A draft paper section on reference choices exists and is not published here.</p>
+<!-- Paper: vrs-paper sections/331_reference_choices.tex, section 3.4 "Reference choices for the InSAR time series", local commit 2401b55 (not pushed). Draft text stays off the site until submission. -->
+<!-- Sources for this page: 01_reference/notes/2026-09-29-ground-reference.md, 2026-09-29-unique-pair-ground-reference.md, 2026-09-29-ground-reference-seasonality.md, 2026-09-28-overlap-rates-two-processings.md. -->
+
+<h2 id="why" data-short="Why it matters">Why a reference is needed</h2>
+<p>Radar interferometry never measures absolute positions, only changes, and only relative to a chosen point. If that point itself moves, every other point seems to move the opposite way. For the air signal this matters less than it sounds: the method compares a high point with a low point on the same pass, and anything they share cancels. It matters a great deal as soon as rates, seasons, or the two processings are compared.</p>
+<div class="tech">
+<p>Each displacement series is relative to one reference point in space and one reference epoch in time. Neither point set contains its reference point. A common reference signal shifts every series by the same amount per epoch, so it changes rates and seasonal terms, but it leaves a same-epoch height slope with a free intercept unchanged.</p>
+</div>
+
+<h2 id="offset" data-short="The disagreement">The two processings disagree by a constant</h2>
+<p>Over the four years they share, the same points should move at the same speed in both processings. They do not: the newer one gives every point a rate about 0.6 mm per year higher, whatever its height or position. A constant difference like that is what two different reference points produce.</p>
+<div class="tech">
+<p>752 unique mutual-nearest point pairs (coherence above 0.6, within 1.5 m horizontally and 1.5 m in height), linear rates fitted on exactly the same 122 dates: median difference, newer minus older, <b>+0.60 mm/yr</b>, interquartile range 0.38 mm/yr. A plane-plus-height fit to the paired differences has a height coefficient of -0.01 mm/yr per 100 m and leaves the spread unchanged (0.45 mm/yr before and after). The physical cause of the offset is not established by these data.</p>
+</div>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md (752 pairs, +0.60, IQR 0.38, -0.01 mm/yr per 100 m, SD 0.45). -->
+
+<h2 id="options" data-short="The options">The options compared</h2>
+<p>Three ways to set the zero were compared on the same point pairs. The best one is the one that makes the two processings agree.</p>
+<div class="tbl"><table>
+<thead><tr><th>Reference</th><th>Points used</th><th>Median difference</th><th>Spread (IQR)</th></tr></thead>
+<tbody>
+<tr><td>Each processor's own reference (unknown)</td><td>none</td><td class="num">+0.60 mm/yr</td><td class="num">0.38</td></tr>
+<tr><td>Each processing's own ground points</td><td>coherent points below 5 m</td><td class="num">+0.22 mm/yr</td><td class="num">0.38</td></tr>
+<tr><td>Ground points present in both processings</td><td>499 matched pairs</td><td class="num"><b>+0.11 mm/yr</b></td><td class="num">0.38</td></tr>
+</tbody></table></div>
+<p class="small">The spread does not shrink: subtracting a common reference shifts the whole distribution of differences, it does not make individual pairs agree better. The remaining +0.11 mm/yr is not an accuracy estimate.</p>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md, table "Spatial reference / Median difference / IQR". -->
+
+<h2 id="ground" data-short="Why the ground">Why the shared ground</h2>
+<p>The shared ground removes most of the disagreement, it is a reference we can name, and it sits at street level, where the air signal starts. Measured against it, the buildings tell nearly the same story in both processings.</p>
+<div class="tbl"><table>
+<thead><tr><th>Building</th><th>Older processing</th><th>Newer processing</th></tr></thead>
+<tbody>
+<tr><td>De Rotterdam</td><td class="num">-1.94</td><td class="num">-1.66</td></tr>
+<tr><td>New Orleans</td><td class="num">-1.21</td><td class="num">-0.97</td></tr>
+<tr><td>Montevideo</td><td class="num">-0.39</td><td class="num">-0.19</td></tr>
+<tr><td>World Port Center</td><td class="num">+0.12</td><td class="num">+0.21</td></tr>
+<tr><td>Las Palmas</td><td class="num">+0.29</td><td class="num">+0.28</td></tr>
+<tr><td>Hotel New York</td><td class="num">+0.22</td><td class="num">+0.21</td></tr>
+<tr><td>Cruise Terminal Rotterdam</td><td class="num">+0.26</td><td class="num">+0.35</td></tr>
+</tbody></table></div>
+<p class="small">Median line-of-sight rate in mm/yr of each processing's own coherent points above 5 m on the building, over the same 122 dates, relative to the 499 shared ground pairs. Each value is a median over many points; the building samples differ between the processings. A rate here means "relative to the street", not an absolute movement, and it does not by itself say why a building moves.</p>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md, table "Building examples in the corrected shared-ground frame". -->
+
+<h2 id="seasons" data-short="Seasonal cycle">The ground has a seasonal cycle of its own</h2>
+<p>The shared-ground series is not perfectly still: in the processor's frame it swings by about half a millimetre over the year, peaking in late winter. That swing enters every point's series once the ground is the reference. It does not change the height slope the air method uses.</p>
+<div class="tech">
+<p>For the 499 unique ground pairs, the fitted annual amplitude is 0.498 and 0.506 mm over each full record, and 0.440 and 0.468 mm on the identical dates (older, newer). The earlier 778-entry baseline peaked around day 51 to 52 (20 to 21 February). Subtracting the reference series changed the existing free-intercept height slope by at most 1.09e-14 mm per 100 m, numerical round-off. The amplitude describes a composite reference series; reference motion, atmosphere, local motion and processing effects have not been separated.</p>
+</div>
+<!-- Sources: 2026-09-29-unique-pair-ground-reference.md (0.498/0.506, 0.440/0.468 mm); 2026-09-29-ground-reference-seasonality.md (day 51-52, 1.09e-14 mm/100 m, composite series caveat). -->
+
+<h2 id="limits" data-short="Limits">Limits of the proposal</h2>
+<ul>
+  <li>"Ground" means radar points less than 5 m above ground with coherence above 0.6. It is a group of low scatterers, not a surveyed benchmark, and the inherited selection includes some points with negative inferred height.</li>
+  <li>It is not a calibrated zero at exactly 3.20 m NAP, the street level the simulation assumes.</li>
+  <li>The original processor reference points are still unknown; what the +0.60 mm/yr is remains a question for the data provider.</li>
+  <li>It is the proposed working choice, drafted for section 3.4 of the paper, but not yet formally adopted by the team.</li>
+</ul>
+<!-- Sources: 2026-09-29-unique-pair-ground-reference.md (seasonality and recommendation; not a surveyed stable reference or a calibrated zero at 3.20 m NAP); 2026-09-30-reference-aware-estimation-pilot.md (negative inferred AGL in shared-ground selection); 2026-09-29-ground-reference.md (z_reference 3.20 m NAP, question for Ramon). -->
+
+<h2 id="history" data-short="Earlier versions">Earlier versions of this analysis</h2>
+<p>Two earlier steps are superseded and kept here only so older links make sense. The 17 September search established what the file itself says about the reference (the reference epoch is the first pass, 10 January 2014; the reference point is not in the file). The first ground-reference comparison of 28 and 29 September used one-way matching (778 entries, only 628 distinct newer points) and six extra dates in the newer processing; it gave +0.14 mm/yr. The corrected one-to-one comparison above replaces it.</p>
+<!-- Sources: 2026-09-17-reference-point-search.md; 2026-09-29-ground-reference.md; 2026-09-29-unique-pair-ground-reference.md ("Two corrections"). -->
+
+<div class="placeholder">
+<p>Figure slot. The reference figures in the team repository (34 to 36) show individual points and may not be published. An aggregate version (per building and per ground group, at least 20 points each, with spread) would need to be made for this page.</p>
+</div>
+
+<footer data-shared></footer>
+</main></div>
+<script defer src="js/nav.js?v=20261005"></script>
+</body>
+</html>

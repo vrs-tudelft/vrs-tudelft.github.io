@@ -1,11 +1,13 @@
 /* The 3D view: layout on top of the site tokens in ../style.css */
 .viewer { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 22px; margin: 10px 0 0; align-items: start; }
 @media (max-width: 900px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
+.viewer > * { min-width: 0; }  /* a grid item would otherwise grow to the canvas pixel width on phones */
 
 .stage {
   position: relative; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); overflow: hidden; min-height: 380px; aspect-ratio: 16 / 10;
 }
+@media (max-width: 700px) { .stage { aspect-ratio: auto; height: 420px; } }  /* min-height with a 16:10 ratio forced a 608 px width */
 .stage canvas.gl { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
 .stage .hud { position: absolute; left: 14px; top: 12px; font-size: .8rem; color: var(--muted); pointer-events: none; max-width: 70%; }
 .stage .overlay {
