@@ -20,8 +20,12 @@ Only three inputs differ:
   - the De Bilt soundings are read for 2019-2026 instead of 2014-2023, and the top of the layer is
     the highest coherent point of this set instead of 83 m.
 
-The joint fit (joint.json) is not written: the KNMI Rotterdam daily temperatures on hand end on
-31 December 2023, so only the first four of the six and a half years would enter it.
+The KNMI Rotterdam (station 344) daily values come from two raw files in the team repository's
+02_data/05_weather/knmi/ (kept out of git and out of this site): the September file for 2014-2023
+and rotterdam-344-daily-2020-2026.txt, fetched on 5 October 2026 from the KNMI daily-data service
+(https://www.daggegevens.knmi.nl/klimatologie/daggegevens, stns=344, vars=TG:TN:TX:UG,
+2020-01-01 to 2026-10-03; KNMI open data, CC BY 4.0). The two agree exactly on 2020-2023; where
+both have a day the newer file is used. With them the joint fit (joint.json) covers the whole set.
 
 Run from this repository with the team repository's environment:
   "../ASG Project/.venv/Scripts/python.exe" tools/export_ground_frame.py [--team "../ASG Project"]
@@ -40,7 +44,11 @@ import numpy as np
 
 SITE = Path(__file__).resolve().parents[1]
 DATASET = "2020-2026-ground"
-SKIP = ("joint",)
+SKIP = ()
+KNMI_NEW = "rotterdam-344-daily-2020-2026.txt"
+KNMI_SOURCE = ("KNMI station 344 Rotterdam, daily TG, TN, TX and UG, from the KNMI daily-data service "
+               "https://www.daggegevens.knmi.nl/klimatologie/daggegevens (2014-2023 file of 2 September 2026, "
+               "2020-01-01 to 2026-10-03 fetched 5 October 2026); licence CC BY 4.0")
 SONDE_YEARS = (2019, 2026)
 
 
@@ -97,7 +105,12 @@ def main(argv=None) -> int:
     hp.load_igra_profiles = functools.partial(igra, y0=SONDE_YEARS[0], y1=SONDE_YEARS[1], ztop=h_top)
     se.POINT_COUNTS = tuple(sorted({20594, 11818, len(stack), int(P["good"].sum())}))
     x, y = se.to_rd(stack.meta["pnt_lon"].to_numpy(), stack.meta["pnt_lat"].to_numpy())
-    I = dict(stack=stack, P=P, knmi=jr.load_knmi(), xy_rd=np.column_stack([x, y]),
+    old_knmi = jr.load_knmi()
+    new_knmi = jr.load_knmi(jr.KNMI_FILE.with_name(KNMI_NEW))
+    knmi = new_knmi.combine_first(old_knmi).asfreq("D")
+    print(f"KNMI 344: {knmi.index[0].date()} to {knmi.index[-1].date()}, "
+          f"{int(knmi['tg'].reindex(stack.epochs.normalize()).notna().sum())} of {len(stack.epochs)} passes with a value")
+    I = dict(stack=stack, P=P, knmi=knmi, xy_rd=np.column_stack([x, y]),
              sondes=jr.load_igra_layer(y0=SONDE_YEARS[0], y1=SONDE_YEARS[1]))
 
     out = a.out
@@ -142,9 +155,11 @@ def main(argv=None) -> int:
         if name == "profile":
             obj["h_top_m"] = h_top
         if name == "yearclock":
-            obj["air"]["label"] = "air temperature, KNMI 344 daily mean [degC]; monthly means over 2014-2023, the years on hand"
+            obj["air"]["label"] = "air temperature, KNMI 344 daily mean [degC]; monthly means over 2014-2026"
         if name == "epochs":
-            obj["knmi"]["note"] = "KNMI 344 daily values on hand up to 31 December 2023; later passes have none"
+            obj["knmi"]["source"] = KNMI_SOURCE
+        if name == "joint":
+            obj["knmi_source"] = KNMI_SOURCE
         obj["dataset"] = frame
         text = json.dumps(se._clean(obj), separators=(",", ":"), ensure_ascii=False)
         (out / f"{name}.json").write_text(text, encoding="utf-8")
@@ -154,7 +169,9 @@ def main(argv=None) -> int:
     se.write_manifest(out, min_seen, counts)
     man = json.loads((out / "MANIFEST.json").read_text(encoding="utf-8"))
     man["dataset"] = frame
-    man["not_written"] = {"joint.json": "KNMI Rotterdam daily temperatures on hand end on 31 December 2023"}
+    man["sources"] = {"radar": "TerraSAR-X point set provided for the course by R.F. Hanssen; aggregates only",
+                      "weather": KNMI_SOURCE,
+                      "soundings": "NOAA IGRA2, De Bilt (NLM00006260), 2019-2026, public domain"}
     (out / "MANIFEST.json").write_text(json.dumps(man, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     for p in problems:
         print("PROBLEM", p)
