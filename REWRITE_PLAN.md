@@ -81,16 +81,17 @@ existing phone bugs fixed on the way: the 3D stage was forced to 608 px by `min-
 
 ## 4. Decisions before anything goes public
 
-1. Take down the eleven per-point figures on the live site now, independently of this rewrite?
-2. Is the shared-ground reference adopted by the team, or does it stay "proposed working choice"?
+1. DECIDED 05-10: take them down now, separately (`hotfix/remove-point-figures`, 9967d8e; push awaits Quinten's OK).
+2. DECIDED 05-10: the team adopted the shared-ground reference (bdcf08b).
    Section 3.4 of the paper (local `2401b55`) is a draft and not public.
 3. Do Sander and the people named agree with their pages and credits (`low-level.html`, the
    "Who made what" box)? Check the reading of the low-level score table (comment on the page:
    the 59/82/20/46 % in the package README are against straight-line interpolation of the
    remaining readings, not against the weather model).
 4. The team list: are all twelve students still active (Shaquille Huiswoud was unconfirmed)?
-5. Keep or drop the archived Explore and 3D views, or rebuild them on the newer processing in the
-   shared-ground frame?
+5. DECIDED 05-10: a data-input switch on Explore and 3D, 2020-2026 ground frame by default, 2014-2023
+   processor frame archived (90fbac2 to f30af22). Open: KNMI 344 daily data for 2024-2026 for the
+   joint view; own-ground vs shared-ground for a single set; rate colour range of 2 mm/yr.
 6. A public home for the reproducibility material (an archive release or a public mirror), since
    the team repository is private.
 7. When the simulation update lands: who writes the simulation page, and with which approved
