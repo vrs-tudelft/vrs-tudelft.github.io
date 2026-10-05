@@ -9,18 +9,22 @@ site updates within a minute or two.
 
 | File | What it shows |
 |---|---|
-| `index.html` | The idea, five key numbers with their catches, what has been found so far, about and licences |
-| `findings.html` | The figures grouped by the question they answer, including the ground and the buildings (`figures.html` redirects here) |
-| `estimation.html` | Four-building reference tests, held-out-date diagnostics, synthetic atmospheric signal loss and absolute-profile ambiguity (30 September 2026). Figures 37-39 and `data/estimation-pilot.json`; no point records |
-| `method.html` | The data, the three kinds of height, the ground truth, the method, the paper's outline, what is still open, a short glossary, and the rule on what may appear here |
-| `animations.html` | Six animations drawn in the browser from the aggregate files in `data/` |
-| `3d/index.html` | The experimental 3D view: 3DBAG buildings coloured by the radar aggregates, with a time slider |
+| `index.html` | The idea in plain language, where each stage stands, what holds so far, about and licences |
+| `data.html` | The two TerraSAR-X processings, building heights (3DBAG/AHN5), soundings, stations and towers, and the rule on what may be published |
+| `low-level.html` | The annual low-level reconstruction of the lowest 200 m (1 October 2026) and its Brasschaat and Cabauw checks |
+| `simulation.html` | Placeholder: the end-to-end simulation is being rebuilt ("Simulation: model update pending") |
+| `reference.html` | Where the zero sits: the +0.60 mm/yr offset between processings and the shared-ground proposal (29 September 2026) |
+| `estimation.html` | The estimation pilot (30 September 2026): references, four buildings, held-out dates, synthetic signal retention, absolute-profile ambiguity. Figures 37-39 and `data/estimation-pilot.json` |
+| `paper.html` | The paper's title and outline, the team, the course |
+| `animations.html` | "Explore": six animations from the aggregate files in `data/`, marked as archived September views |
+| `3d/index.html` | The experimental 3D view (archived September view), with the gull easter egg |
+| `findings.html`, `method.html`, `figures.html` | Redirects to the pages that replaced them (October 2026) |
 | `figures/` | The PNG files, `NN-short-name.png`; the number continues the count in the team repository's `05_results/00_tsx_figures/` (01 to 31 as of 16 September 2026) |
 | `svg/` | The drawings; `tools/inline_svg.py` pastes them into the pages |
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below); `data/3d/` holds the building models, the ground image and the manifest |
 | `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `animations.js` (the six animations) |
 | `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated), `flight.js` (the small bird in the corner of the view: a gull with a flight model over the same scene, loaded only when someone clicks it) |
-| `tools/` | `check_data.py` (the aggregation check), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
+| `tools/` | `check_data.py` (the aggregation check), `check_links.py` (every internal link, image and anchor resolves, no em dashes), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
 | `style.css` | The look: one light theme, the shell grid, the tooltips |
 
 Every figure is made by a script in the team repository
@@ -64,7 +68,7 @@ From the team repository, with its virtual environment:
 .venv/Scripts/python.exe 04_python/tsx/site_export.py --only cells --points ../vrs-tudelft.github.io/data
 ```
 
-Then here: `python tools/check_data.py` and, after editing a drawing in `svg/`,
+Then here: `python tools/check_data.py`, `python tools/check_links.py` and, after editing a drawing in `svg/`,
 `python tools/inline_svg.py`.
 
 The estimation pilot is regenerated separately, from the team repository:
@@ -89,7 +93,7 @@ view loads ES modules, so it needs a server either way and will not run from a `
 1. A figure: put the PNG in `figures/` with the next free number, add a `<figure>` block
    to the page it belongs to (copy an existing one), run `tools/inline_svg.py` to fill in
    the image size.
-2. An open question: add an item to the list on `method.html`.
+2. An open question: add it to the "Limits" section of the page it belongs to.
 3. An animation: add a builder to `js/animations.js`, an element with `data-anim="..."`
    to `animations.html`, and the data it needs to `site_export.py`.
 4. A term worth explaining: wrap it in `<span class="t" data-tip="...">`, which renders as a tooltip on hover, focus or tap.
