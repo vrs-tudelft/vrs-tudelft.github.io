@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3D · Virtual Radiosonde</title>
-<meta name="description" content="Kop van Zuid in three dimensions from the open 3DBAG building models, coloured by what the radar saw: sinking, tilt, seasonal swing, and a time slider over the 288 passes. Every colour is a mean over at least 20 radar points.">
+<meta name="description" content="Kop van Zuid in three dimensions from the open 3DBAG building models, coloured by what the radar saw: sinking, tilt, seasonal swing, and a time slider over the passes, from the 2020-2026 data in the ground reference or the archived 2014-2023 view. Every colour is a mean over at least 20 radar points.">
 <link rel="stylesheet" href="../style.css?v=20261005">
 <link rel="stylesheet" href="3d.css?v=20261005">
 <script type="importmap">
@@ -28,7 +28,12 @@
 <div class="shell wide">
   <main>
     <h1>Kop van Zuid in three dimensions</h1>
-    <p class="lead">The buildings of the pier from the open 3D register, coloured by what the radar saw on them over ten years, with a time slider over the 288 passes. Drag to orbit, scroll to zoom, click a building or a cell for its numbers.</p>
+    <p class="lead">The buildings of the pier from the open 3D register, coloured by what the radar saw on them, with a time slider over the <span data-fill="passes">213</span> passes of the chosen data set. Drag to orbit, scroll to zoom, click a building or a cell for its numbers.</p>
+    <div class="dsbar">
+      <div class="dsrow"><span class="dslabel">Data input</span><div data-ds-switch="Data input for the 3D view and the animations"><noscript>The switch needs JavaScript.</noscript></div></div>
+      <p><b data-ds-name>2020-2026, ground reference</b>: <span data-fill="passes">213</span> passes, <span data-fill="first">8 Jan 2020</span> to <span data-fill="last">24 Aug 2026</span>. <span data-ds-about>TerraSAR-X, the newer processing. Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.</span></p>
+      <p class="small">The switch also sets the <a href="../animations.html">animations</a>. The building models, the outlines and the aerial image are the same for both sets; only the radar averages change. No single point is shown in either.</p>
+    </div>
 
     <div class="viewer">
       <div class="stage" id="stage">
@@ -91,7 +96,7 @@
           <label><input type="checkbox" id="edges" checked> edges</label>
           <label><input type="checkbox" id="texture" checked> aerial image</label>
           <label><input type="checkbox" id="radarLight"> radar lighting</label>
-          <label><input type="checkbox" id="ceiling"> 83 m ceiling</label>
+          <label><input type="checkbox" id="ceiling"> <span data-fill="hTop">89</span> m ceiling</label>
         </div>
         <div class="row">
           <button type="button" id="raysBtn">Radar rays</button>
@@ -104,12 +109,12 @@
     <div class="timepanel" id="timepanel">
       <div class="row">
         <button type="button" id="tPlay" class="play" aria-label="Play">▶</button>
-        <input type="range" id="tSlider" min="0" max="287" value="0" aria-label="Pass">
+        <input type="range" id="tSlider" min="0" max="212" value="0" aria-label="Pass">
         <select id="tSpeed" aria-label="Speed"><option value="4">4 passes/s</option><option value="8" selected>8 passes/s</option><option value="16">16 passes/s</option></select>
       </div>
       <div class="modes">
         <label><input type="radio" name="tmode" value="increment" checked> change since the previous pass</label>
-        <label><input type="radio" name="tmode" value="cumulative"> since 2014</label>
+        <label><input type="radio" name="tmode" value="cumulative"> since <span data-fill="firstYear">2020</span></label>
         <label><input type="radio" name="tmode" value="detrended"> minus each cell's trend</label>
       </div>
       <div class="epoch" id="epochLabel"></div>
@@ -117,18 +122,20 @@
     </div>
 
     <div class="notes">
-      <div class="banner"><p><b>Archived exploratory view, September 2026.</b> Built from the older processing (2014 to 2023) in the processor's own reference frame, before the <a href="../reference.html">shared-ground reference</a>. Rates here are relative to that unknown reference point, not to the street. The aggregate rule still holds: no single point is shown.</p></div>
       <h2 id="see">What to look for</h2>
       <ul class="cols">
-        <li>Colour by rate: the towers at the north-east end are deep blue, the south-west tip around Hotel New York almost white. Switch to construction year and the orderings match.</li>
-        <li>Colour per slab and switch on the ceiling plane: every tower goes grey above 83 m although the register's geometry continues to 150 m and more.</li>
+        <li data-ds-only="2020-2026-ground">Colour by rate: measured against the street, the young towers at the north-east end are blue and the old warehouses at the south-west tip around Hotel New York are close to zero or slightly red. That is the ground settling under the old buildings, not the buildings rising (see <a href="../reference.html">Reference</a>). Switch to construction year and compare the orderings.</li>
+        <li data-ds-only="2014-2023-processor" hidden>Colour by rate: the towers at the north-east end are deep blue, the south-west tip around Hotel New York almost white. Switch to construction year and the orderings match.</li>
+        <li>Colour per slab and switch on the ceiling plane: every tower goes grey near the <span data-fill="hTop">89</span> m ceiling, the height of the highest radar point, although the register's geometry continues to 150 m and more.</li>
         <li>The satellite view with radar lighting: the bright faces are the ones the radar illuminates, the dark faces have no points, and the towers hide the ground behind them.</li>
-        <li>Seasonal swing per slab: each tower's colour deepens upward, about 0.03 mm per metre. Buildings peak around day 210, the open quays around day 45.</li>
-        <li>Play the slider: most passes are pale over the whole pier; some turn the whole scene at once, never one building alone, and the strip chart spikes on the same passes.</li>
-        <li>Colour the cells by spread rather than by mean: the quays are dark, so their points agree and the cell mean stands for all of them; the cells on facades are bright, where a single number hides points that differ by millimetres. Every card gives the spread beside the mean.</li>
+        <li data-ds-only="2020-2026-ground">Seasonal swing per slab: each tower's colour deepens upward. The towers peak in early August, around day 215.</li>
+        <li data-ds-only="2014-2023-processor" hidden>Seasonal swing per slab: each tower's colour deepens upward, about 0.03 mm per metre. Buildings peak around day 210, the open quays around day 45.</li>
+        <li data-ds-only="2020-2026-ground">Play the slider and compare the quays with the towers; the strip chart under the slider is the height gradient for the same passes, trend and yearly wave removed.</li>
+        <li data-ds-only="2014-2023-processor" hidden>Play the slider: most passes are pale over the whole pier; some turn the whole scene at once, never one building alone, and the strip chart spikes on the same passes.</li>
+        <li>Colour the cells by spread rather than by mean: the quays are dark, so their points agree and the cell mean stands for all of them; the cells on facades are brighter, where a single number hides points that differ by millimetres. Every card gives the spread beside the mean.</li>
         <li>The radar rays show why the layer of air is thin and tilted: the lower ray travels about 80 m further through it. The balloon lights the height bands of one pass in turn.</li>
       </ul>
-      <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one grid cell of 10 m, 25 m for ground points only; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Ten of the twelve buildings that carry radar points are named: the register footprint was matched to a named building in Wikidata, and the name is used only where the construction year and the roof height agree as well. The other two keep their register id. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
+      <p class="small">Every colour is a mean over at least 20 radar points on one building, in one 10 m slab, or in one grid cell of 10 m, 25 m for ground points only; no individual point is in this view. Building models: 3DBAG (TU Delft), CC BY 4.0. Ten of the <span data-ds-only="2020-2026-ground">fourteen</span><span data-ds-only="2014-2023-processor" hidden>twelve</span> buildings that carry radar points are named: the register footprint was matched to a named building in Wikidata, and the name is used only where the construction year and the roof height agree as well. The others keep their register id. Aerial image: PDOK 2023 orthophoto, CC BY 4.0, toned down. Viewer: three.js. Blue is away from the satellite, red towards it; whether that is down and up is the site's reading and unconfirmed.</p>
       <p class="small" id="noWebgl" hidden>This browser could not start the 3D view. The <a href="../animations.html">animations</a> show the same aggregates in two dimensions.</p>
     </div>
 
@@ -136,7 +143,8 @@
   </main>
 </div>
 <script defer src="../js/nav.js?v=20261005"></script>
+<script defer src="../js/dataset.js?v=20261005b"></script>
 <script src="colormaps.js?v=20260918c"></script>
-<script type="module" src="viewer.js?v=20260918c"></script>
+<script type="module" src="viewer.js?v=20261005b"></script>
 </body>
 </html>

@@ -1,14 +1,19 @@
 /* The 3D view of Kop van Zuid. Buildings from the 3DBAG as one mesh, coloured through a small
    lookup texture (one row per building, one column for the whole building and ten for its 10 m
-   slabs); ground cells as one instanced mesh; a time slider over the 288 passes. All values are
-   means over at least 20 radar points, read from ../data/. */
+   slabs); ground cells as one instanced mesh; a time slider over the passes. All values are
+   means over at least 20 radar points. The geometry (3DBAG models, aerial image, presets) is read
+   from ../data/3d/; the radar aggregates from the folder of the data input chosen with the switch
+   above the view (../js/dataset.js, ../data/datasets.json), and a change of input reloads them in
+   place. */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const $ = (id) => document.getElementById(id);
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const DATA = "../data/";
+const GEO = "../data/3d/";
+let DATA = "../data/";        /* the active data input's folder; set from VRSData */
+let DS = null, SWITCH = 0;
 const isMobile = matchMedia("(max-width: 767px)").matches || (navigator.maxTouchPoints > 1 && innerWidth < 1024);
 const MAPS = window.VRS_COLORMAPS;
 
@@ -74,15 +79,17 @@ let D = {};   /* data */
 let cellGeom = { all: null, ground: null };
 let rayGroup, balloonGroup, airSlab, pointCloud;
 
-async function loadAll() {
-  const [manifest, bld, cells, epochs, bands, bin, sdBin] = await Promise.all([
-    fetch(DATA + "3d/manifest.json").then((r) => r.json()),
-    fetch(DATA + "buildings.json").then((r) => r.json()),
-    fetch(DATA + "cells.json").then((r) => r.json()),
-    fetch(DATA + "epochs.json").then((r) => r.json()),
-    fetch(DATA + "bands.json").then((r) => r.json()),
-    fetch(DATA + "cells.bin").then((r) => r.arrayBuffer()),
-    fetch(DATA + "cells-sd.bin").then((r) => r.arrayBuffer())
+const getJson = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.json(); });
+const getBuf = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.arrayBuffer(); });
+
+async function loadData(base, archived) {
+  const [bld, cells, epochs, bands, bin, sdBin] = await Promise.all([
+    getJson(base + "buildings.json"),
+    getJson(base + "cells.json"),
+    getJson(base + "epochs.json"),
+    getJson(base + "bands.json"),
+    getBuf(base + "cells.bin"),
+    getBuf(base + "cells-sd.bin")
   ]);
   const i16 = new Int16Array(bin), sd16 = new Int16Array(sdBin);
   const grids = {};
@@ -90,17 +97,24 @@ async function loadAll() {
     const G = cells.grids[g], start = G.offset_bytes / 2, n = cells.series.epochs;
     grids[g] = { cells: G.cells, get: (c, t) => i16[start + c * n + t] / 100, sd: (c, t) => sd16[start + c * n + t] / 100 };
   }
-  D = { manifest, bld, cells, epochs, bands, grids, tYears: epochs.days_since_ref.map((d) => d / 365.25) };
-  D.points = await loadLocalPoints();
+  /* colour scales belong to the data set, not to the geometry */
+  const scales = { cells: cells.scales, s_resid_mm_per_100m: epochs.scales.s_resid_mm_per_100m, band_fast_mm: bands.scales.band_fast_mm };
+  const points = archived ? await loadLocalPoints(base) : null;   /* the local build exists only for the archived set */
+  return { bld, cells, epochs, bands, grids, scales, points, tYears: epochs.days_since_ref.map((d) => d / 365.25) };
+}
+
+async function loadAll() {
+  const manifest = await getJson(GEO + "manifest.json");
+  D = Object.assign({ manifest }, await loadData(DATA, DS.archived));
 }
 
 /* data/points.* is a local build for the team: git ignores it and it is not on the published
    site, so this quietly does nothing when the files are absent. */
-async function loadLocalPoints() {
+async function loadLocalPoints(base) {
   try {
-    const meta = await fetch(DATA + "points.json").then((r) => (r.ok ? r.json() : null));
+    const meta = await fetch(base + "points.json").then((r) => (r.ok ? r.json() : null));
     if (!meta) return null;
-    const buf = await fetch(DATA + "points.bin").then((r) => (r.ok ? r.arrayBuffer() : null));
+    const buf = await fetch(base + "points.bin").then((r) => (r.ok ? r.arrayBuffer() : null));
     if (!buf) return null;
     const i16 = new Int16Array(buf), n = meta.epochs;
     return { meta, n, get: (k, t) => i16[k * n + t] / 100 };
@@ -135,7 +149,7 @@ function initScene() {
   ground.position.set(gp.centre[0], gp.centre[1], gp.centre[2]);
   scene.add(ground);
   if (D.manifest.texture) {
-    new THREE.TextureLoader().load(DATA + "3d/" + (isMobile ? "ground-512.jpg" : "ground-2048.jpg"), (tex) => {
+    new THREE.TextureLoader().load(GEO + (isMobile ? "ground-512.jpg" : "ground-2048.jpg"), (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
       ground.userData.tex = tex; applyTexture(); S.needsRender = true;
     });
@@ -145,7 +159,7 @@ function initScene() {
   gridHelper.visible = false;
   scene.add(gridHelper);
   ceilingPlane = new THREE.Mesh(new THREE.PlaneGeometry(700, 600), new THREE.MeshBasicMaterial({ color: 0x1f6fa3, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }));
-  ceilingPlane.rotation.x = -Math.PI / 2; ceilingPlane.position.set(0, D.manifest.ground_nap + 83.2, 0); ceilingPlane.visible = false;
+  ceilingPlane.rotation.x = -Math.PI / 2; ceilingPlane.position.set(0, D.manifest.ground_nap + DS.hTop + 0.2, 0); ceilingPlane.visible = false;
   scene.add(ceilingPlane);
   resize();
   new ResizeObserver(resize).observe($("stage"));
@@ -169,7 +183,7 @@ function resize() {
 
 /* ------------------------------------------------------------ buildings */
 async function loadBuildings() {
-  const file = DATA + "3d/" + (isMobile ? "buildings-lod12.glb" : "buildings-lod22.glb");
+  const file = GEO + (isMobile ? "buildings-lod12.glb" : "buildings-lod22.glb");
   const gltf = await new GLTFLoader().loadAsync(file);
   let geom = null;
   gltf.scene.traverse((o) => { if (o.isMesh && !geom) geom = o.geometry; });
@@ -278,7 +292,7 @@ function colourPoints() {
   const P = D.points.meta, n = P.n_points, col = pointCloud.geometry.getAttribute("color");
   const mode = S.pointLayer;
   const L = mode === "time"
-    ? { ramp: "RdBu_r", lim: [-D.manifest.scales.cells[S.tmode + "_mm"], D.manifest.scales.cells[S.tmode + "_mm"]] }
+    ? { ramp: "RdBu_r", lim: [-D.scales.cells[S.tmode + "_mm"], D.scales.cells[S.tmode + "_mm"]] }
     : POINT_LAYERS[mode];
   for (let k = 0; k < n; k++) {
     let v;
@@ -320,7 +334,7 @@ function colourCells() {
   const G = D.grids[S.cellGrid], col = new THREE.Color();
   let L;
   if (S.cellLayer === "time") {
-    const lim = D.manifest.scales.cells[S.tmode + "_mm"];
+    const lim = D.scales.cells[S.tmode + "_mm"];
     L = { ramp: "RdBu_r", lim: [-lim, lim] };
     G.cells.forEach((c, k) => { const v = cellValue(G, c, k, S.epoch); const rgb = colourOf(L, v); col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col); });
   } else {
@@ -352,7 +366,7 @@ function drawLegend(L) {
 
 function updateEpochLabel() {
   const e = D.epochs, i = S.epoch, tg = e.knmi.tg[i];
-  $("epochLabel").textContent = `Pass ${i + 1} of ${e.n_epochs} · ${fmtDate(e.dates[i])} · Rotterdam daily mean ${tg === null ? "n/a" : tg.toFixed(1) + " °C"} (KNMI 344) · s(t) minus trend and yearly wave ${sgn(e.s_resid[i], 1)} mm/100 m`;
+  $("epochLabel").textContent = `${DS.button} · pass ${i + 1} of ${e.n_epochs} · ${fmtDate(e.dates[i])} · Rotterdam daily mean ${tg === null ? "no KNMI value on hand" : tg.toFixed(1) + " °C (KNMI 344)"} · s(t) minus trend and yearly wave ${sgn(e.s_resid[i], 1)} mm/100 m`;
   $("tSlider").value = i;
 }
 
@@ -360,7 +374,7 @@ function drawStrip() {
   const cv = $("strip"), ctx = cv.getContext("2d"), w = cv.clientWidth, h = 110;
   cv.width = w * 2; cv.height = h * 2; ctx.scale(2, 2); ctx.clearRect(0, 0, w, h);
   const e = D.epochs, n = e.n_epochs, x0 = 40, x1 = w - 10, y0 = 8, y1 = h - 22;
-  const lim = D.manifest.scales.s_resid_mm_per_100m * 1.6;
+  const lim = D.scales.s_resid_mm_per_100m * 1.6;
   const X = (k) => x0 + k / (n - 1) * (x1 - x0), Y = (v) => y1 - (v + lim) / (2 * lim) * (y1 - y0);
   ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
   const tg = e.knmi.tg, tmin = -5, tmax = 25;
@@ -441,7 +455,7 @@ function stepRays(dt) {
   const nu = D.epochs.s_resid[S.epoch] * Math.cos(23 * Math.PI / 180) * 10;
   const extra = D.manifest.presets.rays.extra_path_m;
   $("overlay").innerHTML = `<b>Two heights, one layer of air.</b> The lower ray travels ${extra.toFixed(0)} m further through the layer (${(g.high.y - g.low.y).toFixed(0)} m of height at 23° from vertical). One N-unit more refractivity in that layer delays it by ${(1e-6 * extra * 1000).toFixed(2)} mm. On this pass the height gradient, trend and yearly wave removed, is ${sgn(D.epochs.s_resid[S.epoch], 1)} mm per 100 m, about ${sgn(nu, 0)} N-units if it were all air.`;
-  const lim = D.manifest.scales.s_resid_mm_per_100m, v = D.epochs.s_resid[S.epoch];
+  const lim = D.scales.s_resid_mm_per_100m, v = D.epochs.s_resid[S.epoch];
   const rgb = colourOf({ ramp: "RdBu_r", lim: [-lim, lim] }, v);
   airSlab.material.color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
   airSlab.material.opacity = 0.06 + 0.25 * Math.min(1, Math.abs(v) / lim);
@@ -471,7 +485,7 @@ function stepBalloon(dt) {
   const f = g.t / T, hb = f * 86;
   g.sphere.position.set(g.x, D.manifest.ground_nap + hb, g.z);
   const k = Math.max(0, Math.min(D.epochs.n_epochs - 2, S.epoch - 1));
-  const lim = D.manifest.scales.band_fast_mm;
+  const lim = D.scales.band_fast_mm;
   const L = { ramp: "RdBu_r", lim: [-lim, lim] };
   let txt = `<b>A balloon from the data.</b> ${fmtDate(D.epochs.dates[k])} → ${fmtDate(D.epochs.dates[k + 1])}. Each slab: the 11-day change of its height band relative to the lowest band.<br>`;
   g.slabs.forEach((m, b) => {
@@ -514,7 +528,7 @@ function sparkline(cv, series, epochMark, unit) {
   ctx.strokeStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(X(epochMark), 4); ctx.lineTo(X(epochMark), h - 14); ctx.stroke();
   ctx.fillStyle = css("--muted"); ctx.font = "9px system-ui"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
   ctx.fillText(hi.toFixed(0), 27, Y(hi)); ctx.fillText(lo.toFixed(0), 27, Y(lo));
-  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("mean displacement of the group [" + unit + "], 2014 to 2023", 30, h - 11);
+  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("mean displacement of the group [" + unit + "], " + D.epochs.dates[0].slice(0, 4) + " to " + D.epochs.dates[n - 1].slice(0, 4), 30, h - 11);
 }
 
 function buildingCard(bid) {
@@ -548,7 +562,7 @@ function cellCard(k) {
     <tr><td>Long-term rate</td><td>${sgn(c.rate_mean, 2)} mm/yr, curvature ${sgn(c.quad_mean, 2)} mm/yr²</td></tr>
     <tr><td>Spread between its points</td><td>rate ± ${c.rate_sd.toFixed(2)} mm/yr (10th to 90th: ${sgn(c.rate_p10, 1)} to ${sgn(c.rate_p90, 1)}), heights ± ${c.h_agl_sd.toFixed(1)} m; ${G.sd(k, S.epoch).toFixed(1)} mm apart on this pass, ${c.scatter_mm.toFixed(1)} mm on a typical one</td></tr>
     <tr><td>Seasonal swing</td><td>${c.amp.toFixed(2)} mm, peaking around ${doyText(c.peak_doy)}</td></tr>
-    <tr><td>This pass</td><td>${sgn(cellValue(G, c, k, S.epoch), 2)} mm (${S.tmode === "increment" ? "since the previous pass" : S.tmode === "cumulative" ? "since 2014" : "minus the cell's trend"})</td></tr>
+    <tr><td>This pass</td><td>${sgn(cellValue(G, c, k, S.epoch), 2)} mm (${S.tmode === "increment" ? "since the previous pass" : S.tmode === "cumulative" ? "since " + fmtDate(D.epochs.dates[0]) : "minus the cell's trend"})</td></tr>
     </tbody></table><canvas id="spark"></canvas>`;
   sparkline($("spark"), series, S.epoch, "mm");
 }
@@ -616,7 +630,7 @@ async function takeOff() {
   if (!flight) {
     const mod = await import("./flight.js");
     flight = mod.createFlight({
-      scene, stage: $("stage"), camera: persp, controls, manifest: D.manifest, dataUrl: DATA,
+      scene, stage: $("stage"), camera: persp, controls, manifest: D.manifest, dataUrl: DATA,   /* outlines.json and buildings.json: the same BAG geometry in every set */
       onExit: () => { setPreset("overview"); }
     });
   }
@@ -627,15 +641,45 @@ async function takeOff() {
 async function main() {
   try {
     await loadAll();
+    setLimits();
     initScene();
     await loadBuildings();
     buildCells(); buildRays(); buildBalloon(); buildPoints();
-    if (D.points) {                       /* only on a machine with the local per-point build */
-      const sel = $("cellLayer"), o = document.createElement("option");
+    syncPointsUi();
+    wire();
+    applyDataset();
+    setPreset("overview");
+    setEpoch(0);
+    $("loading").remove();
+    $("hud").textContent = "Overview from the south-east · drag to orbit, scroll to zoom, click a building";
+    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, get D() { return D; }, setPreset, setEpoch };
+    window.VRSData.onChange(switchData);
+    requestAnimationFrame(loop);
+  } catch (err) {
+    console.error(err);
+    $("loading").textContent = "The 3D view could not start: " + err.message;
+    $("noWebgl").hidden = false;
+  }
+}
+
+/* The option "every radar point" exists only where the local per-point build sits next to the
+   active set's files (the archived set, on a team machine); never on the published site. */
+function syncPointsUi() {
+  const sel = $("cellLayer"), has = !!D.points, old = sel.querySelector('option[value="points"]');
+  if (!has) {
+    if (old) old.remove();
+    if ($("pointsWrap")) $("pointsWrap").remove();
+    return;
+  }
+  if (old) return;
+  {
+    {
+      const o = document.createElement("option");
       o.value = "points";
       o.textContent = "every radar point (local file, not published)";
       sel.insertBefore(o, sel.lastElementChild);
       const wrap = document.createElement("div");
+      wrap.id = "pointsWrap";
       wrap.innerHTML = '<h3>Every point (local)</h3>' +
         '<select id="pointLayer" aria-label="Point layer">' +
         '<option value="time">what each point did on the slider pass</option>' +
@@ -654,17 +698,64 @@ async function main() {
         colourCells();
       });
     }
-    wire();
-    setPreset("overview");
-    setEpoch(0);
-    $("loading").remove();
-    $("hud").textContent = "Overview from the south-east · drag to orbit, scroll to zoom, click a building";
-    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, D, setPreset, setEpoch };
-    requestAnimationFrame(loop);
-  } catch (err) {
-    console.error(err);
-    $("loading").textContent = "The 3D view could not start: " + err.message;
-    $("noWebgl").hidden = false;
   }
 }
-main();
+
+/* Rates measured against the ground are smaller than in the processor's frame, so a set may ask for a
+   narrower colour range for the rate layers (datasets.json rate_lim_mm_yr); the legend always shows it. */
+function setLimits() {
+  const rl = DS.rateLim;
+  LAYERS.rate.lim = LAYERS.ground_rate.lim = LAYERS.band_rate.lim = rl ? [-rl, rl] : [-5, 5];
+  CELL_LAYERS.rate_mean.lim = rl ? [-rl, rl] : [-7, 7];
+}
+
+/* Text on the page that depends on the set: <span data-fill="key">. */
+function applyDataset() {
+  setLimits();
+  const e = D.epochs, v = { passes: e.n_epochs, first: fmtDate(e.dates[0]), last: fmtDate(e.dates[e.n_epochs - 1]), firstYear: e.dates[0].slice(0, 4), lastYear: e.dates[e.n_epochs - 1].slice(0, 4), hTop: DS.hTop };
+  document.querySelectorAll("[data-fill]").forEach((el) => { const k = el.dataset.fill; if (v[k] !== undefined) el.textContent = String(v[k]); });
+  $("tSlider").max = e.n_epochs - 1;
+  ceilingPlane.position.y = D.manifest.ground_nap + DS.hTop + 0.2;
+}
+
+/* A new data input: reload the aggregates and recolour, keeping the camera and the nearest date. */
+async function switchData(ds) {
+  const token = ++SWITCH, oldDate = D.epochs ? D.epochs.dates[S.epoch] : null;
+  $("hud").textContent = "Loading " + ds.name + "…";
+  let next;
+  try {
+    next = await loadData(ds.path, ds.archived);
+  } catch (err) {
+    console.error(err);
+    if (token === SWITCH) $("hud").textContent = "Could not load " + ds.name + ": " + err.message;
+    return;
+  }
+  if (token !== SWITCH) return;
+  DS = ds; DATA = ds.path;
+  S.playing = false; $("tPlay").textContent = "▶";
+  if (pointCloud) { scene.remove(pointCloud); pointCloud.geometry.dispose(); pointCloud = null; }
+  Object.assign(D, next);
+  if (S.cellLayer === "points" && !D.points) { S.cellLayer = "time"; $("cellLayer").value = "time"; }
+  syncPointsUi(); buildPoints();
+  S.selected = null;
+  $("card").innerHTML = '<p class="small">Click a building or a cell for its numbers and its mean series.</p>';
+  if (balloonGroup) { scene.remove(balloonGroup); }
+  buildBalloon();
+  if (S.balloon) { balloonGroup.visible = true; balloonGroup.userData.t = 0; }
+  applyDataset();
+  fillTable(); buildCells();
+  let k = 0;
+  if (oldDate) {
+    const t0 = Date.parse(oldDate);
+    let best = Infinity;
+    D.epochs.dates.forEach((d, j) => { const dd = Math.abs(Date.parse(d) - t0); if (dd < best) { best = dd; k = j; } });
+  }
+  setEpoch(k);
+  $("hud").textContent = "Data input: " + ds.name;
+  S.needsRender = true;
+}
+
+window.VRSData.ready.then((ds) => { DS = ds; DATA = ds.path; main(); }).catch((err) => {
+  console.error(err);
+  $("loading").textContent = "The 3D view could not start: the list of data inputs did not load (" + err.message + ").";
+});
