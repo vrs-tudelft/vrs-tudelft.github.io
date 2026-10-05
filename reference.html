@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reference · Virtual Radiosonde</title>
-<meta name="description" content="Where the zero of the radar measurement sits, why the two processings disagree, and the proposal to tie both to the ground points they share.">
+<meta name="description" content="Where the zero of the radar measurement sits, why the two processings disagree, and why the team ties both to the ground points they share.">
 <link rel="stylesheet" href="style.css?v=20261005">
 </head>
 <body>
@@ -23,8 +23,8 @@
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
 <h1>Where the zero sits</h1>
-<p class="lead">Every radar movement is measured against some fixed point. Neither data set says which point that was, and the two processings disagree because of it. The proposal: measure everything against the ground the two share.</p>
-<p class="asof">Analysis of 29 September 2026. The shared ground is the proposed working reference; the team has not formally adopted it. A draft paper section on reference choices exists and is not published here.</p>
+<p class="lead">Every radar movement is measured against some fixed point. Neither data set says which point that was, and the two processings disagree because of it. The team now measures everything against the ground the two share.</p>
+<p class="asof">Analysis of 29 September 2026. The team adopted the shared ground as its reference on 5 October 2026. A draft paper section on reference choices exists and is not published here.</p>
 <!-- Paper: vrs-paper sections/331_reference_choices.tex, section 3.4 "Reference choices for the InSAR time series", local commit 2401b55 (not pushed). Draft text stays off the site until submission. -->
 <!-- Sources for this page: 01_reference/notes/2026-09-29-ground-reference.md, 2026-09-29-unique-pair-ground-reference.md, 2026-09-29-ground-reference-seasonality.md, 2026-09-28-overlap-rates-two-processings.md. -->
 
@@ -76,12 +76,11 @@
 </div>
 <!-- Sources: 2026-09-29-unique-pair-ground-reference.md (0.498/0.506, 0.440/0.468 mm); 2026-09-29-ground-reference-seasonality.md (day 51-52, 1.09e-14 mm/100 m, composite series caveat). -->
 
-<h2 id="limits" data-short="Limits">Limits of the proposal</h2>
+<h2 id="limits" data-short="Limits">Limits of the ground reference</h2>
 <ul>
   <li>"Ground" means radar points less than 5 m above ground with coherence above 0.6. It is a group of low scatterers, not a surveyed benchmark, and the inherited selection includes some points with negative inferred height.</li>
   <li>It is not a calibrated zero at exactly 3.20 m NAP, the street level the simulation assumes.</li>
   <li>The original processor reference points are still unknown; what the +0.60 mm/yr is remains a question for the data provider.</li>
-  <li>It is the proposed working choice, drafted for section 3.4 of the paper, but not yet formally adopted by the team.</li>
 </ul>
 <!-- Sources: 2026-09-29-unique-pair-ground-reference.md (seasonality and recommendation; not a surveyed stable reference or a calibrated zero at 3.20 m NAP); 2026-09-30-reference-aware-estimation-pilot.md (negative inferred AGL in shared-ground selection); 2026-09-29-ground-reference.md (z_reference 3.20 m NAP, question for Ramon). -->
 
