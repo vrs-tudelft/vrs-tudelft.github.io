@@ -45,9 +45,11 @@ not. The captions here are the plain-language version of those notes.
 
 The choice is kept in the address (`?data=2020-2026-ground` or `?data=2014-2023-processor`) and in
 the browser's local storage; the address wins. Changing it redraws every player and recolours the
-3D view in place. A view the active set cannot support says why instead of drawing: the
-buildings-or-air joint fit is not built for 2020-2026, because the KNMI Rotterdam daily
-temperatures on hand end in December 2023. To add a set: write its folder, add it to
+3D view in place. A view the active set cannot support says why instead of drawing (set
+`unavailable` in `data/datasets.json`); at present every view is built for both sets. The
+2020-2026 weather comes from KNMI station 344 daily data fetched on 5 October 2026 from the KNMI
+daily-data service (daggegevens.knmi.nl, CC BY 4.0); the raw file stays in the team repository's
+`02_data/05_weather/knmi/`, not on this site. To add a set: write its folder, add it to
 `data/datasets.json` (with `unavailable` reasons where a view's files are missing) and run both checks.
 
 ## What may go on this site
