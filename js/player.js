@@ -156,6 +156,8 @@ window.VRS = (function () {
     var b = a.filter(function (v) { return v !== null && !isNaN(v); }).slice().sort(function (x, y) { return x - y; });
     return b[Math.min(b.length - 1, Math.floor(p / 100 * b.length))];
   }
+  /* 3273 -> "3 273": the thousands gap the pages use, unbreakable */
+  function fmtInt(v) { return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
   /* ---------------------------------------------------------------- the player */
@@ -171,6 +173,7 @@ window.VRS = (function () {
 
   function create(opts) {
     var mount = typeof opts.mount === "string" ? document.querySelector(opts.mount) : opts.mount;
+    if (mount._vrsPlayer) mount._vrsPlayer.destroy();   /* redrawn with another data input */
     var frames = opts.frames, fps = opts.fps || 6, speed = 1, loop = opts.loop !== false;
     var i = opts.start || 0, playing = false, wasPlaying = false, raf = null, acc = 0, lastT = 0;
     mount.classList.add("anim");
@@ -246,29 +249,39 @@ window.VRS = (function () {
       playing = false; playBtn.innerHTML = ICONS.play; playBtn.title = "Play";
       if (raf) cancelAnimationFrame(raf); raf = null;
     }
-    mount.addEventListener("keydown", function (e) {
+    function onKey(e) {
       if (e.target !== mount) return;
       if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); }
       else if (e.key === "ArrowRight") { e.preventDefault(); pause(); set(i + (e.shiftKey ? 10 : 1)); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); pause(); set(i - (e.shiftKey ? 10 : 1)); }
       else if (e.key === "Home") { e.preventDefault(); pause(); set(0); }
       else if (e.key === "End") { e.preventDefault(); pause(); set(frames - 1); }
-    });
-    if (window.ResizeObserver) new ResizeObserver(resize).observe(mount); else window.addEventListener("resize", resize);
+    }
+    mount.addEventListener("keydown", onKey);
+    var ro = null, io = null;
+    if (window.ResizeObserver) { ro = new ResizeObserver(resize); ro.observe(mount); } else window.addEventListener("resize", resize);
     if (window.IntersectionObserver) {
       var first = true;
-      new IntersectionObserver(function (entries) {
+      io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
           if (en.isIntersecting) {
             if (first) { first = false; if (!reduced && opts.autoplay !== false) play(); }
             else if (wasPlaying) play();
           } else { wasPlaying = playing; pause(); }
         });
-      }, { threshold: 0.2 }).observe(mount);
+      }, { threshold: 0.2 });
+      io.observe(mount);
     }
     resize();
     var api = {
       set: set, play: play, pause: pause, redraw: draw, extra: extra,
+      destroy: function () {
+        pause();
+        if (ro) ro.disconnect(); else window.removeEventListener("resize", resize);
+        if (io) io.disconnect();
+        mount.removeEventListener("keydown", onKey);
+        if (mount._vrsPlayer === api) mount._vrsPlayer = null;
+      },
       get frame() { return i; }, get playing() { return playing; },
       setFrames: function (n) { frames = n; range.max = n - 1; set(Math.min(i, n - 1)); },
       addToggle: function (labelText, name, options, onChange) {
@@ -291,11 +304,13 @@ window.VRS = (function () {
         l.appendChild(c); l.appendChild(document.createTextNode(labelText)); extra.appendChild(l);
       }
     };
+    mount._vrsPlayer = api;
     return api;
   }
 
   function fallback(mount, msg) {
     var m = typeof mount === "string" ? document.querySelector(mount) : mount;
+    if (m && m._vrsPlayer) m._vrsPlayer.destroy();
     if (m) m.innerHTML = '<p class="anim-fallback">' + msg + "</p>";
   }
 
@@ -304,7 +319,7 @@ window.VRS = (function () {
     scales: scales, legend: legend, css: css,
     axes: { linear: linear, niceTicks: niceTicks, xAxis: xAxis, yAxis: yAxis, yearTicks: yearTicks, fmt: fmt },
     draw: { line: line, text: text },
-    util: { fmtDate: fmtDate, stat: stat, pct: pct, ease: ease },
+    util: { fmtDate: fmtDate, fmtInt: fmtInt, stat: stat, pct: pct, ease: ease },
     Player: { create: create, fallback: fallback },
     reducedMotion: reduced
   };

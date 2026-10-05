@@ -1,22 +1,27 @@
 /* The six animations. Each mounts on an element with data-anim="..." and reads the aggregate
-   files in data/ (means over at least 20 radar points; see tools/check_data.py). */
+   files of the data input chosen with the switch at the top of the page (js/dataset.js,
+   data/datasets.json): means over at least 20 radar points; see tools/check_data.py. Changing
+   the input redraws every player from the other set's files. */
 (function () {
   "use strict";
   var V = window.VRS, L = V.load, A = V.axes, D = V.draw, U = V.util, css = V.css;
   var root = document.documentElement.getAttribute("data-root") || "";
-  var DATA = root + "data/";
+  var DATA = root + "data/";      /* the folder of the active data input, set by buildAll */
+  var DS = null, GEN = 0;          /* the active set, and a counter so a slow load of the previous set never draws */
   var COS23 = Math.cos(23 * Math.PI / 180);
 
-  function tg(ep, i) { var v = ep.knmi.tg[i]; return (v === null || v === undefined) ? "no KNMI value" : v.toFixed(1) + " °C"; }
+  function tg(ep, i) { var v = ep.knmi.tg[i]; return (v === null || v === undefined) ? "no KNMI value on hand" : v.toFixed(1) + " °C"; }
   function passLabel(ep, i) { return U.fmtDate(ep.dates[i]) + " · pass " + (i + 1) + " of " + ep.n_epochs + " · Rotterdam daily mean " + tg(ep, i); }
   function pad(size) { return { l: 46, r: 14, t: 10, b: 30, f: size.font + "px system-ui" }; }
   function cursor(ctx, x, y0, y1, colour) { ctx.strokeStyle = colour || css("--bad"); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke(); ctx.lineWidth = 1; }
 
   /* ================================================================ (a) scene */
   function scene(mount) {
+    var gen = GEN;
     Promise.all([L.json(DATA + "cells.json"), L.int16(DATA + "cells.bin"), L.json(DATA + "outlines.json"),
                  L.json(DATA + "epochs.json"), L.int16(DATA + "cells-sd.bin")])
       .then(function (r) {
+      if (gen !== GEN) return;
         var cells = r[0], bin = r[1], outlines = r[2], ep = r[3], sdBin = r[4];
         var mode = "increment", gridName = "all";
         var grids = {};
@@ -74,7 +79,7 @@
             D.text(ctx, "200 m", px(e0) + 10, py(n0) - 14, { font: size.font + "px system-ui", colour: css("--muted") });
             var lw = Math.min(180, w * 0.3), f1 = (size.font - 1) + "px system-ui";
             var title = mode === "increment" ? "change since the previous pass [mm]"
-              : mode === "cumulative" ? "displacement since January 2014 [mm]"
+              : mode === "cumulative" ? "displacement since " + U.fmtDate(ep.dates[0]) + " [mm]"
               : mode === "spread" ? "spread of the points inside the cell, this pass [mm]"
               : "displacement minus the cell's trend [mm]";
             D.text(ctx, title, w - 12, 14, { font: f1, colour: css("--muted"), align: "right" });
@@ -102,25 +107,28 @@
         });
         player.addToggle("Show:", "mode", [
           { value: "increment", label: "change since the previous pass", checked: true },
-          { value: "cumulative", label: "displacement since 2014" },
+          { value: "cumulative", label: "displacement since " + ep.dates[0].slice(0, 4) },
           { value: "detrended", label: "minus each cell's trend" },
           { value: "spread", label: "spread inside each cell" }], function (v) { mode = v; });
         player.addToggle("Cells:", "grid", [
           { value: "all", label: "all points", checked: true },
           { value: "ground", label: "ground points only (below 5 m)" }], function (v) { gridName = v; });
-      }).catch(function (e) { V.Player.fallback(mount, "The scene animation could not load its data (" + e.message + ")."); });
+      }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The scene animation could not load its data (" + e.message + ")."); });
   }
 
   /* data/points.* is a local build for the team (site_export.py --points). It is git-ignored and
      never published, so this resolves to null on the live site and the per-point views disappear. */
+  var pointsCache = {};
   function localPoints() {
-    if (localPoints.cached !== undefined) return localPoints.cached;
-    localPoints.cached = fetch(DATA + "points.json").then(function (r) { return r.ok ? r.json() : null; })
+    if (!DS.archived) return Promise.resolve(null);   /* the local build exists only for the archived set */
+    if (pointsCache[DATA] !== undefined) return pointsCache[DATA];
+    var base = DATA;
+    pointsCache[base] = fetch(base + "points.json").then(function (r) { return r.ok ? r.json() : null; })
       .then(function (meta) {
         if (!meta) return null;
         return Promise.all([
-          fetch(DATA + "points.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; }),
-          fetch(DATA + "points-resid.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+          fetch(base + "points.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; }),
+          fetch(base + "points-resid.bin").then(function (r) { return r.ok ? r.arrayBuffer() : null; })
         ]).then(function (bufs) {
           if (!bufs[0]) return null;
           var raw = new Int16Array(bufs[0]), res = bufs[1] ? new Int16Array(bufs[1]) : null, n = meta.epochs;
@@ -132,12 +140,14 @@
           };
         });
       }).catch(function () { return null; });
-    return localPoints.cached;
+    return pointsCache[base];
   }
 
   /* ================================================================ (b) bands */
   function bands(mount) {
+    var gen = GEN;
     Promise.all([L.json(DATA + "bands.json"), L.json(DATA + "epochs.json"), localPoints()]).then(function (r) {
+      if (gen !== GEN) return;
       var B = r[0].fine, ep = r[1], PTS = r[2], epochMean = r[0].epoch_mean;
       var perPoint = false, pQty = "resid";
       /* the residual and the 11-day change are what s(t) is actually fitted to, so they get
@@ -160,6 +170,7 @@
       var hmax = 90, sLim = Math.ceil(U.pct(ep.s.slope.map(Math.abs), 99.5));
       var spread = true;
       var nTot = B.reduce(function (a, b) { return a + b.n; }, 0);
+      var nMin = Math.min.apply(null, B.map(function (b) { return b.n; })), nMax = Math.max.apply(null, B.map(function (b) { return b.n; }));
       var hbar = B.reduce(function (a, b) { return a + b.h_mean * b.n; }, 0) / nTot;
       var player = V.Player.create({
         mount: mount, frames: ep.n_epochs, fps: 6, aspect: function (w) { return w < 600 ? 0.9 : 1.5; },
@@ -238,8 +249,8 @@
           D.text(ctx, perPoint
             ? (pQty === "resid" ? "every coherent point at its own height; the yearly wave of each structure is still in here"
                : pQty === "fast" ? "every coherent point at its own height; 11 days apart, so the season largely cancels"
-               : "every coherent point at its own height, ten years of settlement included")
-            : "ten height bands, each a mean over 119 to 3 273 points; red line: the weighted fit, slope s(t)",
+               : "every coherent point at its own height, the whole record of settlement included")
+            : B.length + " height bands, each a mean over " + U.fmtInt(nMin) + " to " + U.fmtInt(nMax) + " points; red line: the weighted fit, slope s(t)",
             p.l + 4, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
           if (!perPoint) {
             D.text(ctx, spread ? "thick bar: twice the standard error of the band mean · thin bar: one standard deviation of the points in the band"
@@ -261,21 +272,23 @@
         { value: "se", label: "error of the mean only" }], function (v) { spread = v === "both"; });
       if (PTS) {
         player.addToggle("Show:", "perpoint", [
-          { value: "bands", label: "ten band means", checked: true },
+          { value: "bands", label: B.length + " band means", checked: true },
           { value: "points", label: "every point, no bins (local file)" }], function (v) { perPoint = v === "points"; });
         if (PTS.resid) {
           player.addToggle("Per point:", "pqty", [
             { value: "resid", label: "minus its own trend and yearly wave", checked: true },
             { value: "fast", label: "change since the previous pass" },
-            { value: "cumulative", label: "displacement since 2014" }], function (v) { pQty = v; });
+            { value: "cumulative", label: "displacement since " + ep.dates[0].slice(0, 4) }], function (v) { pQty = v; });
         }
       }
-    }).catch(function (e) { V.Player.fallback(mount, "The height-band animation could not load its data (" + e.message + ")."); });
+    }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The height-band animation could not load its data (" + e.message + ")."); });
   }
 
   /* ================================================================ (c) decomposition */
   function decomp(mount) {
+    var gen = GEN;
     L.json(DATA + "epochs.json").then(function (ep) {
+      if (gen !== GEN) return;
       var PER = 70, frames = 4 * PER, n = ep.n_epochs;
       var s = ep.s.slope, m = ep.s_model, t = ep.days_since_ref.map(function (d) { return d / 365.25; });
       var trend = t.map(function (tt) { return m.offset + m.trend_per_yr * tt; });
@@ -283,9 +296,9 @@
       var resid = ep.s_resid, fast = ep.s_fast, sigma = ep.summary.formal_sigma_mm_per_100m, rms = ep.summary.fast_rms_mm_per_100m;
       var titles = [
         "1. The height gradient s(t), one number per pass: how much more the high points moved than the low ones",
-        "2. Take out the slow trend (" + m.trend_per_yr.toFixed(2) + " mm/100 m per year): the towers at the north-east end sinking faster than the ground",
+        "2. Take out the slow trend (" + m.trend_per_yr.toFixed(2) + " mm/100 m per year)" + (DS.archived ? ": the towers at the north-east end sinking faster than the ground" : ""),
         "3. Take out the yearly wave (" + m.annual_amp.toFixed(2) + " mm/100 m, peaking around day " + Math.round(m.annual_peak_doy) + "): the buildings expanding in summer",
-        "4. What changes from one pass to the next: " + rms.toFixed(2) + " mm/100 m rms, three times the fit noise of " + sigma.toFixed(2) + ", about " + Math.round(ep.summary.fast_as_n_units) + " N-units of air"
+        "4. What changes from one pass to the next: " + rms.toFixed(2) + " mm/100 m rms, " + Math.round(rms / sigma) + " times the fit noise of " + sigma.toFixed(2) + ", about " + Math.round(ep.summary.fast_as_n_units) + " N-units if it were all air"
       ];
       var player = V.Player.create({
         mount: mount, frames: frames, fps: 24, aspect: function (w) { return w < 600 ? 1.1 : 2; },
@@ -318,7 +331,7 @@
           }
           A.yAxis(ctx, Y, p.l, [-10, -5, 0, 5, 10], "s(t) [mm per 100 m of height]", p.f);
           A.xAxis(ctx, X, h - p.b, A.yearTicks(ep.dates), "", p.f);
-          var legend = stage === 1 ? "red: the fitted trend being removed" : stage === 2 ? "orange: the fitted yearly wave being removed" : stage === 3 ? "green: change from pass to pass (the candidate air signal)" : "blue: s(t) as measured, coherence > 0.6";
+          var legend = stage === 1 ? "red: the fitted trend being removed" : stage === 2 ? "orange: the fitted yearly wave being removed" : stage === 3 ? "green: change from pass to pass" + (DS.archived ? " (the candidate air signal)" : "") : "blue: s(t) as measured, coherence > 0.6";
           D.text(ctx, legend, p.l + 6, p.t + 14, { font: p.f, colour: css("--muted") });
         }
       });
@@ -329,12 +342,14 @@
         stages.appendChild(b);
       });
       player.extra.appendChild(stages);
-    }).catch(function (e) { V.Player.fallback(mount, "The decomposition animation could not load its data (" + e.message + ")."); });
+    }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The decomposition animation could not load its data (" + e.message + ")."); });
   }
 
   /* ================================================================ (d) joint */
   function joint(mount) {
+    var gen = GEN;
     Promise.all([L.json(DATA + "joint.json"), L.json(DATA + "epochs.json")]).then(function (r) {
+      if (gen !== GEN) return;
       var J = r[0], ep = r[1], which = "full";
       function G() { return J[which]; }
       var player = V.Player.create({
@@ -381,19 +396,23 @@
         }
       });
       player.addToggle("Scene:", "which", [{ value: "full", label: "whole scene", checked: true }, { value: "SW", label: "south-west half only (no sinking towers)" }], function (v) { which = v; });
-    }).catch(function (e) { V.Player.fallback(mount, "The buildings-versus-air animation could not load its data (" + e.message + ")."); });
+    }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The buildings-versus-air animation could not load its data (" + e.message + ")."); });
   }
 
   /* ================================================================ (e) year clock */
   function yearclock(mount) {
+    var gen = GEN;
     L.json(DATA + "yearclock.json").then(function (Y) {
+      if (gen !== GEN) return;
       var showFeet = false, doy = Y.doy;
       var series = [
         { key: "open_ground", label: "open ground (> 30 m from a tower)", colour: css("--accent") },
         { key: "buildings_gt_40m", label: "buildings above 40 m", colour: css("--bad") },
         { key: "tower_feet", label: "ground at the towers' feet (< 30 m)", colour: css("--warn"), optional: true }
       ];
-      var mmLim = 4;
+      var mmLim = 4, bPeak = Y.groups.buildings_gt_40m.annual.peak_doy;
+      /* ticks on the rim: the buildings' peak, its mirror half a year away, the open ground's peak, the air's peak */
+      var markers = [[bPeak], [(bPeak + 182.625) % 365.25], [Y.groups.open_ground.annual.peak_doy], [Y.air.annual.peak_doy]];
       function ang(d) { return (d / 365.25) * 2 * Math.PI - Math.PI / 2; }
       V.Player.create({
         mount: mount, frames: 366, fps: 30, aspect: function () { return 1; },
@@ -421,7 +440,7 @@
           D.text(ctx, "0", cx + 4, cy - rad(0) - 4, { font: (size.font - 2) + "px system-ui", colour: css("--muted") });
           D.text(ctx, "towards the satellite ↑", cx + 4, cy - rad(1.5), { font: (size.font - 2) + "px system-ui", colour: css("--muted") });
           /* markers */
-          [[28, "day 28: mirror of the buildings"], [45, "day 45: open ground peak"], [205, "day 205: air temperature peak"], [210, "day 210: buildings peak"]].forEach(function (mk) {
+          markers.forEach(function (mk) {
             var a = ang(mk[0]); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx + (R - 6) * Math.cos(a), cy + (R - 6) * Math.sin(a)); ctx.lineTo(cx + (R + 4) * Math.cos(a), cy + (R + 4) * Math.sin(a)); ctx.stroke();
           });
           /* series: per-epoch dots up to the current day, and the monthly climatology as a smooth trace */
@@ -467,19 +486,21 @@
             D.text(ctx, sr.label + ": n = " + g.n + ", " + g.annual.amp.toFixed(2) + " mm peaking day " + Math.round(g.annual.peak_doy), 26, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
             ly += 15;
           });
-          D.text(ctx, "dotted grey, inner: air temperature (KNMI 344 monthly mean, " + tmin.toFixed(0) + " to " + tmax.toFixed(0) + " °C)", 10, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, "dotted grey, inner: air temperature (KNMI 344 monthly mean 2014-2023, " + tmin.toFixed(0) + " to " + tmax.toFixed(0) + " °C)", 10, ly, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
           D.text(ctx, "dots: one pass each, mean of the group after removing offset, trend and curvature per point; line: monthly mean", 10, 14, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
         }
       }).addCheck("also show the ground at the towers' feet", false, function (v) { showFeet = v; });
-    }).catch(function (e) { V.Player.fallback(mount, "The year-clock animation could not load its data (" + e.message + ")."); });
+    }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The year-clock animation could not load its data (" + e.message + ")."); });
   }
 
   /* ================================================================ (f) virtual balloon */
   function balloon(mount) {
+    var gen = GEN;
     Promise.all([L.json(DATA + "profile.json"), L.json(DATA + "epochs.json")]).then(function (r) {
+      if (gen !== GEN) return;
       var P = r[0], ep = r[1], SUB = 12, nStep = P.s_fast.length, frames = nStep * SUB;
       var centres = P.bins.centres, se = P.bins.se_mm, ns = P.bins.n, prof = P.prof_fast, slope = P.fit_line_slope_fast, db = P.debilt.dlos11_mm_per_100m;
-      var xl = 4, top = 83;
+      var xl = 4, top = P.h_top_m || DS.hTop || 83;
       V.Player.create({
         mount: mount, frames: frames, fps: 24, aspect: function (w) { return w < 600 ? 0.8 : 1.8; },
         label: function (i) {
@@ -492,7 +513,7 @@
           var X = A.linear(-xl, xl, p.l + 10, leftW - 20), Yh = A.linear(-2, 90, (narrow ? h * 0.55 : h) - p.b, p.t + 10);
           ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(X(0), Yh(-2)); ctx.lineTo(X(0), Yh(90)); ctx.stroke();
           ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X(-xl), Yh(top)); ctx.lineTo(X(xl), Yh(top)); ctx.stroke(); ctx.setLineDash([]);
-          D.text(ctx, "83 m: the highest radar point", X(-xl) + 4, Yh(top) - 4, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, top + " m: the highest radar point", X(-xl) + 4, Yh(top) - 4, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
           var hb = centres[0] + U.ease(sub / (SUB - 1)) * (top - centres[0]);
           /* fitted line through the lowest bin */
           var s = slope[k] / 100;
@@ -527,12 +548,77 @@
           D.text(ctx, "red: from the radar points; grey: De Bilt sounding, interpolated below 650 m", rx0 + 6, ry0 + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
         }
       });
-    }).catch(function (e) { V.Player.fallback(mount, "The balloon animation could not load its data (" + e.message + ")."); });
+    }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The balloon animation could not load its data (" + e.message + ")."); });
   }
 
   var builders = { scene: scene, bands: bands, decomp: decomp, joint: joint, yearclock: yearclock, balloon: balloon };
-  document.querySelectorAll("[data-anim]").forEach(function (el) {
-    var b = builders[el.getAttribute("data-anim")];
-    if (b) b(el); else V.Player.fallback(el, "Unknown animation.");
+
+  /* A view the active set cannot support says so, with the reason, instead of drawing. */
+  function unavailable(el, key, reason) {
+    V.Player.fallback(el, "");
+    var box = el.querySelector(".anim-fallback");
+    box.textContent = "Not available for " + DS.name + ". " + reason + " ";
+    var other = DS.archived ? null : "2014-2023-processor";
+    if (other) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "linkish";
+      b.textContent = "Show the 2014-2023 data instead";
+      b.addEventListener("click", function () { window.VRSData.set(other); });
+      box.appendChild(b);
+    }
+  }
+
+  /* Numbers in the text that depend on the set: <span data-fill="key">. */
+  function corr(a, b) {
+    var x = [], y = [];
+    a.forEach(function (v, k) { if (v !== null && b[k] !== null && b[k] !== undefined) { x.push(v); y.push(b[k]); } });
+    var sx = U.stat(x), sy = U.stat(y), c = 0;
+    x.forEach(function (v, k) { c += (v - sx.mean) * (y[k] - sy.mean); });
+    return c / x.length / (sx.sd * sy.sd);
+  }
+  function fill(gen) {
+    var need = [L.json(DATA + "epochs.json"), L.json(DATA + "bands.json"), L.json(DATA + "yearclock.json"), L.json(DATA + "profile.json")];
+    Promise.all(need).then(function (r) {
+      if (gen !== GEN) return;
+      var ep = r[0], B = r[1].fine, Y = r[2], P = r[3], g = Y.groups, ns = Object.keys(g).map(function (k) { return g[k].n; });
+      var bn = B.map(function (b) { return b.n; });
+      var v = {
+        passes: ep.n_epochs, pairs: ep.n_epochs - 1, first: U.fmtDate(ep.dates[0]), last: U.fmtDate(ep.dates[ep.n_epochs - 1]),
+        firstYear: ep.dates[0].slice(0, 4), nBands: B.length, bandMin: U.fmtInt(Math.min.apply(null, bn)), bandMax: U.fmtInt(Math.max.apply(null, bn)),
+        fastRms: ep.summary.fast_rms_mm_per_100m.toFixed(1), nUnits: Math.round(ep.summary.fast_as_n_units),
+        noiseRatio: Math.round(ep.summary.fast_rms_mm_per_100m / ep.summary.formal_sigma_mm_per_100m),
+        trend: ep.s_model.trend_per_yr.toFixed(2),
+        ycMin: U.fmtInt(Math.min.apply(null, ns)), ycMax: U.fmtInt(Math.max.apply(null, ns)),
+        groundAmp: g.open_ground.annual.amp.toFixed(2), groundPeak: Math.round(g.open_ground.annual.peak_doy),
+        bldAmp: g.buildings_gt_40m.annual.amp.toFixed(1), bldPeak: Math.round(g.buildings_gt_40m.annual.peak_doy),
+        feetAmp: g.tower_feet.annual.amp.toFixed(2), feetPeak: Math.round(g.tower_feet.annual.peak_doy),
+        airPeak: Math.round(Y.air.annual.peak_doy),
+        hTop: P.h_top_m || DS.hTop, corr: corr(P.s_fast, P.debilt.dlos11_mm_per_100m).toFixed(2)
+      };
+      document.querySelectorAll("[data-fill]").forEach(function (el) {
+        var k = el.getAttribute("data-fill");
+        if (v[k] !== undefined) el.textContent = String(v[k]);
+      });
+    }).catch(function (e) { console.error(e); });
+  }
+
+  function buildAll(ds) {
+    DS = ds; DATA = ds.path; GEN += 1;
+    document.querySelectorAll("[data-anim]").forEach(function (el) {
+      var key = el.getAttribute("data-anim"), b = builders[key];
+      var tag = el.previousElementSibling;
+      if (!tag || !tag.classList.contains("dstag")) {
+        tag = document.createElement("p"); tag.className = "dstag";
+        el.parentNode.insertBefore(tag, el);
+      }
+      tag.textContent = "Data: " + ds.name;
+      if (ds.unavailable[key]) unavailable(el, key, ds.unavailable[key]);
+      else if (b) b(el); else V.Player.fallback(el, "Unknown animation.");
+    });
+    fill(GEN);
+  }
+
+  window.VRSData.ready.then(buildAll).catch(function (e) {
+    document.querySelectorAll("[data-anim]").forEach(function (el) { V.Player.fallback(el, "The list of data inputs could not load (" + e.message + ")."); });
   });
+  window.VRSData.onChange(buildAll);
 })();
