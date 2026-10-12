@@ -197,13 +197,19 @@
   }
 
   function renderTable(e) {
-    var h = "<thead><tr><th>Layer</th><th>Radar error</th><th>Weather station alone</th><th>True spread</th><th>Radar bias</th></tr></thead><tbody>";
+    var hasSkill = Array.isArray(e.skill);
+    var h = "<thead><tr><th>Layer</th><th>Radar error</th><th>Weather station alone</th>" +
+      (hasSkill ? '<th title="1 minus the radar\'s squared error divided by the station\'s: above 0 the radar adds something">Skill vs station</th>' : "") +
+      "<th>True spread</th><th>Radar bias</th></tr></thead><tbody>";
     for (var k = e.rmse.length - 1; k >= 0; k--) {
       var win = e.rmse[k] < e.ground_rmse[k];
+      var sk = hasSkill ? e.skill[k] : null;
       h += "<tr><td class=\"num\">" + layerLabel(e.edges, k) + '</td><td class="num' + (win ? " win" : "") + '">' + num(e.rmse[k], 2) + '</td><td class="num' + (win ? "" : " win") + '">' +
-        num(e.ground_rmse[k], 2) + '</td><td class="num">' + num(e.truth_spread[k], 2) + '</td><td class="num">' + num(e.bias[k], 2) + "</td></tr>";
+        num(e.ground_rmse[k], 2) + "</td>" +
+        (hasSkill ? '<td class="num skill ' + (sk > 0 ? "pos" : "neg") + '">' + (sk > 0 ? "+" : "") + num(sk, 2) + "</td>" : "") +
+        '<td class="num">' + num(e.truth_spread[k], 2) + '</td><td class="num">' + num(e.bias[k], 2) + "</td></tr>";
     }
-    document.getElementById("sim-table").innerHTML = h + '</tbody><caption class="small">rms over all passes, N-units; the smaller error in each layer is in bold. Highest layer first.</caption>';
+    document.getElementById("sim-table").innerHTML = h + '</tbody><caption class="small">rms over all passes, N-units; the smaller error in each layer is in bold. Skill above 0 (green): the radar beats the station alone. Highest layer first.</caption>';
   }
 
   /* b: per layer, the true spread as a band, the station and the radar error as bars; height up */
