@@ -14,7 +14,7 @@
   var ICONS = window.VRS_ICONS || {};        // js/icons.js
 
   var NS = "http://www.w3.org/2000/svg";
-  var G = { mainW: 262, sideW: 200, gapIn: 40, laneGap: 130, rowH: 112, nodeH: 72, top: 110, left: 40, sumH: 170 };
+  var G = { mainW: 262, sideW: 200, gapIn: 40, laneGap: 130, rowH: 112, nodeH: 72, top: 110, left: 40, sumH: 196 };
   var LANE_COL = { air: "#4f9a5a", sim: "#8061c0", est: "#3a78a8" };
   var open = {};
   F.lanes.forEach(function (l) { open[l.id] = true; });
@@ -319,9 +319,6 @@
   var anim = null;
   function apply() {
     world.setAttribute("transform", "translate(" + view.x + "," + view.y + ") scale(" + view.k + ")");
-    var s = 24 * view.k;
-    stage.style.backgroundSize = s + "px " + s + "px";
-    stage.style.backgroundPosition = view.x + "px " + view.y + "px";
     var b = boxes[hoverId] || boxes[pinned];
     if (b) place(b);
   }
