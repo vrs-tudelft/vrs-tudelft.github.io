@@ -376,3 +376,67 @@ main > .sim { max-width: 1060px; }
   .app-card.wide { grid-column: 1 / -1; }
   .app-page .sim-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ---------------------------------------------------------------- overview flowchart */
+.ov .app-main.ov-stage { position: relative; padding: 0; overflow: hidden; background: var(--surface-2); }
+.ov-svg { display: block; width: 100%; height: 100%; min-height: 70vh; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.ov-svg.grabbing { cursor: grabbing; }
+.ov-svg .lane { stroke-width: 1.2; }
+.ov-svg .lane-air.lane { fill: #eef6ee; stroke: #b9d8b9; }
+.ov-svg .lane-sim.lane { fill: #f3effa; stroke: #cfc2e6; }
+.ov-svg .lane-est.lane { fill: #edf3f8; stroke: #b9cfe0; }
+.ov-svg .lane-head { cursor: pointer; outline: none; }
+.ov-svg .lane-num { font: 700 22px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+.ov-svg .lane-title { font: 650 19px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+.ov-svg .lane-sub { font: 400 12.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--muted); }
+.ov-svg .lane-head:hover .lane-sub, .ov-svg .lane-head:focus-visible .lane-sub { fill: var(--accent); text-decoration: underline; }
+.ov-svg .node { cursor: pointer; outline: none; transition: opacity .15s ease; }
+.ov-svg .sh { stroke-width: 1.4; transition: stroke-width .12s ease, filter .12s ease; }
+.ov-svg .t-input .sh, .ov-svg .t-output .sh { fill: #fff2cc; stroke: #d6b656; }
+.ov-svg .t-process .sh { fill: #dae8fc; stroke: #6c8ebf; }
+.ov-svg .t-decision .sh { fill: #f8cecc; stroke: #b85450; }
+.ov-svg .t-result .sh { fill: #d5e8d4; stroke: #82b366; }
+.ov-svg .t-summary .sh { fill: #fff; stroke-width: 2; }
+.ov-svg .t-summary.lane-air .sh { stroke: #6aa86a; }
+.ov-svg .t-summary.lane-sim .sh { stroke: #8e74c0; }
+.ov-svg .t-summary.lane-est .sh { stroke: #4b82ad; }
+.ov-svg .node:hover .sh, .ov-svg .node:focus-visible .sh, .ov-svg .node.focus .sh { stroke-width: 2.6; filter: drop-shadow(0 3px 8px rgba(0,0,0,.14)); }
+.ov-svg .tt { font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #17191c; text-anchor: middle; pointer-events: none; }
+.ov-svg .ts { font: 400 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #4b5158; text-anchor: middle; pointer-events: none; }
+.ov-svg .t-summary .tt { font-size: 16px; }
+.ov-svg .has-link { fill: var(--accent); }
+.ov-svg .edge .ln { fill: none; stroke: #5b6168; stroke-width: 1.5; transition: stroke .12s ease, opacity .15s ease; }
+.ov-svg .edge.cross .ln { stroke-width: 2.2; stroke: #3c4249; }
+.ov-svg .edge.dashed .ln { stroke-dasharray: 5 4; }
+.ov-svg .edge.lit .ln { stroke: var(--accent); stroke-width: 2.6; }
+.ov-svg .arrow { fill: #5b6168; }
+.ov-svg .el { font: 600 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink-2); text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.ov-svg .el.left { text-anchor: start; }
+.ov-svg .dim { opacity: .22; }
+.ov-zoom { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 6px; }
+.ov-zoom button, .ov-btn { font: inherit; font-size: .88rem; font-weight: 600; min-width: 40px; min-height: 36px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); cursor: pointer; box-shadow: var(--shadow); }
+.ov-zoom button:hover, .ov-btn:hover { background: var(--surface-2); }
+.ov-btns { display: flex; gap: 8px; margin-top: 10px; }
+.ov-btn { flex: 1; box-shadow: none; }
+.lane-key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: -2px; }
+.lane-key.lane-air { background: #6aa86a; } .lane-key.lane-sim { background: #8e74c0; } .lane-key.lane-est { background: #4b82ad; }
+.ov-legend { list-style: none; padding: 0; margin: 0; font-size: .86rem; color: var(--ink-2); display: grid; gap: 5px; }
+.ov-legend li { margin: 0; display: flex; align-items: center; gap: 10px; }
+.ov-legend svg { width: 30px; height: 16px; flex: none; }
+.ov-legend .lg-io { fill: #fff2cc; stroke: #d6b656; } .ov-legend .lg-p { fill: #dae8fc; stroke: #6c8ebf; }
+.ov-legend .lg-d { fill: #f8cecc; stroke: #b85450; } .ov-legend .lg-r { fill: #d5e8d4; stroke: #82b366; } .ov-legend .lg-l { fill: var(--accent); }
+.ov-story { font-size: .88rem; line-height: 1.5; color: var(--ink-2); background: var(--accent-soft); border-left: 2px solid var(--accent); border-radius: 0 8px 8px 0; padding: 8px 12px; margin: -4px 0 14px; }
+.ov-story p { margin: 0; }
+.ov-card { position: absolute; z-index: 20; width: min(340px, calc(100% - 20px)); background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 13px 16px 14px; font-size: .9rem; line-height: 1.5; }
+.ov-card[hidden] { display: none; }
+.ov-card h3 { margin: 2px 0 6px; font-size: 1.02rem; padding-right: 20px; }
+.ov-card p { margin: 0 0 8px; color: var(--ink-2); }
+.ov-card-lane { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.ov-card-lane.lane-air { color: #4f8a4f; } .ov-card-lane.lane-sim { color: #7559a8; } .ov-card-lane.lane-est { color: #3c6f97; }
+.ov-num { font-weight: 600; color: var(--ink) !important; }
+.ov-code { font-size: .8rem; } .ov-code span { color: var(--muted); font-weight: 600; margin-right: 4px; } .ov-code code { font-size: .78rem; word-break: break-word; }
+.ov-hint { font-size: .78rem; color: var(--muted) !important; margin: 4px 0 0 !important; }
+.ov-go { display: inline-block; margin-top: 2px; font-weight: 650; }
+.ov-x { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 1.3rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 4px 6px; }
+.ov-card:not(.pinned) { pointer-events: none; }
+@media (max-width: 999px) { .ov .app-main.ov-stage { height: 72vh; order: -1; border-bottom: 1px solid var(--line); } }
