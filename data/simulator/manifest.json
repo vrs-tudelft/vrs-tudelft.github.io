@@ -1,0 +1,88 @@
+{
+ "generated": "2026-10-12",
+ "code": {
+  "virtual_radiosonde": "4a3eef53d697ded4e55e6faa008da1bbbd3656a8",
+  "note": "06_simulation rerun via estimation.sim_import"
+ },
+ "scene": {
+  "points": 12000,
+  "buildings": 16,
+  "passes": 288,
+  "first": "2014-01-10",
+  "last": "2023-12-30",
+  "atmosphere": "simulated from KNMI 344 weather",
+  "alpha_true_per_K": 7e-06
+ },
+ "controls": {
+  "noise": [
+   0,
+   1,
+   2,
+   4
+  ],
+  "thermal": [
+   0,
+   1
+  ],
+  "sinking": [
+   0,
+   1
+  ],
+  "crossrange": [
+   0,
+   1
+  ],
+  "method": [
+   "none",
+   "air_prior",
+   "jaap"
+  ],
+  "layers": [
+   "20",
+   "40",
+   "1"
+  ]
+ },
+ "defaults": {
+  "noise": 2,
+  "thermal": 1,
+  "sinking": 1,
+  "crossrange": 1,
+  "method": "air_prior",
+  "layers": "40"
+ },
+ "runs": {
+  "n0_t0_s0_c0": "runs/n0_t0_s0_c0.json",
+  "n0_t0_s0_c1": "runs/n0_t0_s0_c1.json",
+  "n0_t0_s1_c0": "runs/n0_t0_s1_c0.json",
+  "n0_t0_s1_c1": "runs/n0_t0_s1_c1.json",
+  "n0_t1_s0_c0": "runs/n0_t1_s0_c0.json",
+  "n0_t1_s0_c1": "runs/n0_t1_s0_c1.json",
+  "n0_t1_s1_c0": "runs/n0_t1_s1_c0.json",
+  "n0_t1_s1_c1": "runs/n0_t1_s1_c1.json",
+  "n1_t0_s0_c0": "runs/n1_t0_s0_c0.json",
+  "n1_t0_s0_c1": "runs/n1_t0_s0_c1.json",
+  "n1_t0_s1_c0": "runs/n1_t0_s1_c0.json",
+  "n1_t0_s1_c1": "runs/n1_t0_s1_c1.json",
+  "n1_t1_s0_c0": "runs/n1_t1_s0_c0.json",
+  "n1_t1_s0_c1": "runs/n1_t1_s0_c1.json",
+  "n1_t1_s1_c0": "runs/n1_t1_s1_c0.json",
+  "n1_t1_s1_c1": "runs/n1_t1_s1_c1.json",
+  "n2_t0_s0_c0": "runs/n2_t0_s0_c0.json",
+  "n2_t0_s0_c1": "runs/n2_t0_s0_c1.json",
+  "n2_t0_s1_c0": "runs/n2_t0_s1_c0.json",
+  "n2_t0_s1_c1": "runs/n2_t0_s1_c1.json",
+  "n2_t1_s0_c0": "runs/n2_t1_s0_c0.json",
+  "n2_t1_s0_c1": "runs/n2_t1_s0_c1.json",
+  "n2_t1_s1_c0": "runs/n2_t1_s1_c0.json",
+  "n2_t1_s1_c1": "runs/n2_t1_s1_c1.json",
+  "n4_t0_s0_c0": "runs/n4_t0_s0_c0.json",
+  "n4_t0_s0_c1": "runs/n4_t0_s0_c1.json",
+  "n4_t0_s1_c0": "runs/n4_t0_s1_c0.json",
+  "n4_t0_s1_c1": "runs/n4_t0_s1_c1.json",
+  "n4_t1_s0_c0": "runs/n4_t1_s0_c0.json",
+  "n4_t1_s0_c1": "runs/n4_t1_s0_c1.json",
+  "n4_t1_s1_c0": "runs/n4_t1_s1_c0.json",
+  "n4_t1_s1_c1": "runs/n4_t1_s1_c1.json"
+ }
+}
