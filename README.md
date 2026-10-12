@@ -9,12 +9,13 @@ site updates within a minute or two.
 
 | File | What it shows |
 |---|---|
-| `index.html` | The idea in plain language, where each stage stands, what holds so far, about and licences |
+| `index.html` | The idea in plain language, the result in one picture, where each stage stands, what holds so far, about and licences |
 | `data.html` | The two TerraSAR-X processings, building heights (3DBAG/AHN5), soundings, stations and towers, and the rule on what may be published |
 | `low-level.html` | The annual low-level reconstruction of the lowest 200 m (1 October 2026) and its Brasschaat and Cabauw checks |
-| `simulation.html` | Placeholder: the end-to-end simulation is being rebuilt ("Simulation: model update pending") |
+| `simulation.html` | The end-to-end simulation: the synthetic city, the three atmospheres, the nuisances, the hand-over files, what it has shown |
+| `simulator.html` | The estimation simulator: pick noise and building movement, see what the estimation recovers. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
 | `reference.html` | Where the zero sits: the +0.60 mm/yr offset between processings and the shared-ground proposal (29 September 2026) |
-| `estimation.html` | The estimation pilot (30 September 2026): references, four buildings, held-out dates, synthetic signal retention, absolute-profile ambiguity. Figures 37-39 and `data/estimation-pilot.json` |
+| `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the first pass, the test on the simulation (figures 41-46), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
 | `paper.html` | The paper's title and outline, the team, the course |
 | `animations.html` | "Explore": six animations from the aggregate files, with a data-input switch (see below) |
 | `3d/index.html` | The experimental 3D view, with the same switch and the gull easter egg |
@@ -112,6 +113,18 @@ The second command stages only the approved aggregate/synthetic outputs and page
 edits in this checkout. It does not commit or push. Run this site's data check
 and inspect the diff before publication. The walkthrough and VS Code workspace
 are in the team repository's `03_notebooks/04_estimation_reference_pilot/`.
+
+The estimation figures 40-50 come from the team repository's notebook
+`03_notebooks/07_estimation/estimation.ipynb` (run it, then copy `results_summary.png` as 40, the
+notebook's figure outputs as 41-46, `05_results/24_estimation_refractivity_profile/fig1, fig2, fig6`
+as 47-49 and `flowchart/step00_overview.png` as 50). The simulator data are regenerated with:
+
+```
+python 04_python/estimation/site_simulator.py --out ../vrs-tudelft.github.io/data/simulator
+```
+
+It reruns the team's simulation for every combination of the controls and runs the estimation on
+each; everything it writes is synthetic.
 
 To test locally, run `python tools/serve.py` and open `http://localhost:8000/`. It sends
 `Cache-Control: no-store`, because a plain `python -m http.server` lets the browser keep

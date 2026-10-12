@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Virtual Radiosonde</title>
 <meta name="description" content="Reading the lowest hundred metres of the air above Rotterdam from satellite radar, using the buildings as the measuring stick. A TU Delft student team project, 2026.">
-<link rel="stylesheet" href="style.css?v=20261005">
+<link rel="stylesheet" href="style.css?v=20261012">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -18,13 +18,17 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
 <h1>A weather balloon that never launches</h1>
 <p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
-<p class="asof">Status on 5 October 2026. The project runs until 22 October 2026.</p>
+<p class="asof">Status on 12 October 2026. The project runs until 22 October 2026.</p>
+
+<figure><img src="figures/40-estimation-result.png" width="1641" height="660" alt="Left: on the simulation, the radar's error per 40 m layer against the weather station alone and the true variation of the air. Right: on the real data, the radar's lowest layer against the weather station, one dot per pass, correlation 0.45." loading="lazy">
+<figcaption><b>Where we are, in one picture.</b> Left: on a simulated city, where the truth is known, the radar recovers the air in 40 m layers to 3 to 5 N-units, against an air that varies by about 12. Right: on the real data of Rotterdam, the radar's lowest layer follows the weather station with <i>r</i> = 0.45. Details on the <a href="estimation.html">estimation page</a>; try it yourself in the <a href="simulator.html">simulator</a>.</figcaption></figure>
+<!-- Source: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb (12 October 2026). -->
 
 <h2 id="idea" data-short="The idea">The idea</h2>
 <p>A <span class="t" data-tip="The instrument on a weather balloon: pressure, temperature, humidity and position, sent back on the way up.">radiosonde</span> measures pressure, temperature and humidity on its way up through the air. The Netherlands launches them from De Bilt, never over a city, and the archived records say little about the lowest few hundred metres. Cities are where that layer matters most: heat, air quality and weather models all depend on it.</p>
@@ -94,32 +98,34 @@
 <!-- Sources: ASG Project 01_reference/checked-numbers.md (method, N success criterion, P/T/e stretch, 11-day revisit); 01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md (absolute profile needs an external reference). -->
 
 <h2 id="status" data-short="Where it stands">Where the project stands</h2>
-<p>The work follows one chain, from the inputs to the paper. Each stage has its own page.</p>
+<p>The work follows one chain. The estimation is its core: it is where the radar measurements become a profile of the air.</p>
 <ol class="steps">
   <li><a class="name" href="data.html">Data</a><span class="badge done">in hand</span>
     <p>Two radar processings of the same district, building heights, balloon soundings, weather stations and two measurement towers.</p></li>
+  <li><a class="name" href="reference.html">Reference</a><span class="badge done">adopted, 5 Oct</span>
+    <p>Where the zero of the measurement sits: both processings are tied to the ground points they share.</p></li>
+  <li><a class="name" href="simulation.html">Simulation</a><span class="badge done">running, 12 Oct</span>
+    <p>A synthetic city and a known atmosphere pushed through the radar geometry, with building movement and noise, to test the estimation against the truth.</p></li>
+  <li><a class="name" href="estimation.html">Estimation</a><span class="badge done">first full version, 12 Oct</span>
+    <p>From radar points to the refractivity of the air in 40 m layers, one profile per pass. Tested on the simulation and run on six years of real data.</p></li>
+  <li><a class="name" href="simulator.html">Simulator</a><span class="badge done">first version, 12 Oct</span>
+    <p>Switch noise and building movement on and off and see what the estimation recovers.</p></li>
   <li><a class="name" href="low-level.html">Air near the ground</a><span class="badge done">first version, 1 Oct</span>
     <p>A reconstruction of the lowest 200 m of air from soundings, surface weather and a weather model, checked against two towers.</p></li>
-  <li><a class="name" href="simulation.html">Simulation</a><span class="badge pending">being rebuilt</span>
-    <p>A known atmosphere pushed through the radar geometry and back, to see what can be recovered. The model is being updated.</p></li>
-  <li><a class="name" href="reference.html">Reference</a><span class="badge done">adopted, 5 Oct</span>
-    <p>Where the zero of the measurement sits. Both processings are tied to the ground points they share, adopted by the team on 5 October.</p></li>
-  <li><a class="name" href="estimation.html">Estimation</a><span class="badge open">pilot, 30 Sep</span>
-    <p>Removing what the buildings do. The reference is handled; separating building expansion from temperature-linked air is not solved.</p></li>
   <li><a class="name" href="paper.html">Paper</a><span class="badge pending">due 22 Oct</span>
     <p>One manuscript by the whole team. The draft is not on this site.</p></li>
 </ol>
 
 <h2 id="claims" data-short="What holds">What holds so far, and what does not yet</h2>
-<p>There is no observed refractivity or humidity profile on this site yet. What the analyses so far do support:</p>
 <ul>
-  <li>The two radar processings disagree on how fast every point moves by a near-constant amount. Tying both to the ground points they share removes most of it, from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="reference.html">Reference</a></li>
-  <li>Changing the reference does not change the height contrast the method relies on, to numerical round-off. <a href="estimation.html#reference">Estimation</a></li>
-  <li>The correction for building expansion can also remove the air signal when the air follows temperature. In a synthetic test with correlation 0.9, only <b>19 %</b> of a known air pattern survives. <a href="estimation.html#injection">Estimation</a></li>
-  <li>Changes over time alone cannot give an absolute profile; one external reference profile is needed. <a href="estimation.html#absolute">Estimation</a></li>
-  <li>Between the lowest and highest sensor of the Brasschaat tower (0.1 and 32.8 m), the low-level temperature shape predicts the eight withheld levels better than a straight line between the two: error <b>0.522 to 0.357 K</b>. <a href="low-level.html">Air near the ground</a></li>
+  <li>On simulated air alone, the estimation recovers the refractivity per layer to a few tenths of an N-unit from pass to pass. <a href="estimation.html#ideal">Estimation</a></li>
+  <li>A naive correction for building expansion also removes the air that follows temperature, about 9 N per layer on the simulation. Taking out what the weather station predicts before the correction, and putting it back after, recovers the true expansion: <b>7.02</b> against the true <b>7.00 × 10⁻⁶ per kelvin</b>. <a href="estimation.html#buildings">Estimation</a></li>
+  <li>With realistic noise and building movement the radar recovers the air to <b>3 to 5 N</b> per 40 m layer, against an air that varies by about 12 N. That is not yet better than the weather station alone per layer; for the column as a whole it is (1.4 against 3.1 N). <a href="estimation.html#simulation">Estimation</a></li>
+  <li>On the real data of 2020 to 2026, the radar's lowest layer (3 to 43 m) follows the weather station with <b><i>r</i> = 0.45</b>, and 0.35 once the yearly cycle is removed. The upper layer still carries building movement. <a href="estimation.html#real">Estimation</a></li>
+  <li>The vertical structure of the real profile is not validated yet: no profile measurement overlaps the satellite passes below 100 m. <a href="estimation.html#limits">Estimation</a></li>
+  <li>Tying both processings to their shared ground points reduces their disagreement from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="reference.html">Reference</a></li>
 </ul>
-<!-- Sources: 01_reference/notes/2026-09-29-unique-pair-ground-reference.md (+0.60 to +0.11 mm/yr, 752 pairs, 499 ground pairs, 122 dates); 2026-09-30-reference-aware-estimation-pilot.md (1.09e-14 mm/100 m; 19 % at rho 0.9; absolute profile); 2026-10-01-annual-low-level-brasschaat.md and 03_notebooks/05_annual_low_level_reconstruction/05_results/19_annual_low_level_reconstruction/brasschaat/heldout_paired_scores.csv (0.522 K linear baseline to 0.357 K model). -->
+<!-- Sources: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb and 04_python/estimation/DECISIONS.md (D2, D4, D7, D8), 12 October 2026; reference numbers as on reference.html. -->
 
 <h2 id="about" data-short="About">About</h2>
 <p>A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). The team is listed on <a href="paper.html#team">Paper and team</a>.</p>
@@ -140,6 +146,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261005"></script>
+<script defer src="js/nav.js?v=20261012"></script>
 </body>
 </html>

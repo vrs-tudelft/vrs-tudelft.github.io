@@ -2,11 +2,12 @@
 (function () {
   var pages = [
     { href: "index.html", label: "Home" },
-    { href: "data.html", label: "Data" },
-    { href: "low-level.html", label: "Air near the ground" },
-    { href: "simulation.html", label: "Simulation" },
-    { href: "reference.html", label: "Reference" },
     { href: "estimation.html", label: "Estimation" },
+    { href: "simulator.html", label: "Simulator" },
+    { href: "simulation.html", label: "Simulation" },
+    { href: "data.html", label: "Data" },
+    { href: "reference.html", label: "Reference" },
+    { href: "low-level.html", label: "Air near the ground" },
     { href: "paper.html", label: "Paper and team" },
     { href: "animations.html", label: "Explore" }
   ];

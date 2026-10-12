@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Estimation · Virtual Radiosonde</title>
-<meta name="description" content="The estimation pilot of 30 September 2026: four buildings, two processings, five references, held-out dates and synthetic tests of whether the building correction keeps the air signal.">
-<link rel="stylesheet" href="style.css?v=20261005">
+<meta name="description" content="How the radar measurements of building points are turned into the refractivity of the air per height layer, one profile per satellite pass: the method, the test on the simulation and the first results on the real data.">
+<link rel="stylesheet" href="style.css?v=20261012">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -18,90 +18,131 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="data.html">Data</a> <a href="low-level.html">Air near the ground</a> <a href="simulation.html">Simulation</a> <a href="reference.html">Reference</a> <a href="estimation.html">Estimation</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
-<h1>Removing what the buildings do</h1>
-<p class="lead">Before the air can be read, the movement of the buildings has to come out. A pilot on four towers shows that the reference problem is handled, and that the building correction can remove the air signal too.</p>
-<p class="asof">Pilot of 30 September 2026. Diagnostic experiments, not a validated atmospheric retrieval.</p>
-<!-- Source for every number on this page unless noted: 01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md; per-building spread from data/estimation-pilot.json (written by 04_python/tsx/publish_estimation_pilot.py). -->
+<h1>Estimation: from radar points to a profile of the air</h1>
+<p class="lead">The core of the project. The radar measures how far thousands of points on buildings move between satellite passes. The estimation separates what the buildings did from what the air did, and turns the air part into the refractivity of the air in a few height layers, for every pass on its own.</p>
+<p class="asof">Status on 12 October 2026. Method as in the team's estimation flowchart of 12 October; settings and their evidence in the team's decision log.</p>
+
+<figure><img src="figures/40-estimation-result.png" width="1641" height="660" alt="Left: on the simulation, the radar's error per 40 m layer (red bars, 3.2 to 5.2 N in the full layers) against the weather station alone (grey, 1.3 to 4.2 N) and the true variation of the air (blue band, about 12 N). Right: on the real data, the radar's lowest layer against the weather station, one dot per pass, correlation 0.45." loading="lazy">
+<figcaption><b>Figure 40.</b> The result in one picture. <b>Left</b>, the simulation, where the truth is known: the radar's error per 40 m layer (red) is well below how much the air really varies (blue), but not yet below what the weather station alone predicts (grey). <b>Right</b>, the real data: the radar's lowest layer follows the weather station, pass by pass, with <i>r</i> = 0.45.</figcaption></figure>
+<!-- Source: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb (12 October 2026), results_summary.png; Part A step 10 and Part C C2. -->
 
 <h2 id="short" data-short="In short">In short</h2>
 <ul>
-  <li><b>The reference is not the problem.</b> Whichever of five references is used, the corrected height contrast stays the same.</li>
-  <li><b>Temperature is.</b> Buildings expand with temperature, and the air near the ground also changes with temperature. A correction that removes everything linked to temperature removes part of the air signal with it.</li>
-  <li><b>Changes are not levels.</b> The method sees changes from one pass to the next. Turning those into an actual profile needs one profile from somewhere else.</li>
+  <li><b>The maths works.</b> On simulated data with only air in it, the profiles come back to a few tenths of an N-unit from pass to pass. <a href="#ideal">Below</a></li>
+  <li><b>The buildings are the hard part.</b> Buildings grow when warm, and a tall building grows more, which looks just like the air. Fitted naively, the expansion term takes about 9 N of air signal out of every layer. Our fix, the <i>air prior</i>, gets the expansion right and the error down to the noise limit, 3 to 5 N per 40 m layer. <a href="#buildings">Below</a></li>
+  <li><b>On real data the lowest layer sees the air.</b> Its changes follow the weather station 7 km away with <i>r</i> = 0.45 (0.35 once the yearly cycle is removed). Higher layers still carry building movement. <a href="#real">Below</a></li>
+  <li><b>Try it yourself.</b> The <a href="simulator.html">simulator</a> lets you switch noise and building movement on and off and see what the estimation recovers.</li>
 </ul>
 
-<h2 id="reference" data-short="The reference">The reference changes the zero, not the height contrast</h2>
-<p>We compared the two processings on the same 122 dates, January 2020 to December 2023, with five references: the 499 shared ground pairs, the original processor reference, each processing's own ground points, and the western and eastern halves of the shared ground.</p>
-<div class="tech">
-<p>The full contrast-based correction changes the final height gradient by at most <b>1.09 &times; 10<sup>-14</sup> mm per 100 m</b> across the five choices: numerical round-off. It keeps a free spatial intercept and the same points and weights. A deliberately naive temperature fit without that protection changes its coefficient by up to <b>0.001934 mm/m/K</b>. This does not identify the original reference point or make the ground stable; it shows that a spatially uniform reference signal cancels from the tested contrast.</p>
-</div>
+<h2 id="chain" data-short="The steps">The steps, one flowchart</h2>
+<p>The estimation follows one flowchart, agreed by the team on 12 October. In words:</p>
+<ol class="steps">
+  <li><span class="name">Read the radar data</span>
+    <p>Every point's change in distance to the satellite, per pass, relative to the first pass (the <span class="t" data-tip="The first satellite pass. Every other pass, a 'daughter', is compared with it.">mother</span>) and to the street.</p></li>
+  <li><span class="name">Match the weather</span>
+    <p>For every pass, the temperature, pressure and humidity at Rotterdam airport at the overpass time, about 06:08 UTC, and from those the refractivity of the air at the street.</p></li>
+  <li><span class="name">Assign points to buildings</span>
+    <p>Using the building outlines of the national register (BAG) and their roof heights (3DBAG). Each building moves in its own way.</p></li>
+  <li><span class="name">Remove what the buildings do</span>
+    <p>Per building: sinking, slow shrinking, and growing when warm. What is left is the air plus noise.</p></li>
+  <li><span class="name">Turn the rest into the air, layer by layer</span>
+    <p>Average per height layer and per pass, recover the first pass with one stated assumption, and convert the delay across each layer into its refractivity.</p></li>
+  <li><span class="name">Tie it to the ground</span>
+    <p>The weather station sets the average level; the radar gives the change from pass to pass. Optionally, temperature and humidity per layer under stated assumptions.</p></li>
+</ol>
+<figure><img src="figures/50-estimation-flowchart.png" width="913" height="1512" alt="The estimation flowchart: observations, reference, buildings, weather branch, three motion models and their joint fit, motion removal, binning, the mother and daughter profiles, the inversion with ground calibration, and the outputs N, M and P, T, e." loading="lazy" style="max-width:520px">
+<figcaption><b>Figure 50.</b> The estimation flowchart of 12 October. The notebook in the team repository walks through it box by box.</figcaption></figure>
 
-<h2 id="buildings" data-short="Four buildings">Four buildings, step by step</h2>
-<p>For each tower we remove each point's offset and a building-wide trend that may grow with height, then fit one temperature response to the height contrast. What is left gets smaller at each step. Smaller is not the same as more correct: the last step can remove air signal as well as building movement.</p>
-<figure><img src="figures/37-building-estimation-stages.png" width="2070" height="1619" alt="Four buildings, each with input, detrended and temperature-corrected height gradients; two processings use the same dates but different building samples." loading="lazy">
-<figcaption><b>Figure 37.</b> Height-gradient diagnostics for four buildings, each panel on its own vertical scale. Each line aggregates hundreds or thousands of scatterers; none shows an individual point.</figcaption></figure>
+<h2 id="buildings" data-short="Buildings vs air">Telling the buildings from the air</h2>
+<p>A building gets taller when it is warm: a few millimetres at the top of a tower over a summer. The air changes with the weather too, and in a way that also grows with height. Seen from the satellite, the two look the same. If the expansion is simply fitted, it takes the part of the air that follows temperature with it.</p>
+<p>The fix is to use what we already know. The weather station predicts how much the air should change on each pass. We take that prediction out <i>before</i> fitting the buildings and put it back <i>after</i>. The buildings can then no longer swallow it, and the radar adds only what the weather station did not predict.</p>
+<div class="stats">
+  <div class="stat"><div class="k">Expansion, fitted naively</div><div class="v">9.05<span class="u"> × 10⁻⁶ /K</span></div></div>
+  <div class="stat"><div class="k">With the air prior</div><div class="v">7.02<span class="u"> × 10⁻⁶ /K</span></div></div>
+  <div class="stat"><div class="k">True value in the simulation</div><div class="v">7.00<span class="u"> × 10⁻⁶ /K</span></div></div>
+</div>
+<div class="tech">
+<p>Per building <i>b</i>, point <i>i</i> at height <i>h<sub>i</sub></i> above the foundation and pass <i>j</i>: <code>y_ij = cos θ [ v_s Δt_j − h_i γ0 τ_c (1 − e^(−Δt_j/τ_c)) + h_i α ΔT_j ] + c_i + ε_ij</code>, weighted least squares with γ0 ≥ 0 and τ_c searched over 0.25 to 50 years. The thermal term and an air anomaly that is uniform with height are both linear in height, so per building they are not separable. Air prior: before the fit, subtract <code>−10⁻³/cos θ · (z_i − z_0) · δN_g(t_j)</code> (the delay of the ground station's N anomaly, uniform with height); after the inversion add δN_g(t_j) to every layer. The part the motion terms cannot absorb is restored exactly (tested); the part they would absorb is supplied by the station. A prior α fixed 30 % off costs as much as fitting without the air prior. A second variant, J. de Ruiter's, drives the expansion with a 72-hour memory of the hourly temperature and puts back only the air that follows KNMI pressure and temperature; it agrees within about 1 N (the <a href="simulator.html">simulator</a> has both).</p>
+</div>
+<!-- Sources: virtual-radiosonde 04_python/estimation/README.md "Air prior"; DECISIONS.md D2 (9.05 vs 7.02 vs 7.00) and D10 (Jaap's method); tests/test_air_prior.py. -->
+
+<h2 id="mother" data-short="The first pass">The one thing the radar cannot see: the first pass</h2>
+<p>The radar only measures changes: every pass compared with the first. Add the same profile to every pass and nothing the radar sees changes. So one assumption is needed, and we state it: on average over all passes, the air gets thinner with height by <b>55 N-units per kilometre</b>. That is what the Cabauw mast measures at dawn (60 N/km) and the De Bilt soundings at night (53 N/km). The textbook value of 40 N/km holds higher up and at midday, not at 6 in the morning near the ground.</p>
+<figure><img src="figures/43-sim-mother.png" width="990" height="350" alt="On the simulation: the first pass's delay profile relative to the assumed average, estimated (red) against true (black), and its error, below 0.5 mm at every height." loading="lazy">
+<figcaption><b>Figure 43.</b> Simulation. Left: the first pass relative to the assumed average, estimate (red) against truth (black). Right: its error, at most 0.5 mm. An error here shifts every pass by the same amount; it never changes the differences between passes.</figcaption></figure>
+<!-- Source: DECISIONS.md D3 (Cabauw 06 UTC −60, De Bilt 00 UTC −53, simulated atmospheres −57 to −59 N/km); notebook step 8. -->
+
+<h2 id="simulation" data-short="Test: simulation">Tested on the simulation</h2>
+<p>The team's <a href="simulation.html">simulation</a> builds a fake city of 16 buildings with 12 000 radar points, fake air from the real weather of 288 satellite passes (2014 to 2023), and everything that makes the real data hard: sinking, shrinking, thermal expansion, a position error and 2 mm of noise per point. Because the true air is known, every step can be checked.</p>
+<figure><img src="figures/41-sim-layer-errors.png" width="440" height="402" alt="Per 40 m layer: radar error 3.2, 4.0, 5.2 and 11.5 N; weather station alone 1.3, 2.7, 4.2 and 5.1 N; true variation of the air about 11.7 N." loading="lazy" style="max-width:440px">
+<figcaption><b>Figure 41.</b> Error per 40 m layer, root mean square over the 288 passes. Red: the radar. Grey: the weather station alone, carried up with the same 55 N/km. Blue: how much the true air varies. The top layer has radar points only up to 140 m, which is why it is worse.</figcaption></figure>
+<p>The radar recovers the air to 3 to 5 N per layer, against an air that varies by about 12 N. That is the noise limit of this many points. It is not yet better than the weather station alone, because in this simulation the air changes almost the same way at every height, which the station predicts well. With one thick layer from the street to the top, the radar does beat the station: 1.4 against 3.1 N.</p>
+<figure><img src="figures/42-sim-single-passes.png" width="1090" height="418" alt="Two single passes, the coldest and the warmest: true profile, true layer means and the radar's layer estimates." loading="lazy">
+<figcaption><b>Figure 42.</b> Two single passes, the coldest and the warmest: the passes furthest from average, so a worst case. Black: the true air on 1 m levels. Grey: its mean per layer. Red: the radar's estimate.</figcaption></figure>
+<div class="tech">
+<p>Settings: fitted α with the air prior, 40 m layers from 3.2 m NAP, ground calibration of the level only (the radar keeps its own value per pass; calibrating every pass to the station spreads the lowest layer's error upward: 5.9 to 16.7 N in the second 20 m layer), background −55 N/km, KNMI 344 at 06 UTC. 4 985 facade points on the 6 buildings that pass the 60-point, 20 m span gate. For white noise the error of a layer is about <code>σ_N ≈ k σ_point cos θ / (10⁻³ Δz √n)</code> with k ≈ 2 to 2.5; at 20 m layers it is 6 to 15 N, which is why 40 m layers are used.</p>
+</div>
+<!-- Sources: notebook Part A steps 5 and 10 (3.2/4.0/5.2/11.5 N; ground alone 1.3/2.7/4.2/5.1; one layer 1.4 vs 3.1); DECISIONS.md D4, D7. -->
+
+<h2 id="ideal" data-short="Test: air only">The maths alone is exact</h2>
+<p>The simulation team also delivered runs with air only: no building movement, no noise, with three different atmospheres (the Cabauw mast, De Bilt soundings, and air built from the weather record). They test the second half of the method by itself.</p>
+<figure><img src="figures/45-ideal-runs.png" width="1277" height="384" alt="Three panels, one per atmosphere: true profiles as lines and the estimated layer values as dots, which sit on the lines." loading="lazy">
+<figcaption><b>Figure 45.</b> Air only, 20 m layers, three passes per atmosphere: true profile (lines) and estimate (dots).</figcaption></figure>
+<p>From pass to pass the estimate is off by at most <b>0.25 N</b>. What is left is the assumption about the first pass: at most 1.2 N with 55 N/km, against up to 2.9 N with the textbook 40 N/km. The weather station alone is off by up to 5.5 N here.</p>
+<!-- Source: notebook Part B; DECISIONS.md D3. -->
+
+<h2 id="real" data-short="Real data">First results on the real data</h2>
+<p>The same steps on the TerraSAR-X data of Kop van Zuid: 213 passes from January 2020 to August 2026, 8 745 radar points on 11 buildings, two layers: 3 to 43 m and 43 to 123 m above sea level. Everything shown is a mean over thousands of points per layer and pass.</p>
+<p>All 11 buildings expand when warm, as they should. The only independent check we have is the weather station: does the radar's lowest layer move with it?</p>
+<figure><img src="figures/49-real-boundary-check.png" width="1660" height="615" alt="Left: the radar's lowest layer against the weather station, one dot per pass, correlation 0.45 and 0.35 without the yearly cycle. Right: the first pass relative to the assumed average." loading="lazy">
+<figcaption><b>Figure 49.</b> Left: the change in refractivity of the radar's lowest layer (3 to 43 m) against the weather station, one dot per pass: <i>r</i> = 0.45, and 0.35 once the yearly cycle is taken out of both. Right: the first pass relative to the assumed average.</figcaption></figure>
+<figure><img src="figures/48-real-seasonal-cycle.png" width="1184" height="585" alt="Average change per calendar month for the two layers and the weather station: the lower layer follows the station's summer high and winter low, with a larger amplitude." loading="lazy">
+<figcaption><b>Figure 48.</b> Average change per calendar month. The lower layer follows the weather station's yearly cycle; the upper layer much less.</figcaption></figure>
+<figure><img src="figures/47-real-layer-timeseries.png" width="1784" height="654" alt="Change in refractivity per layer over 2020 to 2026, dots per pass with an uncertainty band and a 90-day mean; the upper layer drifts upward by 8.9 N per year, the lower downward by 4.8 N per year." loading="lazy">
+<figcaption><b>Figure 47.</b> Change in refractivity per layer over six years, with the uncertainty from leaving one building out at a time. The air does not get several N-units more refractive every year: the drifts (+8.9 and −4.8 N per year, in opposite directions) are building movement that the model has not fully removed.</figcaption></figure>
+<p>So the lowest 40 m sees real air, with a lot of noise; the upper layer is not usable yet. Whether the radar resolves structure <i>within</i> the lowest 100 m cannot be tested with existing data: the soundings have no level below about 100 m, and no other profile overlaps in time. That needs a measurement over Kop van Zuid at about 06 UTC on a few pass dates.</p>
+<div class="tech">
+<p>Sign of the export: positive towards the satellite, from four independent checks (SkyGeo's own velocity column, the summer height pattern, all 11 buildings expanding when warm, the sign of the boundary check). Reference: the 499 ground points both processings share. Buildings: BAG outlines with a 5 m facade buffer and a 3DBAG roof check. Median fitted expansion 3.0 × 10⁻⁶ /K with the air prior (5.0 without). Boundary check made without the air prior, since that puts the station's anomaly into every layer. Layer uncertainty (jackknife over buildings) 8.8 and 10.3 N; the formal error is 3 to 4 times smaller because buildings scatter as a whole.</p>
+</div>
+<!-- Sources: notebook Part C (C1-C3); DECISIONS.md D1, D7, D8. -->
+
+<h2 id="choices" data-short="Choices">The choices we made</h2>
 <div class="tbl"><table>
-<thead><tr><th>Processing</th><th>Building</th><th>Points</th><th>Raw</th><th>Detrended</th><th>Corrected</th><th>Point SD</th></tr></thead>
+<thead><tr><th>Question</th><th>Choice</th><th>Why</th></tr></thead>
 <tbody>
-<tr><td>2014-2023</td><td>De Rotterdam</td><td class="num">2510</td><td class="num">6.12</td><td class="num">3.27</td><td class="num">1.33</td><td class="num">1.76</td></tr>
-<tr><td>2014-2023</td><td>Montevideo</td><td class="num">1372</td><td class="num">3.43</td><td class="num">2.66</td><td class="num">1.51</td><td class="num">1.99</td></tr>
-<tr><td>2014-2023</td><td>New Orleans</td><td class="num">1188</td><td class="num">4.43</td><td class="num">3.69</td><td class="num">1.58</td><td class="num">1.79</td></tr>
-<tr><td>2014-2023</td><td>World Port Center</td><td class="num">884</td><td class="num">2.99</td><td class="num">2.93</td><td class="num">1.70</td><td class="num">1.99</td></tr>
-<tr><td>2020-2026</td><td>De Rotterdam</td><td class="num">2776</td><td class="num">5.70</td><td class="num">3.16</td><td class="num">1.21</td><td class="num">1.62</td></tr>
-<tr><td>2020-2026</td><td>Montevideo</td><td class="num">1072</td><td class="num">3.13</td><td class="num">2.58</td><td class="num">1.56</td><td class="num">1.82</td></tr>
-<tr><td>2020-2026</td><td>New Orleans</td><td class="num">851</td><td class="num">3.84</td><td class="num">3.42</td><td class="num">1.50</td><td class="num">1.57</td></tr>
-<tr><td>2020-2026</td><td>World Port Center</td><td class="num">784</td><td class="num">2.90</td><td class="num">2.83</td><td class="num">1.59</td><td class="num">1.70</td></tr>
+<tr><td>Sign of the radar data</td><td>positive towards the satellite</td><td>four independent checks agree</td></tr>
+<tr><td>Building expansion</td><td>fitted per building, with the air prior</td><td>gets the true expansion back on the simulation</td></tr>
+<tr><td>The first pass</td><td>average decrease of 55 N per km</td><td>measured at dawn at Cabauw and De Bilt</td></tr>
+<tr><td>Tie to the ground</td><td>the station sets the average level only</td><td>tying every pass spreads errors upward</td></tr>
+<tr><td>Overpass time</td><td>06 UTC</td><td>orbit calculation: 06:08 UTC</td></tr>
+<tr><td>Weather station</td><td>KNMI 344, Rotterdam airport</td><td>the closest one that measures temperature, pressure and humidity</td></tr>
+<tr><td>Layer thickness</td><td>40 m</td><td>20 m layers are limited by noise</td></tr>
 </tbody></table></div>
-<p class="small">Raw, detrended and corrected: RMS of the height gradient in mm line of sight per 100 m, all on the same 2020 to 2023 dates. Point SD: the spread of the points around the building model in mm, averaged over dates; it is not an error bar for the atmosphere. <a href="data/estimation-pilot.json">The aggregate data</a> also give each building's height spread and rate spread (SD, 10th and 90th percentiles).</p>
-<div class="tech">
-<p>Baseline: coherence above 0.6, points more than 5 m above ground, coherence-squared weights, linear trend, five-day temperature response time, KNMI Rotterdam daily temperature as a proxy for structural temperature. The fitted coefficient is an effective line-of-sight response in mm/m/K, not a material constant. Atmosphere with the same temperature dependence and height structure is inseparable in this model. The building samples differ between processings: only 11, 32, 13 and 15 mutual pairs remain above 5 m in both for De Rotterdam, Montevideo, New Orleans and World Port Center, so this is not a matched-target cross-validation.</p>
-</div>
+<!-- Source: virtual-radiosonde 04_python/estimation/DECISIONS.md D1-D10. -->
 
-<h2 id="holdout" data-short="Held-out dates">Tested on dates the fit never saw</h2>
-<p>Fitted on 63 dates in 2020 and 2021, tested on the 59 dates of 2022 and 2023. The more flexible the correction, the worse it can do on new dates.</p>
-<div class="tech">
-<p>Baseline residual-gradient RMS on withheld dates: <b>1.71 to 2.21 mm/100 m</b>. The 15-day linear case gives 1.25 to 1.89; the 5-day quadratic case 1.83 to 5.76. That shows sensitivity and possible extrapolation error; it does not make the 15-day case physically right, since a model can lower residuals by removing the air. The equal-weight mean of the four corrected gradients has RMS 1.19 and 1.09 mm/100 m (older, newer); leaving one building out changes it by 0.24 to 0.39 mm/100 m RMS, a sensitivity range rather than a confidence interval. Ten-metre height bins keep 5 to 9 bins per building and processing, each with at least 20 points.</p>
-</div>
-
-<h2 id="injection" data-short="Does the air survive?">Does a known air signal survive?</h2>
-<p>A synthetic test answers that: add a known air pattern to simulated building movement and noise, run the same correction, and see how much of the pattern comes back. When the air does not follow temperature, all of it survives. The more closely it follows temperature, the more the correction takes away.</p>
-<figure><img src="figures/38-synthetic-signal-retention.png" width="1445" height="850" alt="Recovered projection gain falls from 100 percent to zero as synthetic atmospheric correlation with temperature rises; withheld-date outcomes show additional spread." loading="lazy">
-<figcaption><b>Figure 38.</b> Fully synthetic. The vertical axis is the projection gain onto the injected pattern, not total amplitude and not a confidence for real data. Shading: 5th to 95th percentile over 100 synthetic trials. Held-out gain can exceed 100 % because extrapolation can amplify the pattern.</figcaption></figure>
-<div class="tbl"><table>
-<thead><tr><th>Correlation with temperature</th><th>All dates</th><th>Held-out median</th><th>Held-out 5th to 95th percentile</th></tr></thead>
-<tbody>
-<tr><td class="num">0.0</td><td class="num">100 %</td><td class="num">108.0 %</td><td class="num">101.0 to 137.9 %</td></tr>
-<tr><td class="num">0.5</td><td class="num">75 %</td><td class="num">86.2 %</td><td class="num">76.0 to 108.0 %</td></tr>
-<tr><td class="num">0.9</td><td class="num">19 %</td><td class="num">22.2 %</td><td class="num">5.1 to 36.7 %</td></tr>
-<tr><td class="num">1.0</td><td class="num">0 %</td><td class="num">0 %</td><td class="num">about 0 %</td></tr>
-</tbody></table></div>
-<p class="small">These settings are experimental choices, not estimates from Rotterdam: the real correlation between the air and temperature here is not known. Detrending also removes a linear air trend, and a deliberately unmodelled nonlinear expansion produced an apparent residual of 10.03 N-units RMS with no air variation at all.</p>
-
-<h2 id="absolute" data-short="Absolute profiles">Changes do not give an absolute profile</h2>
-<p>The method sees how the air changes from one pass to another, never how much air there is. Two very different profiles that change in the same way look identical. One profile from somewhere else (a sounding, a tower or a reconstruction) has to fix the level, and that choice is an assumption, not something the radar measures.</p>
-<figure><img src="figures/39-reference-profile-ambiguity.png" width="1700" height="765" alt="Two distinct absolute refractivity profiles produce identical temporal differences in all three synthetic height layers." loading="lazy">
-<figcaption><b>Figure 39.</b> Fully synthetic. Adding a fixed profile to every date leaves every temporal difference unchanged. An ideal three-layer inversion recovers the differences, but cannot choose between the absolute profiles.</figcaption></figure>
-<div class="tech">
-<p>For a temporal difference, <code>&Delta;N(t) = N(t) - N(ref)</code>, so its mean is <code>mean(N) - N(ref)</code>. Example with the simplified Smith-Weintraub model at P = 1013 hPa, T = 288 K, e = 12 hPa (N = 326.91): holding N fixed, assuming T one kelvin higher moves the inferred vapour pressure to 12.295 hPa; a 10 N-unit anchor error moves it to 14.224 hPa. This shows how much the assumptions matter; the pilot reports no humidity profile.</p>
-</div>
-
-<h2 id="next" data-short="Next">What would settle it</h2>
+<h2 id="limits" data-short="Limits">Limits</h2>
 <ul>
-  <li>A building-expansion model constrained independently of the air, or a joint fit with an external air covariate, tested against the same failure cases.</li>
-  <li>Confirmation of the export sign, processing filters, height datum and the hour of the pass.</li>
-  <li>Comparison of real residuals with external observations, on separate calibration and evaluation dates, with uncertainty for the distance in space and time.</li>
+  <li>On the simulation the radar is at its noise limit and not yet better than the weather station per 40 m layer.</li>
+  <li>On the real data both layers drift over the years: building movement that is not fully removed.</li>
+  <li>The vertical structure of the real profile is not validated: no profile measurement overlaps the passes.</li>
+  <li>The absolute level rests on one assumption about the average profile, uncertain by about ±1.2 N at 130 m.</li>
+  <li>The sign of the export is inferred, not yet confirmed by SkyGeo.</li>
 </ul>
 
-<h2 id="reproduce" data-short="Reproduce">Reproduce and inspect</h2>
-<!-- DECISION NEEDED: the team repository is private, so these links fail for the public. Replace with a public archive or drop before going live. -->
-<p>Code: <code>04_python/tsx/estimation_pilot.py</code>; walkthrough: <code>03_notebooks/04_estimation_reference_pilot/</code>; note: <code>01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md</code>, all in the team repository. <a href="data/estimation-pilot.json">Aggregate results</a>. The synthetic experiments run without radar access; the real-data run needs the course data sets. Published real results include group sizes and spread; raw observations, point identifiers, coordinates and individual series are excluded.</p>
+<h2 id="pilot" data-short="Earlier pilot">Earlier: the pilot of 30 September</h2>
+<p>The first pilot showed two things that still hold. The choice of reference changes the zero but not the height contrast the method relies on. And a correction that removes everything linked to temperature also removes air that follows temperature: with a correlation of 0.9, only 19 % of a known air pattern survived. The air prior above is the answer to that second finding.</p>
+<figure><img src="figures/38-synthetic-signal-retention.png" width="1445" height="850" alt="Recovered projection gain falls from 100 percent to zero as synthetic atmospheric correlation with temperature rises." loading="lazy">
+<figcaption><b>Figure 38.</b> Pilot, fully synthetic: how much of an injected air pattern survives a plain temperature correction, against how closely the air follows temperature.</figcaption></figure>
+
+<h2 id="reproduce" data-short="Reproduce">Reproduce</h2>
+<p>The code is in the team repository (private during the course): the package <code>04_python/estimation/</code>, the notebook <code>03_notebooks/07_estimation/estimation.ipynb</code> that follows the flowchart step by step, and the decision log <code>04_python/estimation/DECISIONS.md</code>.</p>
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261005"></script>
+<script defer src="js/nav.js?v=20261012"></script>
 </body>
 </html>
