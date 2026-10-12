@@ -346,3 +346,33 @@ main > .sim { max-width: 1060px; }
 .sim-pair.two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .sim-pair.two .sim-fig { margin-top: 0; }
 @media (max-width: 720px) { .sim-controls { padding: 12px 12px 10px; } .verdict { font-size: 1.02rem; } }
+
+/* ---------------------------------------------------------------- full-window app (simulator) */
+.app-page .top-inner { max-width: none; padding-left: 20px; padding-right: 20px; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr); overflow-x: clip; }
+.app-panel .t::after { max-width: min(270px, 76vw); }
+.app-panel { padding: 18px 16px 20px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.app-panel h1 { font-size: 1.35rem; margin: 0 0 6px; }
+.app-intro { font-size: .88rem; color: var(--ink-2); line-height: 1.5; margin: 0 0 14px; }
+.app-panel .sim-controls { border: 0; padding: 0; background: transparent; }
+.app-panel .asof { font-size: .78rem; margin: 14px 0 0; }
+.app-main { padding: 18px 16px 40px; min-width: 0; }
+.app-main .verdict { margin-bottom: 0; }
+.app-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.app-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 12px; min-width: 0; }
+.app-card h3, .app-main .app-card h3 { margin: 0 0 8px; font-size: 1rem; }
+.app-card .sim-chart, .app-card .sim-fig svg { border: 0; }
+.app-card .tbl { margin: 0; }
+.app-how { margin-top: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 16px; }
+.app-how summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.app-how[open] summary { margin-bottom: 10px; }
+.app-how .steps { max-width: none; }
+@media (min-width: 1000px) {
+  .app-page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  .app { flex: 1 1 auto; min-height: 0; grid-template-columns: 330px minmax(0, 1fr); }
+  .app-panel { border-bottom: 0; border-right: 1px solid var(--line); overflow-y: auto; padding: 20px 20px 24px; }
+  .app-main { overflow-y: auto; padding: 20px 26px 40px; }
+  .app-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .app-card.wide { grid-column: 1 / -1; }
+  .app-page .sim-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

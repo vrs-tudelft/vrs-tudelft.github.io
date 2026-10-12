@@ -9,21 +9,17 @@ site updates within a minute or two.
 
 | File | What it shows |
 |---|---|
-| `index.html` | The idea in plain language, the result in one picture, where each stage stands, what holds so far, about and licences |
-| `data.html` | The two TerraSAR-X processings, building heights (3DBAG/AHN5), soundings, stations and towers, and the rule on what may be published |
-| `low-level.html` | The annual low-level reconstruction of the lowest 200 m (1 October 2026) and its Brasschaat and Cabauw checks |
-| `simulation.html` | The end-to-end simulation: the synthetic city, the three atmospheres, the nuisances, the hand-over files, what it has shown |
-| `simulator.html` | The estimation simulator: pick noise and building movement, see what the estimation recovers. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
-| `reference.html` | Where the zero sits: the +0.60 mm/yr offset between processings and the shared-ground proposal (29 September 2026) |
-| `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the first pass, the test on the simulation (figures 41-43, 45), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
-| `paper.html` | The paper's title and outline, the team, the course |
-| `animations.html` | "Explore": six animations from the aggregate files, with a data-input switch (see below) |
+| `index.html` | Home: the idea in plain language, the result in one picture, where each stage stands, what holds so far, the paper and the team, about and licences |
+| `data.html` | The two TerraSAR-X processings, where the zero sits (the shared-ground reference), building heights (3DBAG/AHN5), soundings, stations and towers, the air near the ground (the low-level reconstruction), links to Explore, and the rule on what may be published |
+| `simulator.html` | The estimation simulator, a full-window page (controls left, results right; `body.app-page` in `style.css`): pick noise and building movement, see what the estimation recovers. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
+| `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the end-to-end simulation, the first pass, the test on the simulation (figures 41-43, 45), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
+| `animations.html` | Explore (linked from Data, no menu tab of its own): six animations from the aggregate files, with a data-input switch (see below) |
 | `3d/index.html` | The experimental 3D view, with the same switch and the gull easter egg |
 | `figures/` | The PNG files, `NN-short-name.png`; the number continues the count in the team repository's `05_results/00_tsx_figures/` (01 to 31 as of 16 September 2026) |
 | `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` | The site icon (the brand mark from the header); the `.ico` and `.png` are rendered from the `.svg` |
 | `svg/` | The drawings; `tools/inline_svg.py` pastes them into the pages |
 | `data/` | The aggregate files behind the animations and the 3D view (see the rule below), one set per data input: the archived September set (2014-2023, processor reference) in `data/` itself, the 2020-2026 set in the ground reference in `data/2020-2026-ground/`, each with its own `MANIFEST.json`; `data/datasets.json` lists them; `data/3d/` holds the building models, the ground image and the manifest, shared by both |
-| `js/` | `nav.js` (the navigation, one list for every page), `player.js` (the canvas player), `dataset.js` (the data-input switch), `animations.js` (the six animations) |
+| `js/` | `nav.js` (the navigation: four tabs, Home, Estimation, Simulator, Data, one list for every page), `player.js` (the canvas player), `dataset.js` (the data-input switch), `animations.js` (the six animations) |
 | `3d/` | `viewer.js` (three.js), `3d.css`, `colormaps.js` (generated), `flight.js` (the small bird in the corner of the view: a gull with a flight model over the same scene, loaded only when someone clicks it) |
 | `tools/` | `check_data.py` (the aggregation check, per data set), `check_links.py` (every internal link, image and anchor resolves, every file the Explore views fetch exists, no em dashes), `export_ground_frame.py` (writes `data/2020-2026-ground/`), `inline_svg.py` (pastes the drawings in) and `serve.py` (a local server that never caches) |
 | `style.css` | The look: one light theme, the shell grid, the tooltips |

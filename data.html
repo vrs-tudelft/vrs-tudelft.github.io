@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012">
+<link rel="stylesheet" href="style.css?v=20261012b">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,12 +21,12 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
 <h1>Data</h1>
-<p class="lead">Radar measurements of one Rotterdam district, the heights of its buildings, and the balloon, station and tower measurements we compare them with.</p>
+<p class="lead">Radar measurements of one Rotterdam district, where their zero sits, the heights of its buildings, the balloon, station and tower measurements we compare them with, and the air near the ground rebuilt from those.</p>
 
 <h2 id="radar" data-short="Radar">Radar: two processings of Kop van Zuid</h2>
 <p>The radar satellite TerraSAR-X passes over Rotterdam every 11 days. From its images, thousands of fixed points on facades, roof edges and pavement are tracked over the years. We have two processings of the same district, Kop van Zuid, made at different times. They overlap for four years, which lets us check one against the other.</p>
@@ -39,12 +39,82 @@
 </tbody></table></div>
 <!-- Sources: 01_reference/notes/2026-09-29-ground-reference-seasonality.md (20,594 points / 288 dates; 22,118 points / 213 dates; 122 identical dates 2020-01-08 to 2023-12-30); 2026-09-29-unique-pair-ground-reference.md (752 unique mutual-nearest pairs); 01_reference/checked-numbers.md (dates of the older set). -->
 <div class="tech">
-<p>Descending track, X band, incidence about 23 degrees. The older set was verified at 288 epochs with an 11-day step (largest gap 44 days); epoch 0 is exactly zero for every point, so all series are differences from 10 January 2014. The local hour of the pass is not in either file. Each processing refers its displacements to a reference point that is not in the file; see <a href="reference.html">Reference</a>. Of the older set, 11 818 points have coherence above 0.6. Its scatterers sit at a median of 14.7 m above ground with an interquartile span of 31.2 m and a ceiling of 83.2 m, although roofs in the scene reach 158 m. Kop van Zuid is a high-rise best case, not a city average.</p>
+<p>Descending track, X band, incidence about 23 degrees. The older set was verified at 288 epochs with an 11-day step (largest gap 44 days); epoch 0 is exactly zero for every point, so all series are differences from 10 January 2014. The local hour of the pass is not in either file. Each processing refers its displacements to a reference point that is not in the file; see <a href="#reference">Reference</a>. Of the older set, 11 818 points have coherence above 0.6. Its scatterers sit at a median of 14.7 m above ground with an interquartile span of 31.2 m and a ceiling of 83.2 m, although roofs in the scene reach 158 m. Kop van Zuid is a high-rise best case, not a city average.</p>
 </div>
 <!-- Sources: checked-numbers.md (11 days, 288 epochs, largest gap 44 days, overpass time unknown; median 14.7 m, IQR 31.2 m, ceiling 83.2 m; high-rise best case); notes/2026-09-17-reference-point-search.md (epoch 0 exactly zero, 2014-01-10); notes/2026-09-16-site-export-and-figures.md and figure 30 legend (11 818 coherent points, roofs to 158 m); notes/2026-09-30-reference-aware-estimation-pilot.md (23-degree geometry). -->
 
 <figure><img src="figures/31-pass-calendar.png" width="1734" height="601" alt="A calendar of the 288 passes of the older processing from 2014 to 2023, one square per pass, coloured by the daily mean air temperature at KNMI Rotterdam." loading="lazy">
 <figcaption><b>Figure 31.</b> The 288 passes of the older processing, one square each, coloured by that day's mean air temperature at KNMI station 344 Rotterdam. Every season is covered in every year. Contains no radar values.</figcaption></figure>
+
+<h2 id="reference" data-short="Where the zero sits">Where the zero sits</h2>
+<p>Every radar movement is measured against some fixed point. Neither data set says which point that was, and the two processings disagree because of it. The team now measures everything against the ground the two share.</p>
+<p class="asof">Analysis of 29 September 2026. The team adopted the shared ground as its reference on 5 October 2026. A draft paper section on reference choices exists and is not published here.</p>
+<!-- Paper: vrs-paper sections/331_reference_choices.tex, section 3.4 "Reference choices for the InSAR time series", local commit 2401b55 (not pushed). Draft text stays off the site until submission. -->
+<!-- Sources for this section: 01_reference/notes/2026-09-29-ground-reference.md, 2026-09-29-unique-pair-ground-reference.md, 2026-09-29-ground-reference-seasonality.md, 2026-09-28-overlap-rates-two-processings.md. -->
+
+<h3 id="ref-why">Why a reference is needed</h3>
+<p>Radar interferometry never measures absolute positions, only changes, and only relative to a chosen point. If that point itself moves, every other point seems to move the opposite way. For the air signal this matters less than it sounds: the method compares a high point with a low point on the same pass, and anything they share cancels. It matters a great deal as soon as rates, seasons, or the two processings are compared.</p>
+<div class="tech">
+<p>Each displacement series is relative to one reference point in space and one reference epoch in time. Neither point set contains its reference point. A common reference signal shifts every series by the same amount per epoch, so it changes rates and seasonal terms, but it leaves a same-epoch height slope with a free intercept unchanged.</p>
+</div>
+
+<h3 id="ref-offset">The two processings disagree by a constant</h3>
+<p>Over the four years they share, the same points should move at the same speed in both processings. They do not: the newer one gives every point a rate about 0.6 mm per year higher, whatever its height or position. A constant difference like that is what two different reference points produce.</p>
+<div class="tech">
+<p>752 unique mutual-nearest point pairs (coherence above 0.6, within 1.5 m horizontally and 1.5 m in height), linear rates fitted on exactly the same 122 dates: median difference, newer minus older, <b>+0.60 mm/yr</b>, interquartile range 0.38 mm/yr. A plane-plus-height fit to the paired differences has a height coefficient of -0.01 mm/yr per 100 m and leaves the spread unchanged (0.45 mm/yr before and after). The physical cause of the offset is not established by these data.</p>
+</div>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md (752 pairs, +0.60, IQR 0.38, -0.01 mm/yr per 100 m, SD 0.45). -->
+
+<h3 id="ref-options">The options compared</h3>
+<p>Three ways to set the zero were compared on the same point pairs. The best one is the one that makes the two processings agree.</p>
+<div class="tbl"><table>
+<thead><tr><th>Reference</th><th>Points used</th><th>Median difference</th><th>Spread (IQR)</th></tr></thead>
+<tbody>
+<tr><td>Each processor's own reference (unknown)</td><td>none</td><td class="num">+0.60 mm/yr</td><td class="num">0.38</td></tr>
+<tr><td>Each processing's own ground points</td><td>coherent points below 5 m</td><td class="num">+0.22 mm/yr</td><td class="num">0.38</td></tr>
+<tr><td>Ground points present in both processings</td><td>499 matched pairs</td><td class="num"><b>+0.11 mm/yr</b></td><td class="num">0.38</td></tr>
+</tbody></table></div>
+<p class="small">The spread does not shrink: subtracting a common reference shifts the whole distribution of differences, it does not make individual pairs agree better. The remaining +0.11 mm/yr is not an accuracy estimate.</p>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md, table "Spatial reference / Median difference / IQR". -->
+
+<h3 id="ref-ground">Why the shared ground</h3>
+<p>The shared ground removes most of the disagreement, it is a reference we can name, and it sits at street level, where the air signal starts. Measured against it, the buildings tell nearly the same story in both processings.</p>
+<div class="tbl"><table>
+<thead><tr><th>Building</th><th>Older processing</th><th>Newer processing</th></tr></thead>
+<tbody>
+<tr><td>De Rotterdam</td><td class="num">-1.94</td><td class="num">-1.66</td></tr>
+<tr><td>New Orleans</td><td class="num">-1.21</td><td class="num">-0.97</td></tr>
+<tr><td>Montevideo</td><td class="num">-0.39</td><td class="num">-0.19</td></tr>
+<tr><td>World Port Center</td><td class="num">+0.12</td><td class="num">+0.21</td></tr>
+<tr><td>Las Palmas</td><td class="num">+0.29</td><td class="num">+0.28</td></tr>
+<tr><td>Hotel New York</td><td class="num">+0.22</td><td class="num">+0.21</td></tr>
+<tr><td>Cruise Terminal Rotterdam</td><td class="num">+0.26</td><td class="num">+0.35</td></tr>
+</tbody></table></div>
+<p class="small">Median line-of-sight rate in mm/yr of each processing's own coherent points above 5 m on the building, over the same 122 dates, relative to the 499 shared ground pairs. Each value is a median over many points; the building samples differ between the processings. A rate here means "relative to the street", not an absolute movement, and it does not by itself say why a building moves.</p>
+<!-- Source: 2026-09-29-unique-pair-ground-reference.md, table "Building examples in the corrected shared-ground frame". -->
+
+<h3 id="ref-seasons">The ground has a seasonal cycle of its own</h3>
+<p>The shared-ground series is not perfectly still: in the processor's frame it swings by about half a millimetre over the year, peaking in late winter. That swing enters every point's series once the ground is the reference. It does not change the height slope the air method uses.</p>
+<div class="tech">
+<p>For the 499 unique ground pairs, the fitted annual amplitude is 0.498 and 0.506 mm over each full record, and 0.440 and 0.468 mm on the identical dates (older, newer). The earlier 778-entry baseline peaked around day 51 to 52 (20 to 21 February). Subtracting the reference series changed the existing free-intercept height slope by at most 1.09e-14 mm per 100 m, numerical round-off. The amplitude describes a composite reference series; reference motion, atmosphere, local motion and processing effects have not been separated.</p>
+</div>
+<!-- Sources: 2026-09-29-unique-pair-ground-reference.md (0.498/0.506, 0.440/0.468 mm); 2026-09-29-ground-reference-seasonality.md (day 51-52, 1.09e-14 mm/100 m, composite series caveat). -->
+
+<h3 id="ref-limits">Limits of the ground reference</h3>
+<ul>
+  <li>"Ground" means radar points less than 5 m above ground with coherence above 0.6. It is a group of low scatterers, not a surveyed benchmark, and the inherited selection includes some points with negative inferred height.</li>
+  <li>It is not a calibrated zero at exactly 3.20 m NAP, the street level the simulation assumes.</li>
+  <li>The original processor reference points are still unknown; what the +0.60 mm/yr is remains a question for the data provider.</li>
+</ul>
+<!-- Sources: 2026-09-29-unique-pair-ground-reference.md (seasonality and recommendation; not a surveyed stable reference or a calibrated zero at 3.20 m NAP); 2026-09-30-reference-aware-estimation-pilot.md (negative inferred AGL in shared-ground selection); 2026-09-29-ground-reference.md (z_reference 3.20 m NAP, question for Ramon). -->
+
+<h3 id="ref-history">Earlier versions of this analysis</h3>
+<p>Two earlier steps are superseded and kept here only so older links make sense. The 17 September search established what the file itself says about the reference (the reference epoch is the first pass, 10 January 2014; the reference point is not in the file). The first ground-reference comparison of 28 and 29 September used one-way matching (778 entries, only 628 distinct newer points) and six extra dates in the newer processing; it gave +0.14 mm/yr. The corrected one-to-one comparison above replaces it.</p>
+<!-- Sources: 2026-09-17-reference-point-search.md; 2026-09-29-ground-reference.md; 2026-09-29-unique-pair-ground-reference.md ("Two corrections"). -->
+
+<div class="placeholder">
+<p>Figure slot. The reference figures in the team repository (34 to 36) show individual points and may not be published. An aggregate version (per building and per ground group, at least 20 points each, with spread) would need to be made for this page.</p>
+</div>
 
 <h2 id="heights" data-short="Heights">Building heights</h2>
 <p>The method needs to know how high each radar point is, and where the ground is. Heights come from the public 3D building register 3DBAG, which is built from the national elevation model AHN. The pier is flat: the ground sits at about 3.2 m above Dutch sea level (NAP) everywhere.</p>
@@ -56,7 +126,7 @@
 <figcaption><b>Figure 30.</b> Three heights kept apart: the terrain, the roofs (3DBAG) and the radar points. Left, one circle per building with at least 20 points. Right, how many points and roofs sit at each height. Whether the 83 m ceiling is a processing limit, layover or facade orientation is still open.</figcaption></figure>
 
 <h2 id="soundings" data-short="Soundings">Balloon soundings</h2>
-<p>Two radiosonde stations frame the region: De Bilt in the Netherlands and Beauvechain in Belgium. Their archived records are the reference for what the air does, but they keep few readings close to the ground. That is why the team reconstructs the lowest 200 m separately; see <a href="low-level.html">Air near the ground</a>.</p>
+<p>Two radiosonde stations frame the region: De Bilt in the Netherlands and Beauvechain in Belgium. Their archived records are the reference for what the air does, but they keep few readings close to the ground. That is why the team reconstructs the lowest 200 m separately; see <a href="#low-level">Air near the ground</a>.</p>
 <div class="tech">
 <p>Source: NOAA IGRA2. In 2025 the archive holds 453 De Bilt reports on 358 dates and 331 Beauvechain reports on 329 dates. A large fraction of archived records has no reported height, and most 50 m bins near the surface have a median of zero recorded levels per launch: a property of what the archive retains, not of the flight. In the archive used for the September analyses, the first De Bilt level sits at about 650 m above ground, so any De Bilt value for the lowest 83 m is an interpolation.</p>
 </div>
@@ -72,6 +142,65 @@
 </ul>
 <!-- Sources: notes/2026-09-30-reference-aware-estimation-pilot.md (KNMI 344 daily temperature as proxy); notes/2026-10-01-annual-low-level-brasschaat.md and 03_notebooks/05_annual_low_level_reconstruction/README.md (Brasschaat 0.1-32.8 m ten levels; Cabauw 1.5-200 m, months); docs/DATA_SOURCES.md (ICOS licence, ICON-D2 via Open-Meteo). -->
 
+<h2 id="low-level" data-short="Air near the ground">The air near the ground</h2>
+<p>Weather balloons keep few readings in the lowest 200 metres, exactly the layer the radar method looks at. So the team rebuilt that layer from what is measured around it, and checked the result against two measurement towers.</p>
+<p class="asof">Analysis package of 1 October 2026, by Sander da Costa. Year covered: 2025.</p>
+<!-- Sources for this section: 01_reference/notes/2026-10-01-annual-low-level-brasschaat.md; 03_notebooks/05_annual_low_level_reconstruction/README.md; its 05_results/19_annual_low_level_reconstruction/README.md, method.json and brasschaat/method.json, brasschaat/heldout_paired_scores.csv. -->
+
+<h3 id="low-why">Why reconstruct it</h3>
+<p>The radar compares points between street level and about 80 m. To know what it should see, and to give its measurements an absolute level, we need to know what the air did in that layer. The balloon archives hold the measurements, but keep few of the low readings. The reconstruction combines the readings that are kept, the weather at the ground and a weather model into a full profile every 10 m from the ground to 200 m.</p>
+
+<h3 id="low-model">What the model does</h3>
+<p>It starts from the weather model's forecast for the balloon's time and place, and corrects it towards what was actually measured at the ground and on the balloon. Pressure follows from the weight of the air above; refractivity follows from pressure, temperature and humidity.</p>
+<div class="tech">
+<p>A Gaussian model of the discrepancy between the ICON-D2 weather background and observations, conditioned on surface and native sounding temperature and log vapour pressure; hydrostatic pressure; refractivity derived from P, T and e. Stations: De Bilt and Beauvechain, nominal 2025 reports. Output on a 10 m grid from 0 to 200 m, with 2,048 joint draws per profile for uncertainty. Training, tuning and test use different days of each month (days 1 to 14 training, 15 to 20 length validation, 21 to the end test). The 0 to 200 m zenith delay in the output is a partial layer contribution only.</p>
+</div>
+
+<h3 id="low-soundings">Checked against withheld balloon readings</h3>
+<p>All balloon readings between 2 and 200 m were held back on the test days and then predicted. The reconstruction is much closer to them than a straight line drawn between the readings that remain, and somewhat closer than the weather model on its own.</p>
+<div class="tbl"><table>
+<thead><tr><th>Station</th><th>Quantity</th><th>Error reduction against a straight line between readings</th><th>Error reduction against the weather model alone</th></tr></thead>
+<tbody>
+<tr><td>Beauvechain</td><td>temperature</td><td class="num">59 %</td><td class="num">29 %</td></tr>
+<tr><td>Beauvechain</td><td>vapour pressure</td><td class="num">20 %</td><td class="num">38 %</td></tr>
+<tr><td>De Bilt</td><td>temperature</td><td class="num">82 %</td><td class="num">9 %</td></tr>
+<tr><td>De Bilt</td><td>vapour pressure</td><td class="num">46 %</td><td class="num">9 %</td></tr>
+</tbody></table></div>
+<p class="small">Reduction of RMSE on the withheld native sounding levels of the test days: 89 levels on 80 days at Beauvechain, 114 levels on 91 days at De Bilt. The weather model itself assimilates observations, so this is not fully independent forecast validation; the intervals per method are not paired significance tests.</p>
+<!-- Sources: 03_notebooks/05_annual_low_level_reconstruction/README.md, "Results and what they establish" (59 %, 82 %, 20 %, 46 %); the baselines and the weather-model-only column are computed from 05_results/19_annual_low_level_reconstruction/native_reconstruction_scores.csv, split=test: 1 - rmse(background_conditioned)/rmse(linear_observations) gives 58.9/20.3/81.7/46.3 %, against background_only 29.4/37.8/8.5/9.4 %. CHECK WITH SANDER that this reading of the README numbers is right. -->
+
+<h3 id="low-brasschaat">Checked against the Brasschaat tower</h3>
+<p>The Brasschaat tower in Belgium measures temperature at ten heights between 0.1 and 32.8 m. The test keeps only the bottom and top sensor and predicts the eight in between. The reconstructed shape does better than a straight line between the two ends, on test days the model never saw.</p>
+<div class="stats">
+  <div class="stat"><span class="v">0.522 <span class="u">to</span> 0.357 <span class="u">K</span></span><span class="k">temperature error, straight line versus model shape (31.7 % lower)</span></div>
+  <div class="stat"><span class="v">114 <span class="u">days</span></span><span class="k">held-out test days, 5,331 complete half-hour profiles</span></div>
+  <div class="stat"><span class="v">0.129 <span class="u">to</span> 0.202 <span class="u">K</span></span><span class="k">95 % paired day-bootstrap interval of the gain</span></div>
+</div>
+<div class="tech">
+<p>Predictors: only the measured temperature at 0.1 and 32.8 m and the time of day and year; no interior temperature or humidity. Score: mean squared error over the eight interior levels per profile, equal weight per UTC day, 2,000 paired day-bootstrap draws. Some monthly gain intervals include zero; January has no complete ten-level profile, and missing values are not filled.</p>
+</div>
+<!-- Sources: notes/2026-10-01-annual-low-level-brasschaat.md (0.522 to 0.357 K, 31.7 %, 114 days, 5,331 profiles, 0.129-0.202 K, January); brasschaat/method.json (predictors, score, 2000 draws); brasschaat/heldout_paired_scores.csv (baseline is linear interpolation between endpoints). -->
+
+<h3 id="low-limits">What this does not show</h3>
+<ul>
+  <li>Brasschaat is a forest site about 65 km from Beauvechain; that the result carries over to Beauvechain, or to a city, is not tested.</li>
+  <li>The tower stops at 32.8 m, so there is no check of the full 200 m from this tower, and none for humidity (public humidity exists at only two heights, the lower sensor in a separate place).</li>
+  <li>Cabauw (1.5 to 200 m, temperature and humidity) is the separate check for De Bilt, but only for the 2025 months available: January to April, July and August.</li>
+  <li>It is a retrospective test on one year, not a forecast for a future year.</li>
+</ul>
+<!-- Sources: notes/2026-10-01-annual-low-level-brasschaat.md; 03_notebooks/05_annual_low_level_reconstruction/README.md; brasschaat/method.json limitations. -->
+
+<h3 id="low-role">Its role in the project</h3>
+<p>The reconstruction gives the project what the radar cannot supply itself: a realistic picture of the lowest layer, to feed the simulation and to fix the absolute level that radar changes lack. The package already exports profiles in the format the simulation reads. How exactly it enters the rebuilt simulation and the paper is still being worked out.</p>
+<!-- Source: 05_results/19_annual_low_level_reconstruction/E2E_annual_low200_100m.csv and 04_python/radiosonde_e2e_handoff.py exist in the package; estimation note: absolute profile requires external reference. -->
+
+<div class="placeholder">
+<p>Figure slot. The package contains comparison figures (for example the annual reconstruction and the Brasschaat comparison) made only from public inputs. They can go here once their author agrees and the licences (ICOS, KNMI, IGRA, Open-Meteo) are credited in the caption.</p>
+</div>
+
+<h2 id="explore" data-short="Explore">Explore the radar data</h2>
+<p>Two interactive views, drawn in the browser from tables of averages over at least 20 points: <a href="animations.html">six animations</a> that move through the passes (the scene, the height gradient, buildings or air, the year clock, a virtual balloon) and a <a href="3d/index.html">3D view</a> of Kop van Zuid with the buildings coloured by what the radar saw. They show the earlier, pre-estimation look at the data.</p>
+
 <h2 id="rule" data-short="What is published">What may appear on this site</h2>
 <p>This site is public. The radar point sets were given to us for the course and may not be passed on, so the rule is strict.</p>
 <ul>
@@ -85,6 +214,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261012"></script>
+<script defer src="js/nav.js?v=20261012b"></script>
 </body>
 </html>

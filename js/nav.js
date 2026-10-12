@@ -4,12 +4,7 @@
     { href: "index.html", label: "Home" },
     { href: "estimation.html", label: "Estimation" },
     { href: "simulator.html", label: "Simulator" },
-    { href: "simulation.html", label: "Simulation" },
-    { href: "data.html", label: "Data" },
-    { href: "reference.html", label: "Reference" },
-    { href: "low-level.html", label: "Air near the ground" },
-    { href: "paper.html", label: "Paper and team" },
-    { href: "animations.html", label: "Explore" }
+    { href: "data.html", label: "Data" }
   ];
   var root = document.documentElement.getAttribute("data-root") || "";
   var here = location.pathname.replace(/\/+$/, "").split("/").pop() || "index.html";
@@ -26,7 +21,7 @@
       var a = document.createElement("a");
       a.href = root + p.href;
       a.textContent = p.label;
-      if (p.href === "animations.html" ? (in3d || here === p.href) : (!in3d && p.href === here)) a.setAttribute("aria-current", "page");
+      if (p.href === "data.html" ? (in3d || here === p.href || here === "animations.html") : (!in3d && p.href === here)) a.setAttribute("aria-current", "page");
       nav.appendChild(a);
     });
     inner.appendChild(nav);
@@ -89,9 +84,12 @@
   /* keep a tooltip inside the window: flip it to the left or right edge when needed */
   function place(t) {
     t.classList.remove("left", "right");
-    var r = t.getBoundingClientRect(), w = Math.min(330, innerWidth * 0.76);
-    if (r.left + r.width / 2 - w / 2 < 12) t.classList.add("left");
-    else if (r.left + r.width / 2 + w / 2 > innerWidth - 12) t.classList.add("right");
+    /* inside a scrolling panel (the simulator) the panel's edges count, not the window's */
+    var box = t.closest(".app-panel"), lo = 0, hi = innerWidth;
+    if (box) { var b = box.getBoundingClientRect(); lo = b.left; hi = b.right; }
+    var r = t.getBoundingClientRect(), w = Math.min(box ? 270 : 330, (hi - lo) * 0.76);
+    if (r.left + r.width / 2 - w / 2 < lo + 12) t.classList.add("left");
+    else if (r.left + r.width / 2 + w / 2 > hi - 12) t.classList.add("right");
   }
   document.querySelectorAll(".t").forEach(function (t) {
     if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "0");

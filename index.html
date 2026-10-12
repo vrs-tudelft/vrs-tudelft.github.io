@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012">
+<link rel="stylesheet" href="style.css?v=20261012b">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,7 +21,7 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
@@ -105,17 +105,17 @@
 <ol class="steps">
   <li><a class="name" href="data.html">Data</a><span class="badge done">in hand</span>
     <p>Two radar processings of the same district, building heights, balloon soundings, weather stations and two measurement towers.</p></li>
-  <li><a class="name" href="reference.html">Reference</a><span class="badge done">adopted, 5 Oct</span>
+  <li><a class="name" href="data.html#reference">Reference</a><span class="badge done">adopted, 5 Oct</span>
     <p>Where the zero of the measurement sits: both processings are tied to the ground points they share.</p></li>
-  <li><a class="name" href="simulation.html">Simulation</a><span class="badge done">running, 12 Oct</span>
+  <li><a class="name" href="estimation.html#sim-model">Simulation</a><span class="badge done">running, 12 Oct</span>
     <p>A synthetic city and a known atmosphere pushed through the radar geometry, with building movement and noise, to test the estimation against the truth.</p></li>
   <li><a class="name" href="estimation.html">Estimation</a><span class="badge done">first full version, 12 Oct</span>
     <p>From radar points to the refractivity of the air in 40 m layers, one profile per pass. Tested on the simulation and run on six years of real data.</p></li>
   <li><a class="name" href="simulator.html">Simulator</a><span class="badge done">first version, 12 Oct</span>
     <p>Switch noise and building movement on and off and see what the estimation recovers.</p></li>
-  <li><a class="name" href="low-level.html">Air near the ground</a><span class="badge done">first version, 1 Oct</span>
+  <li><a class="name" href="data.html#low-level">Air near the ground</a><span class="badge done">first version, 1 Oct</span>
     <p>A reconstruction of the lowest 200 m of air from soundings, surface weather and a weather model, checked against two towers.</p></li>
-  <li><a class="name" href="paper.html">Paper</a><span class="badge pending">due 22 Oct</span>
+  <li><a class="name" href="#paper">Paper</a><span class="badge pending">due 22 Oct</span>
     <p>One manuscript by the whole team. The draft is not on this site.</p></li>
 </ol>
 
@@ -126,12 +126,58 @@
   <li>With realistic noise and building movement the radar recovers the air to <b>3 to 5 N</b> per 40 m layer, against an air that varies by about 12 N. That is not yet better than the weather station alone per layer; for the column as a whole it is (1.4 against 3.1 N). <a href="estimation.html#simulation">Estimation</a></li>
   <li>On the real data of 2020 to 2026, the radar's lowest layer (3 to 43 m) follows the weather station with <b><i>r</i> = 0.45</b>, and 0.35 once the yearly cycle is removed. The upper layer still carries building movement. <a href="estimation.html#real">Estimation</a></li>
   <li>The vertical structure of the real profile is not validated yet: no profile measurement overlaps the satellite passes below 100 m. <a href="estimation.html#limits">Estimation</a></li>
-  <li>Tying both processings to their shared ground points reduces their disagreement from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="reference.html">Reference</a></li>
+  <li>Tying both processings to their shared ground points reduces their disagreement from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="data.html#reference">Reference</a></li>
 </ul>
-<!-- Sources: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb and 04_python/estimation/DECISIONS.md (D2, D4, D7, D8), 12 October 2026; reference numbers as on reference.html. -->
+<!-- Sources: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb and 04_python/estimation/DECISIONS.md (D2, D4, D7, D8), 12 October 2026; reference numbers as in data.html#reference. -->
+
+<h2 id="paper" data-short="Paper and team">Paper and team</h2>
+<p>The whole team writes one manuscript. Its draft is not on this site until it is submitted; this section says what it is about and how it is organised.</p>
+
+<h3 id="paper-paper">The paper</h3>
+<p><b>Reconstruction of the near-surface atmospheric refractivity profile from satellite InSAR: potential and limitations.</b> Submission and final presentation: 22 October 2026.</p>
+<p>The success criterion is the refractivity of the near-surface air, one number that combines pressure, temperature and humidity. Separating pressure, temperature and humidity is the stretch goal.</p>
+<!-- Sources: vrs-paper main.tex (title, chapter inputs), commit 2b4a7eb of 02-10-2026; ASG Project README.md (22 October 2026); 01_reference/checked-numbers.md (N success criterion, P/T/e stretch goal). The abstract in main.tex is a placeholder from the skeleton and is NOT used here. -->
+
+<h3 id="paper-outline">How it is organised</h3>
+<div class="tbl"><table>
+<thead><tr><th>Chapter</th><th>What it covers</th></tr></thead>
+<tbody>
+<tr><td>1 Introduction</td><td>Why cities need repeated profiles of the lowest air; what radiosondes observe today; the urban heat island; weather forecasting</td></tr>
+<tr><td>2 Theory</td><td>Radar phase and propagation delay; refractivity of moist air and its sensitivity to humidity and temperature; surface delay models; the temperature effect; from an integrated delay to a profile</td></tr>
+<tr><td>3 Methodology</td><td>The end-to-end simulation; refractivity and delay; making residuals; temporal double differences; reference choices for the radar time series (draft); separating refractivity from building movement</td></tr>
+<tr><td>4 Results</td><td>Radiosonde reference results; joint atmospheric estimation; comparison with GNSS</td></tr>
+<tr><td>5 to 7</td><td>Discussion and future research questions; impact and limitations; conclusions</td></tr>
+<tr><td>Appendix</td><td>Background on radio-wave propagation</td></tr>
+</tbody></table></div>
+<p class="small">Chapter structure as of 2 October 2026; it may still change.</p>
+<!-- Source: vrs-paper sections/ file names and headings (110 to 810), commit 2b4a7eb; 331_reference_choices.tex added in local commit 2401b55 (not pushed). -->
+
+<h3 id="paper-team">Team</h3>
+<!-- DECISION NEEDED: confirm the student list (all twelve still active?) before publishing. Source: vrs-paper sections/010_authors.tex, commit 2b4a7eb. -->
+<p>Twelve MSc students of Delft University of Technology, from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science:</p>
+<ul class="cols">
+  <li>Sander da Costa</li>
+  <li>Jaap de Ruiter</li>
+  <li>Dirk van Dale</li>
+  <li>Alejandro Giner Gil</li>
+  <li>Phoebe Smirk</li>
+  <li>Quinten Uivel</li>
+  <li>Lars van Dijk</li>
+  <li>Rosalyn van Hemert</li>
+  <li>Shaquille Huiswoud</li>
+  <li>Akhil Veeranki</li>
+  <li>Jihun Yoo</li>
+  <li>Oula Zhu</li>
+</ul>
+<p>Supervision: Ramon Hanssen and Freek van Leijen (TU Delft), with Hanno Maljaars (SkyGeo).</p>
+
+<h3 id="paper-course">The course</h3>
+<p>Applied Space Geodesy (AESM5240C), TU Delft, 31 August to 22 October 2026: a coached team project that goes from an idea through research to a scientific paper and a working prototype in about eight weeks.</p>
+<p>Repositories: <a href="https://github.com/vrs-tudelft">github.com/vrs-tudelft</a>. The analysis repository and the paper repository are private to the team; this site is the public part.</p>
+<!-- Source: ASG Project README.md (course, dates); repository visibility on 5 October 2026 (virtual-radiosonde, vrs-paper, vrs-data private; site public). -->
 
 <h2 id="about" data-short="About">About</h2>
-<p>A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). The team is listed on <a href="paper.html#team">Paper and team</a>.</p>
+<p>A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). The team is listed on <a href="#paper-team">Paper and team</a>.</p>
 <details>
   <summary>Who made what is on this site</summary>
   <!-- DECISION NEEDED: confirm this credit paragraph with the people named before publishing. -->
@@ -149,6 +195,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261012"></script>
+<script defer src="js/nav.js?v=20261012b"></script>
 </body>
 </html>

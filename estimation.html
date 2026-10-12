@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012">
+<link rel="stylesheet" href="style.css?v=20261012b">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,7 +21,7 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
@@ -79,8 +79,52 @@
 <figcaption><b>Figure 43.</b> Simulation. Left: the first pass relative to the assumed average, estimate (red) against truth (black). Right: its error, at most 0.5 mm. An error here shifts every pass by the same amount; it never changes the differences between passes.</figcaption></figure>
 <!-- Source: DECISIONS.md D3 (Cabauw 06 UTC −60, De Bilt 00 UTC −53, simulated atmospheres −57 to −59 N/km); notebook step 8. -->
 
+<h2 id="sim-model" data-short="The simulation">The simulation: a city where we know the answer</h2>
+<p>The simulation starts from an atmosphere we choose, works out exactly what the radar would measure on a synthetic city, adds everything that makes real data hard, and hands that to the <a href="estimation.html">estimation</a>. Because the true air is known, it shows what the method can and cannot recover.</p>
+<p class="asof">Status on 12 October 2026: running end to end, from the atmosphere to the radar measurements, and used to test every step of the estimation.</p>
+
+<h3 id="sim-why">Why simulate</h3>
+<p>In the real data the air is mixed with buildings that sink and expand, with noise, and with an unknown reference. There is no measurement of the true profile at the moment of each pass. A simulation lets us switch each of those on and off and compare the result with the truth. Try it in the <a href="simulator.html">simulator</a>.</p>
+
+<h3 id="sim-chain">From air to radar measurement</h3>
+<ol class="steps">
+  <li><span class="name">The scene</span>
+    <p>A synthetic city of 16 box buildings, two of them towers of 100 to 150 m, with 12 000 radar points on facades, roofs and the street, on the 288 real TerraSAR-X pass dates of 2014 to 2023.</p></li>
+  <li><span class="name">The air</span>
+    <p>A profile of pressure, temperature and humidity for every pass, on 1 m levels. Three choices: air built from the KNMI weather of each pass, the De Bilt balloon soundings of 2025, or the Cabauw tower's measured profiles.</p></li>
+  <li><span class="name">From air to delay</span>
+    <p>The refractivity of every level, the delay it causes along the radar's slanted line of sight, and the delay at the height of every radar point.</p></li>
+  <li><span class="name">What makes it hard</span>
+    <p>Ground and buildings sink and shrink, buildings expand when warm, every point has a small position error, and 2 mm of noise per point and pass. Each can be switched off.</p></li>
+  <li><span class="name">The radar's view</span>
+    <p>Every point compared with the street and every pass with the first: the double differences, in the same file layout as the real satellite data.</p></li>
+</ol>
+<div class="tech">
+<p>Code: <code>06_simulation/</code> in the team repository, <code>run_pipeline.py</code> runs steps 0 to 7 (scene, profiles, refractivity (Smith and Weintraub, three terms), delay profile, delay at points, line of sight at 23°, nuisances, single-mother stacking). Nuisances in step 6: sinking and shrinking (−2.5 mm per 100 m per year), thermal expansion α η = 1 × 10⁻⁵ /K × 0.7 driven by the KNMI daily temperature with a 5-day lag, cross-range error (1 m height error × simulated perpendicular baseline), white noise 2.07 mm (the residual level measured on the real stack). Every run can write three files with the same passes: the radar observation (<code>simulated_fullpixel_&lt;name&gt;.csv</code>), the ground weather at 0 m (<code>ground_&lt;name&gt;.csv</code>) and the true N, P, T and e on 1 m levels to 140 m (<code>solution_&lt;name&gt;.csv</code>).</p>
+</div>
+<!-- Sources: virtual-radiosonde 06_simulation/run_pipeline.py and settings.py (12 October 2026); 04_python/estimation/sim_outputs.py. -->
+
+<h3 id="sim-checks">What the simulation has shown so far</h3>
+<ul>
+  <li>With air only, the radar's view is exactly the double-differenced air delay (checked to 0.00001 mm), and the estimation gets the air back to a few tenths of an N-unit from pass to pass. <a href="estimation.html#ideal">Estimation</a></li>
+  <li>With everything switched on, a naive fit of the building expansion takes about 9 N of air signal out of every layer; the estimation's air prior fixes that. <a href="estimation.html#buildings">Estimation</a></li>
+  <li>The remaining error is noise: 3 to 5 N per 40 m layer with 12 000 points and 2 mm per point. <a href="estimation.html#simulation">Estimation</a></li>
+  <li>The simulated air drops by about 58 N per km near the ground on average, like the measured air at dawn: the reason the estimation now assumes 55 N/km.</li>
+</ul>
+<!-- Sources: notebook Part A and Part B; DECISIONS.md D2, D3, D7. -->
+
+<h3 id="sim-simulator">Try it: the simulator</h3>
+<p>The <a href="simulator.html">simulator</a> shows, for every combination of noise level, building movement, thermal expansion and position error, what the estimation recovers. Every combination was run with the team's code: simulation first, then estimation.</p>
+
+<h3 id="sim-limits">Limits</h3>
+<ul>
+  <li>The city is a grid of boxes; the real Kop van Zuid has 11 usable buildings of different shapes.</li>
+  <li>The simulated buildings follow one temperature memory (5 days); real buildings may respond differently.</li>
+  <li>The air is horizontally uniform: the same profile above every point.</li>
+</ul>
+
 <h2 id="simulation" data-short="Test: simulation">Tested on the simulation</h2>
-<p>The team's <a href="simulation.html">simulation</a> builds a fake city of 16 buildings with 12 000 radar points, fake air from the real weather of 288 satellite passes (2014 to 2023), and everything that makes the real data hard: sinking, shrinking, thermal expansion, a position error and 2 mm of noise per point. Because the true air is known, every step can be checked.</p>
+<p>The team's <a href="#sim-model">simulation</a> builds a fake city of 16 buildings with 12 000 radar points, fake air from the real weather of 288 satellite passes (2014 to 2023), and everything that makes the real data hard: sinking, shrinking, thermal expansion, a position error and 2 mm of noise per point. Because the true air is known, every step can be checked.</p>
 <figure><img src="figures/41-sim-layer-errors.png" width="440" height="402" alt="Per 40 m layer: radar error 3.2, 4.0, 5.2 and 11.5 N; weather station alone 1.3, 2.7, 4.2 and 5.1 N; true variation of the air about 11.7 N." loading="lazy" style="max-width:440px">
 <figcaption><b>Figure 41.</b> Error per 40 m layer, root mean square over the 288 passes. Red: the radar. Grey: the weather station alone, carried up with the same 55 N/km. Blue: how much the true air varies. The top layer has radar points only up to 140 m, which is why it is worse.</figcaption></figure>
 <p>The radar recovers the air to 3 to 5 N per layer, against an air that varies by about 12 N. That is the noise limit of this many points. It is not yet better than the weather station alone, because in this simulation the air changes almost the same way at every height, which the station predicts well. With one thick layer from the street to the top, the radar does beat the station: 1.4 against 3.1 N.</p>
@@ -146,6 +190,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261012"></script>
+<script defer src="js/nav.js?v=20261012b"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012">
+<link rel="stylesheet" href="style.css?v=20261012b">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,7 +21,7 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="simulation.html">Simulation</a> <a href="data.html">Data</a> <a href="reference.html">Reference</a> <a href="low-level.html">Air near the ground</a> <a href="paper.html">Paper and team</a> <a href="animations.html">Explore</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="shell">
@@ -31,7 +31,7 @@
     <div class="dsbar">
       <div class="dsrow"><span class="dslabel">Data input</span><div data-ds-switch="Data input for the animations and the 3D view"><noscript>The switch needs JavaScript.</noscript></div></div>
       <p><b data-ds-name>2020-2026, ground reference</b>: <span data-fill="passes">213</span> passes, <span data-fill="first">8 Jan 2020</span> to <span data-fill="last">24 Aug 2026</span>. <span data-ds-about>TerraSAR-X, the newer processing. Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.</span></p>
-      <p class="small">The switch also sets the <a href="3d/index.html">3D view</a>. Either way every colour and every dot is a mean over at least 20 radar points, shown with its spread; how the ground reference works is on the <a href="reference.html">Reference</a> page, and what can and cannot yet be read from these signals is on the <a href="estimation.html">Estimation</a> page.</p>
+      <p class="small">The switch also sets the <a href="3d/index.html">3D view</a>. Either way every colour and every dot is a mean over at least 20 radar points, shown with its spread; how the ground reference works is on the <a href="data.html#reference">Reference</a> page, and what can and cannot yet be read from these signals is on the <a href="estimation.html">Estimation</a> page.</p>
     </div>
     <!-- The 2020-2026 files are written by tools/export_ground_frame.py; the reference is the one in the team repository's 04_python/tsx/ground_reference.py (01_reference/notes/2026-09-29-unique-pair-ground-reference.md). Numbers in data-fill spans are read from the active set's files. -->
     <p class="lead">Six players, drawn in the browser from small tables of averages. Each moves through the <span data-fill="passes">213</span> passes of the chosen data set, or through one year; the line under each one says which pass you are looking at and what the weather was.</p>
@@ -70,7 +70,7 @@
     <footer data-shared></footer>
   </main>
 </div>
-<script defer src="js/nav.js?v=20261012"></script>
+<script defer src="js/nav.js?v=20261012b"></script>
 <script defer src="js/player.js?v=20261005b"></script>
 <script defer src="js/dataset.js?v=20261005b"></script>
 <script defer src="js/animations.js?v=20261005c"></script>
