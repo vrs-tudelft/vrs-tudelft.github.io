@@ -179,17 +179,20 @@
     return "The radar beats the weather station in " + wins.length + " of " + nl + " layers" + (wins.length <= 2 ? " (" + wins.join(" and ") + ")" : "") + ".";
   }
 
-  function stat(v, unit, k) { return '<div class="stat"><span class="v">' + v + (unit ? ' <span class="u">' + unit + "</span>" : "") + '</span><span class="k">' + k + "</span></div>"; }
+  function stat(v, unit, k, ic) {
+    var i = ic && window.VRS_ICON ? '<span class="s-ic">' + window.VRS_ICON(ic) + "</span>" : "";
+    return '<div class="stat">' + i + '<span class="v">' + v + (unit ? ' <span class="u">' + unit + "</span>" : "") + '</span><span class="k">' + k + "</span></div>";
+  }
   function renderStats(e, s) {
     var aTrue = s.thermal === "1" ? (manifest.scene && manifest.scene.alpha_true_per_K) || 7e-6 : 0;
     var aFit = e.alpha_median_per_K;
     var nl = e.rmse.length, avg = nl === 1 ? "" : ", mean of " + nl + " layers";
-    var html = stat(num(mean(e.rmse)), "N", "radar estimate, rms error" + avg) +
-      stat(num(mean(e.ground_rmse)), "N", "weather station alone, rms error" + avg) +
+    var html = stat(num(mean(e.rmse)), "N", "radar estimate, rms error" + avg, "radar") +
+      stat(num(mean(e.ground_rmse)), "N", "weather station alone, rms error" + avg, "thermo") +
       stat(aFit === null || aFit === undefined ? "not fitted" : num(aFit * 1e6, 2), aFit === null || aFit === undefined ? "" : "× 10⁻⁶ /K",
-        "fitted thermal expansion α; true value " + num(aTrue * 1e6, 1) + (aTrue ? " × 10⁻⁶ /K" : " (switched off)")) +
+        "fitted thermal expansion α; true value " + num(aTrue * 1e6, 1) + (aTrue ? " × 10⁻⁶ /K" : " (switched off)"), "sun") +
       stat(e.points_used !== undefined ? Number(e.points_used).toLocaleString("en-GB").replace(/,/g, " ") : "n/a", "points",
-        "used by the estimation" + (e.buildings !== undefined ? ", on " + e.buildings + " buildings" : ""));
+        "used by the estimation" + (e.buildings !== undefined ? ", on " + e.buildings + " buildings" : ""), "grid");
     document.getElementById("sim-stats").innerHTML = html;
   }
 
@@ -298,6 +301,7 @@
     var d = manifest.defaults || {}, hint = document.querySelector(".sim-hint");
     if (hint) hint.textContent = "Realistic: " + d.noise + " mm noise, thermal expansion " + (d.thermal == 1 ? "on" : "off") + ", sinking & shrinking " + (d.sinking == 1 ? "on" : "off") +
       ", cross-range error " + (d.crossrange == 1 ? "on" : "off") + ", " + (METHOD[d.method] || d.method) + ", " + (d.layers === "1" ? "one layer" : d.layers + " m layers") + ".";
+    var rb = document.getElementById("sim-reset"); if (rb && hint) rb.title = hint.textContent;
     var asof = document.getElementById("sim-asof");
     if (asof && manifest.generated) asof.textContent = "Synthetic data only, no real radar point is used. Results generated on " + fmtDate(manifest.generated) +
       (manifest.code && manifest.code.virtual_radiosonde ? " with the team's code at " + String(manifest.code.virtual_radiosonde).slice(0, 7) : "") + ".";

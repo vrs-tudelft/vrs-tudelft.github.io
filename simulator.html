@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012c">
+<link rel="stylesheet" href="style.css?v=20261012e">
 </head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
@@ -25,12 +25,17 @@
 </div></header>
 
 <div class="app" id="sim">
-<aside class="app-panel">
-  <h1>Estimation simulator</h1>
-  <p class="app-intro">Pick what disturbs the radar data. The team's <a href="estimation.html#sim-model">simulation</a> made fake radar data for a synthetic city (<span data-scene="buildings">16</span> buildings, <span data-scene="points">12&nbsp;000</span> points, <span data-scene="passes">288</span> passes, <span data-scene="years">2014 to 2023</span>); the <a href="estimation.html">estimation</a> turned it back into the <span class="t" data-tip="Refractivity N says how much the air slows the radar signal, in N-units: about 1 N-unit per 1 part per million of extra delay. It depends on pressure, temperature and above all humidity.">air refractivity</span> per height layer. The true air is known, so you see how close it gets.</p>
+<aside class="app-panel sim-panel">
+  <div class="sim-head">
+    <span class="sim-head-ic" data-icon="play"></span>
+    <div>
+      <h1>Estimation simulator</h1>
+      <p class="app-intro">Disturb the fake radar data of a synthetic city (<span data-scene="buildings">16</span> buildings, <span data-scene="points">12&nbsp;000</span> points, <span data-scene="passes">288</span> passes) and see how well the <a href="estimation.html">estimation</a> finds the true <span class="t" data-tip="Refractivity N says how much the air slows the radar signal, in N-units: about 1 N-unit per 1 part per million of extra delay. It depends on pressure, temperature and above all humidity.">air refractivity</span>.</p>
+    </div>
+  </div>
   <form class="sim-controls" id="sim-controls" aria-label="Simulation and estimation settings" onsubmit="return false">
     <fieldset class="sim-field">
-      <legend>Radar noise <span class="t i" data-tip="Random error on every radar point on every pass, in millimetres. The real data have about 2 mm."><span class="info">i</span></span></legend>
+      <legend><span class="lg-ic" data-icon="noise"></span>Radar noise <span class="t i" data-tip="Random error on every radar point on every pass, in millimetres. The real data have about 2 mm."><span class="info">i</span></span></legend>
       <div class="seg" data-control="noise">
         <label><input type="radio" name="noise" value="0"><span>0 mm</span></label>
         <label><input type="radio" name="noise" value="1"><span>1 mm</span></label>
@@ -39,38 +44,31 @@
       </div>
     </fieldset>
     <fieldset class="sim-field">
-      <legend>What else the buildings do</legend>
-      <div class="sw-row">
-        <label class="switch"><input type="checkbox" role="switch" name="thermal"><span class="track" aria-hidden="true"></span>Thermal expansion</label>
-        <span class="t i" data-tip="Buildings grow a little when it is warm (7 millionths of their height per degree, five days behind the weather), which looks like a change in the air."><span class="info">i</span></span>
-      </div>
-      <div class="sw-row">
-        <label class="switch"><input type="checkbox" role="switch" name="sinking"><span class="track" aria-hidden="true"></span>Sinking &amp; shrinking</label>
-        <span class="t i" data-tip="The ground and the buildings slowly sink and the buildings shrink, a steady drift that has to be separated from the air."><span class="info">i</span></span>
-      </div>
-      <div class="sw-row">
-        <label class="switch"><input type="checkbox" role="switch" name="crossrange"><span class="track" aria-hidden="true"></span>Cross-range error</label>
-        <span class="t i" data-tip="Each point's position across the radar beam is slightly wrong, which leaks into the measured distance in proportion to how far apart the satellite's orbits were."><span class="info">i</span></span>
+      <legend><span class="lg-ic" data-icon="building"></span>What else happens <span class="t i" data-tip="Switch on what makes real radar data hard. Warm: buildings grow a little when it is warm (7 millionths of their height per degree, five days behind the weather). Sinking: ground and buildings slowly sink and the buildings shrink. Position: each point's position across the beam is slightly off, which leaks into the measured distance."><span class="info">i</span></span></legend>
+      <div class="chips">
+        <label class="chip-t"><input type="checkbox" name="thermal"><span><i data-icon="sun"></i>Warm buildings grow</span></label>
+        <label class="chip-t"><input type="checkbox" name="sinking"><span><i data-icon="sink"></i>Sinking &amp; shrinking</span></label>
+        <label class="chip-t"><input type="checkbox" name="crossrange"><span><i data-icon="sideways"></i>Position error</span></label>
       </div>
     </fieldset>
     <fieldset class="sim-field">
-      <legend>Estimation method <span class="t i" data-tip="How the estimation removes the buildings' thermal expansion before it reads the air."><span class="info">i</span></span></legend>
-      <div class="seg seg-col" data-control="method">
-        <label><input type="radio" name="method" value="none"><span>Fit &alpha; only (the flowchart)</span></label>
-        <label><input type="radio" name="method" value="air_prior"><span>Fit &alpha; + air prior (our default)</span></label>
-        <label><input type="radio" name="method" value="jaap"><span>Jaap's method: 72 h temperature memory</span></label>
+      <legend><span class="lg-ic" data-icon="sliders"></span>Estimation method <span class="t i" data-tip="How the estimation removes the buildings' thermal expansion before it reads the air. Fit α: the flowchart as drawn. α + air prior: our default, sets aside what the weather station predicts first. Jaap's: a 72-hour temperature memory and a temperature-driven air term."><span class="info">i</span></span></legend>
+      <div class="seg" data-control="method">
+        <label><input type="radio" name="method" value="none"><span>Fit α</span></label>
+        <label><input type="radio" name="method" value="air_prior"><span>α + air prior</span></label>
+        <label><input type="radio" name="method" value="jaap"><span>Jaap's 72 h</span></label>
       </div>
     </fieldset>
     <fieldset class="sim-field">
-      <legend>Layer thickness <span class="t i" data-tip="How thick each height layer of air is. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
+      <legend><span class="lg-ic" data-icon="layers"></span>Layer thickness <span class="t i" data-tip="How thick each height layer of air is. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
       <div class="seg" data-control="layers">
         <label><input type="radio" name="layers" value="20"><span>20 m</span></label>
         <label><input type="radio" name="layers" value="40"><span>40 m</span></label>
         <label><input type="radio" name="layers" value="1"><span>One layer</span></label>
       </div>
     </fieldset>
-    <button type="button" class="sim-reset" id="sim-reset">Reset to realistic</button>
-    <p class="sim-hint">Realistic: 2 mm noise, everything switched on, our default method, 40 m layers.</p>
+    <button type="button" class="sim-reset" id="sim-reset"><i data-icon="reset"></i>Reset to realistic</button>
+    <p class="sim-hint" hidden></p>
   </form>
   <p class="asof" id="sim-asof">Synthetic data only. No real radar point is used here. Every combination was computed beforehand with the team's code.</p>
 </aside>
@@ -83,7 +81,7 @@
       <div class="stats sim-stats" id="sim-stats"></div>
     <div class="app-grid">
       <section class="app-card">
-      <h3 id="sim-profile-h">Error per height layer</h3>
+      <h3 id="sim-profile-h"><i class="h-ic" data-icon="bars"></i>Error per height layer</h3>
       <ul class="sim-legend" aria-hidden="true">
         <li><i class="sw" style="background:#d62728"></i>radar estimate, rms error</li>
         <li><i class="sw" style="background:#9a9a9a"></i>weather station alone, rms error</li>
@@ -93,11 +91,11 @@
       <p class="small">Each row is one height layer. A red bar shorter than the grey one means the radar knows that layer better than a weather station on the ground does; a red bar longer than the blue band means the error is larger than the air's own variation, so the estimate says little.</p>
       </section>
       <section class="app-card">
-      <h3 id="sim-table-h">Per layer</h3>
+      <h3 id="sim-table-h"><i class="h-ic" data-icon="table"></i>Per layer</h3>
       <div class="tbl"><table class="sim-table" id="sim-table"></table></div>
       </section>
       <section class="app-card wide">
-      <h3 id="sim-passes-h">The coldest and the warmest pass</h3>
+      <h3 id="sim-passes-h"><i class="h-ic" data-icon="split"></i>The coldest and the warmest pass</h3>
       <ul class="sim-legend" aria-hidden="true">
         <li><i class="ln thin"></i>true profile, every 5 m</li>
         <li><i class="ln dash"></i>true layer mean</li>
@@ -106,7 +104,7 @@
       <div class="sim-pair" id="sim-passes"></div>
       </section>
       <section class="app-card wide">
-      <h3 id="sim-series-h">Over the years</h3>
+      <h3 id="sim-series-h"><i class="h-ic" data-icon="timeline"></i>Over the years</h3>
       <ul class="sim-legend" aria-hidden="true">
         <li><i class="ln"></i>truth (layer mean)</li>
         <li><i class="dt"></i>radar estimate, one dot per pass</li>
@@ -133,7 +131,8 @@
   </details>
 </section>
 </div>
-<script defer src="js/nav.js?v=20261012c"></script>
-<script defer src="js/simulator.js?v=20261012"></script>
+<script defer src="js/nav.js?v=20261012e"></script>
+<script defer src="js/icons.js?v=20261012d"></script>
+<script defer src="js/simulator.js?v=20261012d"></script>
 </body>
 </html>

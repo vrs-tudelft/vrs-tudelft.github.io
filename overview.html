@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012c">
+<link rel="stylesheet" href="style.css?v=20261012e">
 </head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
@@ -25,41 +25,27 @@
 </div></header>
 
 <div class="app ov">
-<aside class="app-panel">
-  <h1>The whole project</h1>
-  <p class="app-intro">Three parts, each built by part of the team, hand over to each other: the <b>air near the ground</b> is rebuilt from balloons, stations and a weather model; the <b>simulation</b> turns a known atmosphere into fake radar data; the <b>estimation</b> turns radar data, fake or real, back into the air. Hover a box for what it does; click it to pin the card and follow its link.</p>
-
-  <div class="sim-controls">
-  <fieldset class="sim-field">
-    <legend>Parts to show</legend>
-    <div class="sw-row"><label class="switch"><input type="checkbox" role="switch" name="lane-air" data-lane="air" checked><span class="track" aria-hidden="true"></span><span class="lane-key lane-air"></span>1 · Air near the ground</label></div>
-    <div class="sw-row"><label class="switch"><input type="checkbox" role="switch" name="lane-sim" data-lane="sim" checked><span class="track" aria-hidden="true"></span><span class="lane-key lane-sim"></span>2 · Simulation</label></div>
-    <div class="sw-row"><label class="switch"><input type="checkbox" role="switch" name="lane-est" data-lane="est" checked><span class="track" aria-hidden="true"></span><span class="lane-key lane-est"></span>3 · Estimation</label></div>
-    <div class="ov-btns"><button type="button" class="ov-btn" id="ov-none">Big picture</button><button type="button" class="ov-btn" id="ov-all">Everything</button></div>
-  </fieldset>
-
-  <fieldset class="sim-field">
-    <legend>Follow a path</legend>
-    <div class="seg seg-col" data-control="path">
-      <label><input type="radio" name="path" value="" checked><span>None</span></label>
-      <label><input type="radio" name="path" value="test"><span>The test: simulated air in, estimate out</span></label>
-      <label><input type="radio" name="path" value="real"><span>The real thing: radar data in, profile out</span></label>
-    </div>
-  </fieldset>
-  <div class="ov-story" id="ov-story" hidden></div>
-
-  <fieldset class="sim-field">
-    <legend>Shapes</legend>
-    <ul class="ov-legend">
-      <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M5 1H29L25 15H1Z" class="lg-io"/></svg>data in or out</li>
-      <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="2" class="lg-p"/></svg>a step of the code</li>
-      <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M15 1L29 8L15 15L1 8Z" class="lg-d"/></svg>a choice or a check</li>
-      <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="7" class="lg-r"/></svg>a result</li>
-      <li><svg viewBox="0 0 30 16" aria-hidden="true"><circle cx="15" cy="8" r="3.2" class="lg-l"/></svg>has a page on this site</li>
-    </ul>
-  </fieldset>
+<aside class="app-panel ov-panel">
+  <div class="ov-intro">
+    <h1>The whole project</h1>
+    <p>Three parts hand over to each other: the <b>air near the ground</b> rebuilt from balloons, a <b>simulation</b> with a known answer, and the <b>estimation</b> that turns radar data into air.</p>
   </div>
-  <p class="asof">The three parts as in the team's code on 12 October 2026. Drag to move, ctrl + scroll or pinch to zoom.</p>
+
+  <section class="ov-sec" aria-labelledby="ov-h-parts">
+    <h2 class="ov-h" id="ov-h-parts">Parts</h2>
+    <label class="ov-lane"><span class="ov-tile lane-air" data-icon="balloon"></span><span class="ov-lane-name">Air near the ground</span><span class="switch"><input type="checkbox" role="switch" data-lane="air" checked><span class="track" aria-hidden="true"></span></span></label>
+    <label class="ov-lane"><span class="ov-tile lane-sim" data-icon="flask"></span><span class="ov-lane-name">Simulation</span><span class="switch"><input type="checkbox" role="switch" data-lane="sim" checked><span class="track" aria-hidden="true"></span></span></label>
+    <label class="ov-lane"><span class="ov-tile lane-est" data-icon="radar"></span><span class="ov-lane-name">Estimation</span><span class="switch"><input type="checkbox" role="switch" data-lane="est" checked><span class="track" aria-hidden="true"></span></span></label>
+    <div class="ov-btns"><button type="button" class="ov-btn" id="ov-none">Big picture</button><button type="button" class="ov-btn" id="ov-all">Everything</button></div>
+  </section>
+
+  <section class="ov-sec" aria-labelledby="ov-h-paths">
+    <h2 class="ov-h" id="ov-h-paths">Follow a path <span>step by step</span></h2>
+    <div class="ov-paths" id="ov-paths"></div>
+    <div class="ov-story" id="ov-story" hidden aria-live="polite"></div>
+  </section>
+
+  <p class="ov-foot">Hover a box, click to pin it. Drag to move, ctrl + scroll to zoom, arrow keys walk a path. The team's code on 12 October 2026.</p>
 </aside>
 
 <section class="app-main ov-stage" id="ov-stage">
@@ -70,6 +56,13 @@
     </defs>
     <g id="ov-world"></g>
   </svg>
+  <ul class="ov-legend" aria-label="Shapes">
+    <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M5 1H29L25 15H1Z" class="lg-io"/></svg>data</li>
+    <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="3" class="lg-p"/></svg>step</li>
+    <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M15 1L29 8L15 15L1 8Z" class="lg-d"/></svg>choice</li>
+    <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="7" class="lg-r"/></svg>result</li>
+    <li><svg viewBox="0 0 16 16" aria-hidden="true" style="width:12px"><circle cx="8" cy="8" r="4" class="lg-l"/></svg>has a page</li>
+  </ul>
   <div class="ov-zoom" role="group" aria-label="Zoom">
     <button type="button" id="ov-zin" aria-label="Zoom in">+</button>
     <button type="button" id="ov-zout" aria-label="Zoom out">&minus;</button>
@@ -78,8 +71,9 @@
   <div class="ov-card" id="ov-card" hidden role="dialog" aria-live="polite"></div>
 </section>
 </div>
-<script defer src="js/nav.js?v=20261012c"></script>
-<script defer src="js/overview-data.js?v=20261012c"></script>
-<script defer src="js/overview.js?v=20261012c"></script>
+<script defer src="js/nav.js?v=20261012e"></script>
+<script defer src="js/icons.js?v=20261012d"></script>
+<script defer src="js/overview-data.js?v=20261012d"></script>
+<script defer src="js/overview.js?v=20261012d"></script>
 </body>
 </html>
