@@ -30,7 +30,7 @@
 <p class="asof">Status on 12 October 2026. The project runs until 22 October 2026.</p>
 
 <figure><img src="figures/40-estimation-result.png" width="1641" height="660" alt="Left: on the simulation, the radar's error per 40 m layer against the weather station alone and the true variation of the air. Right: on the real data, the radar's lowest layer against the weather station, one dot per pass, correlation 0.45." loading="lazy">
-<figcaption><b>Where we are, in one picture.</b> Left: on a simulated city, where the truth is known, the radar recovers the air in 40 m layers to 3 to 5 N-units, against an air that varies by about 12. Right: on the real data of Rotterdam, the radar's lowest layer follows the weather station with <i>r</i> = 0.45. Why this works is on <a href="theory.html">Theory</a>, how the parts fit together on the <a href="overview.html">Overview</a>; try it yourself in the <a href="simulator.html">Simulation</a>, and see the real data under <a href="results.html">Results</a>.</figcaption></figure>
+<figcaption><b>Where we are, in one picture.</b> Left: on a simulated city, where the truth is known, the radar recovers the air in 40 m layers to 3 to 5 N-units, against an air that varies by about 12. Right: on the real data of Rotterdam, the radar's lowest layer follows the weather station with <i>r</i> = 0.45. Why this works is on <a href="theory.html">Theory</a>, how the parts fit together on the <a href="overview.html">Overview</a>; try it yourself in the <a href="simulator.html">Simulator</a>, and see the real data under <a href="results.html">Results</a>.</figcaption></figure>
 <!-- Source: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb (12 October 2026). -->
 
 <h2 id="idea" data-short="The idea">The idea</h2>
@@ -106,7 +106,7 @@
   <li><a class="name" href="theory.html">1. Theory</a><span class="badge done">paper ch. 2</span>
     <p>Why a radar delay measures the air: refractivity, how it depends on pressure, temperature and above all humidity, and why two points at different heights on one building see the air between them.</p></li>
   <li><a class="name" href="overview.html">2. Method</a><span class="badge done">paper ch. 3 and 4</span>
-    <p>Four steps, each a tab under Method. <a href="overview.html">Overview</a>: the three parts on one map. <a href="simulator.html">Simulation</a>: a synthetic city under a known atmosphere, with building movement and noise you switch on and off. <a href="estimation.html">Estimation</a>: from the radar's double differences to the refractivity in 40 m layers, one profile per pass. <a href="buildings.html">Buildings</a>: they sink, shrink and expand with temperature by ten to a few hundred times the air signal; the model that removes it, the animations and the 3D city.</p></li>
+    <p>Four steps, each a tab under Method. <a href="overview.html">Overview</a>: the three parts on one map. <a href="simulator.html">Simulator</a>: a synthetic city under a known atmosphere, with building movement and noise you switch on and off. <a href="estimation.html">Estimation</a>: from the radar's double differences to the refractivity in 40 m layers, one profile per pass. <a href="buildings.html">Buildings</a>: they sink, shrink and expand with temperature by ten to a few hundred times the air signal; the model that removes it, the animations and the 3D city.</p></li>
   <li><a class="name" href="results.html">3. Results</a><span class="badge pending">first look</span>
     <p>The end goal: the estimation on six years of real TerraSAR-X data of Rotterdam, checked against the weather station, and what is not validated yet.</p></li>
   <li><a class="name" href="data.html">4. Data</a><span class="badge done">in hand</span>
@@ -191,6 +191,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261013f"></script>
+<script defer src="js/nav.js?v=20261013g"></script>
 </body>
 </html>
