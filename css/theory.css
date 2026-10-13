@@ -1,0 +1,67 @@
+/* Theory page (theory.html, js/theory.js): the refractivity calculator, the sensitivity charts and the
+   two-panel diagrams. Uses the site's tokens from style.css; nothing here touches other pages. */
+
+main > .th-calc, main > .th-sens, main > .th-dd, main > .th-cm { max-width: 1000px; }
+
+/* two SVG panels side by side, stacked on phones */
+.th-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 720px) { .th-pair { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+figure.diagram .th-pair svg { padding: 8px; }
+.th-layer2 { opacity: .24; }
+.th-eq-wide { max-width: none; margin: 14px 0 12px; font-size: 1.02rem; overflow-wrap: anywhere; }
+.th-grid line { stroke: #ece9e1; stroke-width: 1; }
+.th-axis { stroke: var(--line-2); stroke-width: 1; }
+.th-bar-l { fill: var(--accent); opacity: .18; stroke: var(--accent); stroke-opacity: .5; }
+
+/* ---- calculator */
+.th-calc {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin: 26px 0 12px; box-shadow: var(--shadow);
+}
+@media (min-width: 900px) { .th-calc { grid-template-columns: 300px minmax(0, 1fr); gap: 26px; padding: 20px 22px; } }
+.th-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: .95rem; }
+.th-ic { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+.th-ic svg { width: 16px; height: 16px; }
+.th-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.th-presets button {
+  font: inherit; font-size: .8rem; padding: 4px 10px; min-height: 30px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--surface-2); color: var(--ink-2); cursor: pointer;
+}
+.th-presets button:hover { border-color: var(--accent); color: var(--accent); }
+.th-presets button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.th-sl { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0 10px; margin: 0 0 8px; font-size: .9rem; }
+.th-sl-k { color: var(--ink-2); }
+.th-sl output { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.th-sl input[type="range"] { grid-column: 1 / -1; width: 100%; margin: 2px 0 0; height: 30px; accent-color: var(--accent); }
+.th-sl .seg { grid-column: 1 / -1; margin: 4px 0 2px; }
+.th-seg span { min-height: 34px; font-size: .84rem; }
+.th-note { font-size: .8rem; color: var(--warn); margin: 0; min-height: 1.2em; }
+
+.th-out { min-width: 0; }
+.th-big { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 10px; }
+.th-big-k { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 650; width: 100%; }
+.th-big-v { font-size: 2rem; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.th-big-s { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.th-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--line); }
+.th-bar span { display: block; height: 100%; transition: width .15s ease; }
+.th-bar-d, .th-sw-d { background: #b9cbe3; }
+.th-bar-w, .th-sw-w { background: var(--accent); }
+.th-legend { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: .86rem; color: var(--ink-2); margin: 8px 0 14px; font-variant-numeric: tabular-nums; }
+.th-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+.th-sub { color: var(--muted); font-size: .8rem; }
+.th-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.th-tiles .stat { padding: 11px 13px 10px; }
+.th-tiles .stat .v { font-size: 1.22rem; font-variant-numeric: tabular-nums; }
+.th-tiles .stat .k { font-size: .8rem; margin-top: 4px; }
+@media (max-width: 420px) { .th-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .th-tiles .stat .v { font-size: 1.08rem; } }
+
+/* ---- sensitivity charts */
+.th-charts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 860px) { .th-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .th-wide { grid-column: 1 / -1; } }
+.th-chart { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 12px 6px; min-width: 0; }
+.th-ch-t { font-size: .86rem; font-weight: 600; color: var(--ink); margin: 0 2px 6px; line-height: 1.4; }
+.th-hint { display: block; font-weight: 400; color: var(--muted); font-size: .78rem; }
+.th-svg { min-height: 120px; }
+.th-svg svg { display: block; max-width: 100%; }
+.th-drag svg { cursor: crosshair; touch-action: pan-y; }  /* a tap moves the point; vertical swipes still scroll */

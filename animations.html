@@ -3,12 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Explore · Virtual Radiosonde</title>
-<meta name="description" content="Six animations of the TerraSAR-X record over Kop van Zuid, drawn in the browser from averages of either processing, with a switch between the 2020-2026 data in the ground reference and the archived 2014-2023 view: the scene pass by pass, the height gradient, its decomposition, buildings against air, the year clock, and a virtual balloon.">
+<title>Moved to Buildings · Virtual Radiosonde</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="buildings.html#radar">
+<!-- The six animations now live on the Buildings page, under the same section ids (scene, bands,
+     decomp, joint, yearclock, balloon). The script keeps an old #section and ?data=; without
+     JavaScript the meta refresh goes to the players' section. -->
+<script>
+  (function () {
+    var ids = ["scene", "bands", "decomp", "joint", "yearclock", "balloon"];
+    var h = location.hash.slice(1);
+    location.replace("buildings.html" + location.search + "#" + (ids.indexOf(h) >= 0 ? h : "radar"));
+  })();
+</script>
+<meta http-equiv="refresh" content="0; url=buildings.html#radar">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261013e">
+<link rel="stylesheet" href="style.css?v=20261013f">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,58 +32,12 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="overview.html">Overview</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
-<div class="shell">
-  <nav class="side" aria-label="On this page"></nav>
-  <main>
-    <h1>Explore: animations</h1>
-    <div class="dsbar">
-      <div class="dsrow"><span class="dslabel">Data input</span><div data-ds-switch="Data input for the animations and the 3D view"><noscript>The switch needs JavaScript.</noscript></div></div>
-      <p><b data-ds-name>2020-2026, ground reference</b>: <span data-fill="passes">213</span> passes, <span data-fill="first">8 Jan 2020</span> to <span data-fill="last">24 Aug 2026</span>. <span data-ds-about>TerraSAR-X, the newer processing. Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.</span></p>
-      <p class="small">The switch also sets the <a href="3d/index.html">3D view</a>. Either way every colour and every dot is a mean over at least 20 radar points, shown with its spread; how the ground reference works is on the <a href="data.html#reference">Reference</a> page, and what can and cannot yet be read from these signals is on the <a href="estimation.html">Estimation</a> page.</p>
-    </div>
-    <!-- The 2020-2026 files are written by tools/export_ground_frame.py; the reference is the one in the team repository's 04_python/tsx/ground_reference.py (01_reference/notes/2026-09-29-unique-pair-ground-reference.md). Numbers in data-fill spans are read from the active set's files. -->
-    <p class="lead">Six players, drawn in the browser from small tables of averages. Each moves through the <span data-fill="passes">213</span> passes of the chosen data set, or through one year; the line under each one says which pass you are looking at and what the weather was.</p>
-    <p class="small">Play, pause and step with the buttons, drag the slider to scrub, or focus a player and use the arrow keys and the space bar. The players pause when scrolled out of view.</p>
-
-    <h2 id="scene" data-short="The scene">The scene, pass by pass</h2>
-    <p>Kop van Zuid on a 10 m grid, north up; the ground-only grid stays at 25 m because those points are three times sparser. Each cell is coloured by how much its points moved since the previous pass, on a <span class="t" data-tip="Fixed for all frames and symmetric around zero, so a calm pass looks calm. A scale that rescaled per frame would make every pass look equally eventful.">scale that never changes</span>. <span data-ds-only="2014-2023-processor" hidden>On most passes the whole pier turns one shade together: that common change is the atmosphere over the whole scene, the reference point, or both.</span><span data-ds-only="2020-2026-ground">Measured against the ground, the median of the reference ground points is zero on every pass by construction, so a shade shared by the whole pier largely drops out and what is left is how buildings and quays move relative to the street.</span> The height-dependent part we are after is the small extra colour on the tall buildings, which is why the trace of s(t) runs underneath.</p>
-    <div data-anim="scene"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the cell grids, 10 m over all points and 25 m over ground points only, the spread of the points inside each cell, and the building outlines.<span data-ds-only="2014-2023-processor" hidden> Still images: figures 1, 6 and 25.</span></p>
-
-    <h2 id="bands" data-short="The gradient">The height gradient, pass by pass</h2>
-    <p>Above, the mean displacement of <span data-fill="nBands">ten</span> height bands against their height, relative to the scene mean, with the fitted line for that pass; its slope is s(t). Below, the series of that slope over the whole record, with a marker following the frame. The tilt above and the curve below are the same quantity, and most of the tilt is seasonal and slow: in summer the high bands sit to the right, in winter to the left.</p>
-    <div data-anim="bands"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the height bands, <span data-fill="bandMin">202</span> to <span data-fill="bandMax">4&nbsp;619</span> points each.<span data-ds-only="2014-2023-processor" hidden> Still images: figures 6, 7 and 24.</span></p>
-
-    <h2 id="decomp" data-short="Taking it apart">Taking the gradient apart</h2>
-    <p>The same s(t) in four steps: as measured; the slow trend removed<span data-ds-only="2014-2023-processor" hidden>, the north-east towers sinking faster than the ground</span><span data-ds-only="2020-2026-ground">, which in this set is small (<span data-fill="trend">-0.03</span> mm per 100 m per year)</span>; the yearly wave removed, the buildings expanding in summer; and the remainder differenced from pass to pass. That leftover, about <span data-fill="fastRms">1.6</span> mm per 100 m, is <span data-fill="noiseRatio">7</span> times the formal noise of the fit and about <span class="t" data-tip="An N-unit is one unit of refractivity. If the whole remainder were air, this is the change it would correspond to across the layer."><span data-fill="nUnits">15</span> N-units</span> if it were all air. <span data-ds-only="2014-2023-processor" hidden>It is a candidate, not a proof.</span><span data-ds-only="2020-2026-ground">That does not make it air: the <a href="estimation.html">estimation pilot</a> shows that the fit for the buildings can absorb air that follows the temperature.</span></p>
-    <div data-anim="decomp"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the scene-wide s(t) and its fitted model.<span data-ds-only="2014-2023-processor" hidden> Still image: figure 8.</span></p>
-
-    <h2 id="joint" data-short="Buildings or air">Buildings or air?</h2>
-    <p>Left, the 11-day changes of s(t), of a lagged air temperature standing in for the buildings, and of the lowest 100 m of refractivity above De Bilt. Right, the change of s(t) against each of the two, one dot per pass filling in as time advances, with the fitted line and, dashed, what physics would give if that explanation carried all of it. <span data-ds-only="2014-2023-processor" hidden>In the September reading both fitted lines are real and both fall short by the same third; </span><span data-ds-only="2020-2026-ground">Both fitted lines are real: the temperature line reaches <span data-fill="jT">72</span>&nbsp;% of what the physics would give and the refractivity line <span data-fill="jN">42</span>&nbsp;%. </span>The <a href="estimation.html">estimation pilot</a> showed that such a fit cannot separate the buildings from air that follows the temperature. The <span class="t" data-tip="The south-west half has no sinking towers, so its s(t) carries no long-term trend. Fitting there removes one nuisance from the test.">south-west half</span> is the cleaner test.</p>
-    <div data-anim="joint"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the joint fit on <span data-fill="jPairs">212</span> pairs of passes. Temperatures: KNMI station 344 Rotterdam, daily data from the KNMI daily-data service (daggegevens.knmi.nl), CC BY 4.0.<span data-ds-only="2014-2023-processor" hidden> Still images: figures 14 and 15.</span></p>
-
-    <h2 id="yearclock" data-short="The year clock">The year clock</h2>
-    <p>One year on a clock face, January at the top. As the hand sweeps, each pass drops a dot: the open ground in blue, the buildings above 40 m in red, after offset, trend and curvature are removed per point. The lines are the monthly means; the dotted trace inside is the air temperature, monthly means over <span data-ds-only="2014-2023-processor" hidden>2014-2023</span><span data-ds-only="2020-2026-ground">2014-2026</span>. <span data-ds-only="2014-2023-processor" hidden>The buildings peak in late July with the air. The open ground peaks in February, half a year away and <span class="t" data-tip="A plain mirror image of the buildings would peak around day 28; the open ground peaks on day 45. Close, not equal, which is why the cause is still open.">later than a mirror image would</span>.</span><span data-ds-only="2020-2026-ground">Measured against the ground, the open ground hardly moves through the year (<span data-fill="groundAmp">0.13</span> mm), as expected when the reference is itself made of ground points. The buildings above 40 m swing <span data-fill="bldAmp">2.9</span> mm and peak around day <span data-fill="bldPeak">217</span>, a little after the air (day <span data-fill="airPeak">205</span>). The ground at the towers' feet (tick the box) swings <span data-fill="feetAmp">0.53</span> mm and peaks around day <span data-fill="feetPeak">229</span>, closer in time to the buildings than to the open ground.</span></p>
-    <div data-anim="yearclock"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From groups of <span data-fill="ycMin">2&nbsp;276</span> to <span data-fill="ycMax">3&nbsp;454</span> points, with the KNMI monthly means.<span data-ds-only="2014-2023-processor" hidden> Still images: figures 21 and 27.</span></p>
-
-    <h2 id="balloon" data-short="A virtual balloon">A virtual balloon</h2>
-    <p>For every pair of consecutive passes a balloon rises from the lowest height bin to <span data-fill="hTop">89</span> m, the highest radar point of the set, and drops a dot at each bin: how much that bin's residual changed over the 11 days, relative to the lowest bin. The red line is the fit through the dots and its slope is the layer gradient, the one number per pass the project retrieves today. The dashed line is what the De Bilt sounding predicts for the same 11 days. On most passes the dots fall close to a straight line, and the two series on the right follow each other with a correlation of about <span data-fill="corr">0.47</span>.</p>
-    <div data-anim="balloon"><p class="anim-fallback">This animation needs JavaScript.</p></div>
-    <p class="databehind">From the binned height profile and the De Bilt soundings within 36 h of a pass.<span data-ds-only="2014-2023-processor" hidden> Still images: figures 17, 19 and 28.</span></p>
-
-    <footer data-shared></footer>
-  </main>
-</div>
-<script defer src="js/nav.js?v=20261013e"></script>
-<script defer src="js/player.js?v=20261005b"></script>
-<script defer src="js/dataset.js?v=20261005b"></script>
-<script defer src="js/animations.js?v=20261005c"></script>
+<div class="shell solo"><main>
+  <h1>The animations have moved</h1>
+  <p>They are now part of the <a href="buildings.html#radar">Buildings</a> page, next to the model of how the buildings move.</p>
+</main></div>
+<script defer src="js/nav.js?v=20261013f"></script>
 </body>
 </html>

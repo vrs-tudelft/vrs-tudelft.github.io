@@ -1,0 +1,98 @@
+/* Results page (results.html, js/results.js): the real-data estimation as a one-screen app.
+   Builds on the simulator's app and dashboard classes in style.css (.app, .sim-panel, .sim-tabs,
+   .sim-top, .app-card, .sim-card-head, .sim-floattip); only what differs is here. */
+
+.res-panel .sim-field legend .t.i { margin-left: auto; }
+.res-switches .sw-row { min-height: 34px; font-size: .86rem; }
+.res-switches .sw-row .t.i .info { margin-left: 0; }
+.res-window { display: flex; gap: 10px; align-items: center; font-size: .86rem; color: var(--ink-2); }
+.res-window label { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 0; min-width: 0; }
+.res-window select { flex: 1 1 auto; min-width: 0; font: inherit; font-size: .88rem; min-height: 34px; padding: 3px 8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.seg input:disabled + span { opacity: .4; cursor: default; }
+
+/* stat tiles: the independent check in green, the upper layer's drift in red */
+.res-page .sim-stats .stat.s-r .s-ic { background: #e6f1e6; color: #2f7d3a; }
+.res-page .sim-stats .stat.s-d0 .s-ic { background: var(--accent-soft); color: var(--accent); }
+.res-page .sim-stats .stat.s-d1 .s-ic { background: #fbe4e3; color: #c0322f; }
+.res-page .sim-stats .stat.s-pts .s-ic { background: #eceae4; color: #5b6168; }
+
+/* cards, charts and the stacked time panels */
+.res-dash { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.res-card { display: flex; flex-direction: column; padding: 10px 12px 8px; min-height: 0; }
+.res-card .sim-chart { border: 0; }
+.res-card .sim-chart.sim-fill { height: 300px; }
+.res-stack { display: flex; flex-direction: column; gap: 6px; }
+.res-tpanel { height: 210px; border: 0; }
+.res-tpanel svg { cursor: crosshair; }
+.res-warn { margin: 2px 0 6px; padding: 6px 10px; font-size: .8rem; line-height: 1.45; color: var(--ink-2); background: #fbf3e4; border-left: 3px solid var(--warn); border-radius: 0 7px 7px 0; max-width: none; }
+.res-warn b { color: var(--ink); }
+.sim-legend .ln.grey { border-top-color: #8a8f96; }
+
+/* the building table */
+.res-table { overflow: auto; min-height: 0; }
+.res-table table { font-size: .82rem; }
+.res-table th { font-size: .7rem; padding: 4px 10px 6px 0; white-space: nowrap; text-transform: none; letter-spacing: 0; }
+.res-table td { padding: 5px 10px 5px 0; }
+.res-table th.num, .res-table td.num { text-align: right; }
+.res-table code { font-size: .78rem; padding: 0 4px; }
+.res-table .t::after { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.res-flag { color: var(--muted); font-size: .76rem; white-space: normal; }
+
+/* what it means */
+.res-means { padding: 14px 16px 10px; font-size: .88rem; line-height: 1.5; }
+.res-means-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.res-block { border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px 4px; background: var(--surface-2); }
+.res-block h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: .92rem; }
+.res-block h4 i { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+.res-block h4 i svg { width: 14px; height: 14px; }
+.res-good h4 i { background: #e6f1e6; color: #2f7d3a; }
+.res-bad h4 i { background: #fbe4e3; color: #c0322f; }
+.res-block ul { margin: 0 0 6px; padding-left: 18px; }
+.res-block li { margin: 0 0 7px; max-width: none; color: var(--ink-2); }
+.res-block li b { color: var(--ink); }
+.res-block p { margin: 0 0 8px; max-width: none; color: var(--ink-2); }
+.res-prov { font-size: .78rem; color: var(--muted) !important; }
+.res-prov code { font-size: .74rem; }
+
+@media (min-width: 1000px) {
+  .res-two { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+  .res-seasons { grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); }
+  .res-build { grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); }
+  .res-means-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (min-width: 1300px) {
+  .res-page .sim-top { grid-template-columns: minmax(0, .9fr) minmax(0, 1.6fr); }
+}
+
+/* tall-enough desktop: one view on one screen, the charts fill their cards */
+@media (min-width: 1000px) and (min-height: 600px) {
+  .res-page .app-main.res-results { overflow: hidden; }
+  #res-out:not([hidden]) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .res-dash { grid-template-rows: minmax(0, 1fr); }
+  .res-card .sim-chart.sim-fill { height: auto; flex: 1 1 0; min-height: 0; }
+  .res-stack { flex: 1 1 0; min-height: 0; }
+  .res-tpanel { height: auto; flex: 1 1 0; min-height: 0; }
+  .res-table { flex: 1 1 0; }
+  #view-means:not([hidden]) { display: flex; }
+  .res-means { flex: 1 1 auto; overflow-y: auto; }
+}
+/* phones */
+@media (max-width: 560px) {
+  .res-card .sim-chart.sim-fill { height: 260px; }
+  .res-tpanel { height: 190px; }
+  .res-table table { font-size: .8rem; }
+}
+
+/* "What it means" repeats the verdict in full: give it the whole column */
+@media (min-width: 1000px) and (min-height: 600px) {
+  #res-out[data-view="means"] .sim-top { display: none; }
+}
+.res-short { display: none; }
+@media (max-width: 560px) { .res-long { display: none; } .res-short { display: inline; } }
+/* phones: each building a compact card, three values per row */
+@media (max-width: 640px) {
+  .res-table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 10px; }
+  .res-table td:first-child { grid-column: 1 / -1; }
+  .res-table td, .res-table td.num { text-align: left; padding: 1px 0; }
+  .res-table td.num:last-child { grid-column: span 2; }
+}

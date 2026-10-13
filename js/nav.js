@@ -1,47 +1,55 @@
 /* Header, on-page section nav with scroll-spy, footer, and tooltips on touch. */
 (function () {
   /* the story of the report: introduction, theory, methodology (overview, end-to-end simulation,
-     estimation), the buildings' functional model, results, and the data as appendix */
+     estimation, the buildings' functional model), results, and the data as appendix. The method's
+     chapters share one top tab and get their own row of sub-tabs. */
   var pages = [
     { href: "index.html", label: "Home" },
     { href: "theory.html", label: "Theory" },
-    { href: "overview.html", label: "Overview" },
-    { href: "simulator.html", label: "Simulation" },
-    { href: "estimation.html", label: "Estimation" },
-    { href: "buildings.html", label: "Buildings", also: ["animations.html"] },
+    { href: "overview.html", label: "Method", sub: [
+      { href: "overview.html", label: "Overview" },
+      { href: "simulator.html", label: "Simulation" },
+      { href: "estimation.html", label: "Estimation" },
+      { href: "buildings.html", label: "Buildings", also: ["animations.html"], in3d: true }
+    ] },
     { href: "results.html", label: "Results" },
     { href: "data.html", label: "Data" }
   ];
   var root = document.documentElement.getAttribute("data-root") || "";
   var here = location.pathname.replace(/\/+$/, "").split("/").pop() || "index.html";
   var in3d = document.documentElement.hasAttribute("data-3d");
+  function isHere(p) { return p.in3d && in3d ? true : !in3d && (p.href === here || (p.also || []).indexOf(here) >= 0); }
+  function link(p, cur) {
+    var a = document.createElement("a");
+    a.href = root + p.href;
+    a.textContent = p.label;
+    if (cur) a.setAttribute("aria-current", "page");
+    return a;
+  }
 
-  /* ---- header ---- */
+  /* ---- header: main tabs right; on a method page its sub-tabs next to the brand ---- */
   var inner = document.querySelector("header.top .top-inner");
   if (inner) {
     var old = inner.querySelector("nav"); if (old) old.remove();
     var ns = inner.querySelector("noscript"); if (ns) ns.remove();
     var nav = document.createElement("nav");
     nav.setAttribute("aria-label", "Site");
+    var subOf = null;
     pages.forEach(function (p) {
-      var a = document.createElement("a");
-      a.href = root + p.href;
-      a.textContent = p.label;
-      var cur = p.href === "buildings.html" ? (in3d || here === p.href || (p.also || []).indexOf(here) >= 0) : (!in3d && p.href === here);
-      if (cur) a.setAttribute("aria-current", "page");
-      nav.appendChild(a);
+      var cur = p.sub ? p.sub.some(isHere) : isHere(p);
+      if (p.sub && cur) subOf = p;
+      nav.appendChild(link(p, cur));
     });
+    if (subOf) {
+      var sub = document.createElement("nav");
+      sub.className = "subnav";
+      sub.setAttribute("aria-label", subOf.label);
+      subOf.sub.forEach(function (p) { sub.appendChild(link(p, isHere(p))); });
+      inner.appendChild(sub);
+      document.documentElement.classList.add("has-subnav");
+    }
     inner.appendChild(nav);
   }
-
-  /* ---- tables: label each cell with its column, so phones can show rows as cards ---- */
-  [].slice.call(document.querySelectorAll(".tbl table")).forEach(function (t) {
-    var heads = [].slice.call(t.querySelectorAll("thead th")).map(function (th) { return th.textContent.trim(); });
-    if (!heads.length) return;
-    [].slice.call(t.querySelectorAll("tbody tr")).forEach(function (tr) {
-      [].slice.call(tr.children).forEach(function (td, i) { if (heads[i] && !td.hasAttribute("data-label")) td.setAttribute("data-label", heads[i]); });
-    });
-  });
 
   /* ---- on-page section nav, built from the h2 headings ---- */
   var side = document.querySelector("nav.side");

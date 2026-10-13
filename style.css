@@ -58,10 +58,23 @@ header.top nav { display: flex; gap: 2px; margin-left: auto; font-size: .92rem; 
 header.top nav a { color: var(--muted); padding: 6px 10px; border-radius: 7px; white-space: nowrap; }
 header.top nav a:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 5%, transparent); text-decoration: none; }
 header.top nav a[aria-current="page"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+/* the method's sub-tabs: beside the brand on wide screens, a row of their own on phones */
+header.top nav.subnav { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--line); font-size: .86rem; gap: 2px; }
+header.top nav.subnav a { padding: 4px 9px; }
+header.top nav.subnav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+header.top nav.subnav + nav { margin-left: auto; }
+@media (max-width: 1060px) {
+  .has-subnav .top-inner { flex-wrap: wrap; row-gap: 4px; }
+  header.top nav.subnav { order: 3; flex-basis: 100%; margin: 0; padding: 4px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+}
 @media (max-width: 760px) {
-  .top-inner { padding: 8px 12px 6px; gap: 6px; display: block; }
-  header.top nav { margin: 4px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; font-size: .8rem; }
+  .top-inner, .has-subnav .top-inner { padding: 8px 12px 6px; gap: 0; display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .top-inner .brand { align-self: flex-start; }
+  header.top nav, header.top nav.subnav + nav { order: 2; margin-left: 0; }
+  header.top nav.subnav { order: 3; }
+  header.top nav { margin: 4px 0 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; font-size: .8rem; }
   header.top nav a { min-width: 0; text-align: center; padding: 4px 2px; overflow: hidden; text-overflow: ellipsis; }
+  header.top nav.subnav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 4px; padding-top: 4px; font-size: .78rem; }
 }
 
 /* ---------------------------------------------------------------- shell */

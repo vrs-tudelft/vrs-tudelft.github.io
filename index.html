@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261013e">
+<link rel="stylesheet" href="style.css?v=20261013f">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -21,7 +21,7 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Overview</a> <a href="simulator.html">Simulation</a> <a href="estimation.html">Estimation</a> <a href="buildings.html">Buildings</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="shell"><nav class="side" aria-label="On this page"></nav><main>
@@ -101,21 +101,15 @@
 <!-- Sources: ASG Project 01_reference/checked-numbers.md (method, N success criterion, P/T/e stretch, 11-day revisit); 01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md (absolute profile needs an external reference). -->
 
 <h2 id="status" data-short="The story">The story, chapter by chapter</h2>
-<p>The site follows the paper. Each step is a page in the menu above, in the same order.</p>
+<p>The site follows the paper, chapter by chapter, in the same order as the menu above.</p>
 <ol class="steps">
   <li><a class="name" href="theory.html">1. Theory</a><span class="badge done">paper ch. 2</span>
     <p>Why a radar delay measures the air: refractivity, how it depends on pressure, temperature and above all humidity, and why two points at different heights on one building see the air between them.</p></li>
-  <li><a class="name" href="overview.html">2. Overview</a><span class="badge done">the method on one map</span>
-    <p>The three parts and how they hand over: the air near the ground, the simulation with a known answer, and the estimation.</p></li>
-  <li><a class="name" href="simulator.html">3. Simulation</a><span class="badge done">running, 13 Oct</span>
-    <p>A synthetic city under a known atmosphere pushed through the radar geometry, with building movement and noise. Switch the disturbances on and off and see what the estimation recovers.</p></li>
-  <li><a class="name" href="estimation.html">4. Estimation</a><span class="badge done">first full version, 12 Oct</span>
-    <p>From the radar's double differences to the refractivity in 40 m layers, one profile per pass, tested against the simulation's truth.</p></li>
-  <li><a class="name" href="buildings.html">5. Buildings</a><span class="badge done">paper ch. 4</span>
-    <p>Buildings sink, shrink and expand with temperature, about a thousand times more than the air signal. The model that removes it, the animations of what the radar sees, and the 3D city.</p></li>
-  <li><a class="name" href="results.html">6. Results</a><span class="badge pending">first look</span>
+  <li><a class="name" href="overview.html">2. Method</a><span class="badge done">paper ch. 3 and 4</span>
+    <p>Four steps, each a tab under Method. <a href="overview.html">Overview</a>: the three parts on one map. <a href="simulator.html">Simulation</a>: a synthetic city under a known atmosphere, with building movement and noise you switch on and off. <a href="estimation.html">Estimation</a>: from the radar's double differences to the refractivity in 40 m layers, one profile per pass. <a href="buildings.html">Buildings</a>: they sink, shrink and expand with temperature by ten to a few hundred times the air signal; the model that removes it, the animations and the 3D city.</p></li>
+  <li><a class="name" href="results.html">3. Results</a><span class="badge pending">first look</span>
     <p>The end goal: the estimation on six years of real TerraSAR-X data of Rotterdam, checked against the weather station, and what is not validated yet.</p></li>
-  <li><a class="name" href="data.html">7. Data</a><span class="badge done">in hand</span>
+  <li><a class="name" href="data.html">4. Data</a><span class="badge done">in hand</span>
     <p>The radar processings, the reference, building heights, soundings, weather stations, towers and the reconstructed air near the ground, with the rule for what may be published.</p></li>
   <li><a class="name" href="#paper">Paper</a><span class="badge pending">due 22 Oct</span>
     <p>One manuscript by the whole team. The draft is not on this site.</p></li>
@@ -197,6 +191,6 @@
 
 <footer data-shared></footer>
 </main></div>
-<script defer src="js/nav.js?v=20261013e"></script>
+<script defer src="js/nav.js?v=20261013f"></script>
 </body>
 </html>

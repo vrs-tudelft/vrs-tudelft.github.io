@@ -13,6 +13,12 @@
   function tg(ep, i) { var v = ep.knmi.tg[i]; return (v === null || v === undefined) ? "no KNMI value on hand" : v.toFixed(1) + " °C"; }
   function passLabel(ep, i) { return U.fmtDate(ep.dates[i]) + " · pass " + (i + 1) + " of " + ep.n_epochs + " · Rotterdam daily mean " + tg(ep, i); }
   function pad(size) { return { l: 46, r: 14, t: 10, b: 30, f: size.font + "px system-ui" }; }
+  /* the first of several wordings that fits in maxW at the current font (the last one otherwise) */
+  function fitText(ctx, options, maxW, font) {
+    ctx.font = font;
+    for (var k = 0; k < options.length; k++) { if (ctx.measureText(options[k]).width <= maxW) return options[k]; }
+    return options[options.length - 1];
+  }
   function cursor(ctx, x, y0, y1, colour) { ctx.strokeStyle = colour || css("--bad"); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke(); ctx.lineWidth = 1; }
 
   /* ================================================================ (a) scene */
@@ -376,8 +382,9 @@
           A.xAxis(ctx, X, narrow ? p.t + 3 * rowH : h - p.b, A.yearTicks(ep.dates).filter(function (t, q) { return (leftW > 700) || q % 2 === 0; }), "", p.f);
           /* scatters */
           var sx0 = narrow ? 0 : leftW, sy0 = narrow ? p.t + 3 * rowH + 26 : p.t, sw = narrow ? w : w - leftW, sh = narrow ? h - sy0 : h - p.t;
+          var fs = (size.font - 1) + "px system-ui", jointH = size.font + 8;   /* one line under both scatters for the joint fit */
           [["dT", "Δ temperature [K]", fd.bT, fd.seT, J.expected.bT, css("--bad")], ["dN", "Δ refractivity [N-units]", fd.bN, fd.seN, J.expected.bN, css("--good")]].forEach(function (sc, k) {
-            var x0 = sx0 + k * sw / 2 + 40, x1 = sx0 + (k + 1) * sw / 2 - 10, yTop = sy0 + 12, yBot = sy0 + sh - p.b;
+            var x0 = sx0 + k * sw / 2 + (narrow && k === 0 ? 50 : 40), x1 = sx0 + (k + 1) * sw / 2 - 10, yTop = sy0 + 12 + 2 * (size.font + 3), yBot = sy0 + sh - p.b - jointH;
             var arr = g[sc[0]], xl = U.pct(arr.map(Math.abs), 99) * 1.1 || 1, yl = U.pct(g.ds.map(Math.abs), 99) * 1.1;
             var Xs = A.linear(-xl, xl, x0, x1), Ys = A.linear(-yl, yl, yBot, yTop);
             ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(Xs(-xl), Ys(0)); ctx.lineTo(Xs(xl), Ys(0)); ctx.moveTo(Xs(0), Ys(-yl)); ctx.lineTo(Xs(0), Ys(yl)); ctx.stroke();
@@ -389,10 +396,15 @@
             ctx.setLineDash([5, 4]); ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Xs(-xl), Ys(-sc[4] * xl)); ctx.lineTo(Xs(xl), Ys(sc[4] * xl)); ctx.stroke(); ctx.setLineDash([]);
             A.xAxis(ctx, Xs, yBot, A.niceTicks(-xl, xl, 4), sc[1], (size.font - 1) + "px system-ui");
             A.yAxis(ctx, Ys, x0, A.niceTicks(-yl, yl, 4), k === 0 ? "Δ s(t) [mm/100 m]" : "", (size.font - 1) + "px system-ui");
-            D.text(ctx, "fitted " + sc[2].toFixed(3) + " ± " + sc[3].toFixed(3), x0 + 6, yTop + 12, { font: (size.font - 1) + "px system-ui", colour: sc[5] });
-            D.text(ctx, "dashed: physics if all of it, " + sc[4].toFixed(3), x0 + 6, yTop + 26, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+            /* the two lines sit above the panel, shortened until they fit its width */
+            var tw = x1 - x0 + (k === 0 ? 30 : 30), tx = x0 - 30;
+            D.text(ctx, fitText(ctx, ["fitted " + sc[2].toFixed(3) + " ± " + sc[3].toFixed(3), "fit " + sc[2].toFixed(2) + " ± " + sc[3].toFixed(2)], tw, fs), tx, sy0 + 12, { font: fs, colour: sc[5] });
+            D.text(ctx, fitText(ctx, ["dashed: physics if all of it, " + sc[4].toFixed(3), "dashed: physics, " + sc[4].toFixed(3), "physics " + sc[4].toFixed(2)], tw, fs), tx, sy0 + 12 + size.font + 3, { font: fs, colour: css("--muted") });
           });
-          D.text(ctx, "joint fit: R² " + fd.r2.toFixed(2) + ", VIF " + fd.vif_T.toFixed(2) + " (the two explanations are barely tangled)", sx0 + 44, sy0 + 54, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          var jt = ["joint fit: R² " + fd.r2.toFixed(2) + ", VIF " + fd.vif_T.toFixed(2) + " (the two explanations are barely tangled)",
+                    "joint fit: R² " + fd.r2.toFixed(2) + ", VIF " + fd.vif_T.toFixed(2) + " (barely tangled)",
+                    "joint fit: R² " + fd.r2.toFixed(2) + ", VIF " + fd.vif_T.toFixed(2)];
+          D.text(ctx, fitText(ctx, jt, sw - 20, fs), sx0 + sw / 2, sy0 + sh - 6, { font: fs, colour: css("--muted"), align: "center" });
         }
       });
       player.addToggle("Scene:", "which", [{ value: "full", label: "whole scene", checked: true }, { value: "SW", label: "south-west half only (no sinking towers)" }], function (v) { which = v; });
@@ -504,16 +516,19 @@
       V.Player.create({
         mount: mount, frames: frames, fps: 24, aspect: function (w) { return w < 600 ? 0.8 : 1.8; },
         label: function (i) {
-          var k = Math.floor(i / SUB), s = slope[k], nu = s * COS23 * 10;
-          return U.fmtDate(ep.dates[k]) + " → " + U.fmtDate(ep.dates[k + 1]) + " · layer gradient " + (s >= 0 ? "+" : "") + s.toFixed(2) + " mm/100 m ≈ " + (nu >= 0 ? "+" : "") + nu.toFixed(0) + " N-units" + (db[k] === null ? "" : " · De Bilt would say " + (db[k] >= 0 ? "+" : "") + db[k].toFixed(2));
+          var k = Math.floor(i / SUB), s = slope[k], nu = Math.round(s * COS23 * 10);
+          return U.fmtDate(ep.dates[k]) + " → " + U.fmtDate(ep.dates[k + 1]) + " · gradient " + (s >= 0 ? "+" : "") + s.toFixed(2) + " mm/100 m ≈ " + (nu > 0 ? "+" : "") + (nu === 0 ? "0" : nu) + " N-units" + (db[k] === null ? "" : " · De Bilt would say " + (db[k] >= 0 ? "+" : "") + db[k].toFixed(2));
         },
         draw: function (i, ctx, size) {
           var w = size.w, h = size.h, p = pad(size), k = Math.floor(i / SUB), sub = i % SUB, narrow = w < 600;
-          var leftW = narrow ? w : Math.round(w * 0.42);
-          var X = A.linear(-xl, xl, p.l + 10, leftW - 20), Yh = A.linear(-2, 90, (narrow ? h * 0.55 : h) - p.b, p.t + 10);
+          p.b = 38;   /* room for the axis title under the tick labels */
+          var leftW = narrow ? w : Math.round(w * 0.42), fs = (size.font - 1) + "px system-ui", lh = size.font + 4;
+          /* two caption lines on top, then the plot: the label of the highest point sits above its line, below the captions */
+          var capY = p.t + 12, plotTop = capY + lh + 8 + lh;
+          var X = A.linear(-xl, xl, p.l + 10, leftW - 20), Yh = A.linear(-2, 90, (narrow ? h * 0.55 : h) - p.b, plotTop);
           ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(X(0), Yh(-2)); ctx.lineTo(X(0), Yh(90)); ctx.stroke();
           ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(X(-xl), Yh(top)); ctx.lineTo(X(xl), Yh(top)); ctx.stroke(); ctx.setLineDash([]);
-          D.text(ctx, top + " m: the highest radar point", X(-xl) + 4, Yh(top) - 4, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, top + " m: the highest radar point", X(-xl) + 4, Yh(top) - 4, { font: fs, colour: css("--muted") });
           var hb = centres[0] + U.ease(sub / (SUB - 1)) * (top - centres[0]);
           /* fitted line through the lowest bin */
           var s = slope[k] / 100;
@@ -534,18 +549,21 @@
           ctx.fillStyle = css("--ink"); ctx.fillRect(bx - 3, by + 12, 6, 5);
           A.xAxis(ctx, X, (narrow ? h * 0.55 : h) - p.b, [-4, -2, 0, 2, 4], "11-day change relative to the lowest bin [mm]", p.f);
           A.yAxis(ctx, Yh, p.l + 10, [0, 20, 40, 60, 80], "height above ground [m]", p.f);
-          D.text(ctx, "red: fitted line, slope = layer gradient; dashed: De Bilt", p.l + 16, p.t + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, "red: fitted line, its slope is the gradient", p.l + 16, capY, { font: fs, colour: css("--bad") });
+          D.text(ctx, "dashed: what De Bilt predicts", p.l + 16, capY + lh, { font: fs, colour: css("--muted") });
           /* right: s_fast series */
-          var rx0 = narrow ? p.l : leftW + 30, ry0 = narrow ? h * 0.55 + 10 : p.t + 10, ry1 = h - p.b;
+          /* the right panel's caption gets its own two lines above the chart */
+          var rx0 = narrow ? p.l : leftW + 30, rcap = narrow ? h * 0.55 + 22 : capY, ry0 = rcap + lh + 8, ry1 = h - p.b;
           var X2 = A.linear(0, nStep - 1, rx0, w - p.r), yl = 6, Y2 = A.linear(-yl, yl, ry1, ry0);
           ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(X2(0), Y2(0)); ctx.lineTo(X2(nStep - 1), Y2(0)); ctx.stroke();
           D.line(ctx, db.map(function (_, j) { return X2(j); }), db.map(function (v) { return v === null ? NaN : Y2(Math.max(-yl, Math.min(yl, v))); }), css("--muted"), 0.8);
           D.line(ctx, slope.map(function (_, j) { return X2(j); }), slope.map(function (v) { return Y2(Math.max(-yl, Math.min(yl, v))); }), css("--bad"), 1);
           cursor(ctx, X2(k), ry0, ry1);
           ctx.fillStyle = css("--bad"); ctx.beginPath(); ctx.arc(X2(k), Y2(Math.max(-yl, Math.min(yl, slope[k]))), 4, 0, 2 * Math.PI); ctx.fill();
-          A.yAxis(ctx, Y2, rx0, [-6, -3, 0, 3, 6], "layer gradient per 11 days [mm/100 m]", p.f);
+          A.yAxis(ctx, Y2, rx0, [-6, -3, 0, 3, 6], narrow ? "[mm/100 m]" : "gradient per 11 days [mm/100 m]", p.f);
           A.xAxis(ctx, X2, ry1, A.yearTicks(ep.dates), "", p.f);
-          D.text(ctx, "red: from the radar points; grey: De Bilt sounding, interpolated below 650 m", rx0 + 6, ry0 + 12, { font: (size.font - 1) + "px system-ui", colour: css("--muted") });
+          D.text(ctx, "red: from the radar points", narrow ? 10 : rx0 - 20, rcap, { font: fs, colour: css("--bad") });
+          D.text(ctx, fitText(ctx, ["grey: De Bilt sounding, interpolated below 650 m", "grey: De Bilt sounding"], w - (narrow ? 10 : rx0 - 20) - p.r, fs), narrow ? 10 : rx0 - 20, rcap + lh, { font: fs, colour: css("--muted") });
         }
       });
     }).catch(function (e) { if (gen === GEN) V.Player.fallback(mount, "The balloon animation could not load its data (" + e.message + ")."); });
