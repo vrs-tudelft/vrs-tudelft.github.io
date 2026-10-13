@@ -74,7 +74,18 @@
   function rect(x, y, w, h, fill, extra) {
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + Math.max(0, w).toFixed(1) + '" height="' + Math.max(0, h).toFixed(1) + '" fill="' + fill + '"' + (extra || "") + "/>";
   }
-  function path(pts) { var d = ""; pts.forEach(function (p) { if (p) d += (d ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }); return d; }
+  /* a polyline; with times t, a gap of more than gapDays between passes starts a new segment
+     (the Cabauw tower has no data from May to July) */
+  function path(pts, t, gapDays) {
+    var d = "", prev = null;
+    pts.forEach(function (p, i) {
+      if (!p) return;
+      var jump = t && prev !== null && (t[i] - t[prev]) > gapDays;
+      d += (d && !jump ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
+      prev = i;
+    });
+    return d;
+  }
   function skillColor(v) { return v > 0 ? C.pos : C.neg; }
 
   /* ------------------------------------------------------------ state and the manifest */
@@ -228,7 +239,7 @@
   }
   function renderSeries(el, e, run) {
     var w = width(el), nl = e.series.length;
-    var tx = run.epochs.map(day), d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
+    var tx = run.epochs.map(day), GAP = 30, d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
     var m = { l: 46, r: 10 }, narrow = w < 520, head = narrow ? 30 : 19, gap = 9, bottom = 34;
     /* fill the height of the two cards beside it when the layout puts them there */
     var card = el.closest(".app-card"), side = document.querySelector(".sim-attr-card"), sc = document.querySelector(".sim-sc-card");
@@ -259,8 +270,8 @@
       });
       tt.ticks.forEach(function (t) { var xx = xs(t.d); body += line(xx, top, xx, bot, C.grid); });
       body += line(m.l, bot, w - m.r, bot, C.axis) + line(m.l, top, m.l, bot, C.axis);
-      if (sr.station) body += '<path d="' + path(sr.station.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; })) + '" fill="none" stroke="' + C.station + '" stroke-width="1" stroke-opacity=".9" stroke-linejoin="round"/>';
-      body += '<path d="' + path(sr.truth.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; })) + '" fill="none" stroke="' + C.truth + '" stroke-width="1.15" stroke-linejoin="round"/>';
+      if (sr.station) body += '<path d="' + path(sr.station.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, GAP) + '" fill="none" stroke="' + C.station + '" stroke-width="1" stroke-opacity=".9" stroke-linejoin="round"/>';
+      body += '<path d="' + path(sr.truth.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, GAP) + '" fill="none" stroke="' + C.truth + '" stroke-width="1.15" stroke-linejoin="round"/>';
       var dots = "";
       sr.est.forEach(function (v, j) { if (ok(v)) dots += '<circle cx="' + xs(tx[j]).toFixed(1) + '" cy="' + ys(v).toFixed(1) + '" r="' + r + '"/>'; });
       body += '<g fill="' + C.radar + '" fill-opacity=".75">' + dots + "</g>";
