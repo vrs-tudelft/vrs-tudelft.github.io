@@ -12,7 +12,7 @@ site updates within a minute or two.
 | `index.html` | Home: the idea in plain language, the result in one picture, where each stage stands, what holds so far, the paper and the team, about and licences |
 | `data.html` | The two TerraSAR-X processings, where the zero sits (the shared-ground reference), building heights (3DBAG/AHN5), soundings, stations and towers, the air near the ground (the low-level reconstruction), links to Explore, and the rule on what may be published |
 | `overview.html` | The whole project as one interactive flowchart (air near the ground, simulation, estimation), each part foldable, every box with an icon, a card and a link to its section, six paths that walk through their boxes step by step and open the parts they need; full-window like the simulator. The chart is data in `js/overview-data.js` (with its sources in the header comment), drawn by `js/overview.js` |
-| `simulator.html` | The estimation simulator, a full-window page (controls left, results right; `body.app-page` in `style.css`): pick noise and building movement, see what the estimation recovers. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
+| `simulator.html` | The estimation simulator (v2), a full-window page (controls left, results right; `body.app-page` in `style.css`): pick the atmosphere (KNMI-built, the 2025 balloon soundings or the Cabauw tower), switch sinking, shrinking, thermal dilation and the cross-range error on or off, and choose the noise, the number of points and the height layers. It shows the estimate against the truth and the station per layer over time, where the error comes from, a scatter of the departures with its fitted line, and the cumulative trend when the disturbances are added one by one, with a short reading in plain words. The settings are kept in the address, so a link shares them. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
 | `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the end-to-end simulation, the first pass, the test on the simulation (figures 41-43, 45), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
 | `animations.html` | Explore (linked from Data, no menu tab of its own): six animations from the aggregate files, with a data-input switch (see below) |
 | `3d/index.html` | The experimental 3D view, with the same switch and the gull easter egg |
@@ -110,8 +110,12 @@ as 47-49 and `flowchart/step00_overview.png` as 50). The simulator data are rege
 python 04_python/estimation/site_simulator.py --out ../vrs-tudelft.github.io/data/simulator
 ```
 
-It reruns the team's simulation for every combination of the controls and runs the estimation on
-each; everything it writes is synthetic.
+It reruns the team's simulation (`06_simulation`) for every combination of the atmosphere, the four
+disturbances, the noise and the number of points (384 runs), and estimates each with the four layer
+setups; everything it writes is synthetic. `manifest.json` holds the choices, the defaults and a
+compact summary of every combination (per-layer and column errors, station errors, skill), which the
+page uses for the attribution and the cumulative trend; `runs/<key>.json` holds the per-pass series of
+one run, fetched when it is selected. The run key is `<atm>_s<sinking><shrinking><thermal><crossrange>_n<noise>_p<points>`.
 
 To test locally, run `python tools/serve.py` and open `http://localhost:8000/`. It sends
 `Cache-Control: no-store`, because a plain `python -m http.server` lets the browser keep

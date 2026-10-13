@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Estimation simulator · Virtual Radiosonde</title>
-<meta name="description" content="Choose what disturbs simulated radar data and see how well the team's estimation recovers the air refractivity per height layer, compared with a weather station alone. Precomputed, synthetic data only.">
+<meta name="description" content="Choose the air and what disturbs simulated radar data, and see how well the team's estimation recovers the air refractivity per height layer, compared with a weather station alone. Precomputed, synthetic data only.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261012g">
+<link rel="stylesheet" href="style.css?v=20261013a">
 </head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
@@ -30,10 +30,27 @@
     <span class="sim-head-ic" data-icon="play"></span>
     <div>
       <h1>Estimation simulator</h1>
-      <p class="app-intro">Disturb the fake radar data of a synthetic city (<span data-scene="buildings">16</span> buildings, <span data-scene="points">12&nbsp;000</span> points, <span data-scene="passes">213</span> passes) and see how well the <a href="estimation.html">estimation</a> finds the true <span class="t" data-tip="Refractivity N says how much the air slows the radar signal, in N-units: about 1 N-unit per 1 part per million of extra delay. It depends on pressure, temperature and above all humidity.">air refractivity</span>.</p>
+      <p class="app-intro">Pick the air, switch on what disturbs the fake radar data of a synthetic city, and see how well the <a href="estimation.html">estimation</a> finds the true <span class="t" data-tip="Refractivity N says how much the air slows the radar signal, in N-units: about 1 N-unit per 1 part per million of extra delay. It depends on pressure, temperature and above all humidity.">air refractivity</span>.</p>
     </div>
   </div>
   <form class="sim-controls" id="sim-controls" aria-label="Simulation and estimation settings" onsubmit="return false">
+    <fieldset class="sim-field">
+      <legend><span class="lg-ic" data-icon="cloud"></span>Atmosphere <span class="t i" data-tip="The true air the simulation puts over the city. KNMI-built: made from the Rotterdam station's weather on the 213 radar passes of 2020-2026. Balloon soundings: the 2025 reconstruction from the 453 De Bilt balloon launches. Cabauw tower: 124 mornings of 2025 measured along the KNMI mast, 1.5 to 200 m."><span class="info">i</span></span></legend>
+      <div class="tiles tiles-3" data-control="atm">
+        <label class="tile"><input type="radio" name="atm" value="simulated"><span><i data-icon="cloud"></i><b>Simulated</b><small data-atm-sub="simulated">KNMI-built</small></span></label>
+        <label class="tile"><input type="radio" name="atm" value="radiosonde"><span><i data-icon="balloon"></i><b>Radiosonde</b><small data-atm-sub="radiosonde">balloons 2025</small></span></label>
+        <label class="tile"><input type="radio" name="atm" value="cabauw"><span><i data-icon="tower"></i><b>Cabauw</b><small data-atm-sub="cabauw">tower 2025</small></span></label>
+      </div>
+    </fieldset>
+    <fieldset class="sim-field">
+      <legend><span class="lg-ic" data-icon="building"></span>Disturbances <span class="t i" data-tip="Switch on what makes real radar data hard; any combination. Sinking: the buildings sink as a whole. Shrinking: higher points sink faster, slowing down over the years. Thermal: buildings grow a little when it is warm. Cross-range: each point's position across the beam is slightly off, which leaks into the measured distance."><span class="info">i</span></span></legend>
+      <div class="tiles tiles-4" data-control="dist">
+        <label class="tile tog" data-dist="sinking"><input type="checkbox" name="sinking"><span><i data-icon="sink"></i><b>Sinking</b></span></label>
+        <label class="tile tog" data-dist="shrinking"><input type="checkbox" name="shrinking"><span><i data-icon="shrink"></i><b>Shrinking</b></span></label>
+        <label class="tile tog" data-dist="thermal"><input type="checkbox" name="thermal"><span><i data-icon="sun"></i><b>Thermal</b></span></label>
+        <label class="tile tog" data-dist="crossrange"><input type="checkbox" name="crossrange"><span><i data-icon="sideways"></i><b>Cross-range</b></span></label>
+      </div>
+    </fieldset>
     <fieldset class="sim-field">
       <legend><span class="lg-ic" data-icon="noise"></span>Radar noise <span class="t i" data-tip="Random error on every radar point on every pass, in millimetres. The real data have about 2 mm."><span class="info">i</span></span></legend>
       <div class="seg" data-control="noise">
@@ -43,32 +60,23 @@
         <label><input type="radio" name="noise" value="4"><span>4 mm</span></label>
       </div>
     </fieldset>
+      <fieldset class="sim-field">
+        <legend><span class="lg-ic" data-icon="grid"></span>Points <span class="t i" data-tip="How many radar points the synthetic city has. The real Rotterdam set has about 12 000 in this area; 3000 shows what a sparser city or a stricter selection does."><span class="info">i</span></span></legend>
+        <div class="seg" data-control="points">
+          <label><input type="radio" name="points" value="3000"><span>3000</span></label>
+          <label><input type="radio" name="points" value="12000"><span>12&nbsp;000</span></label>
+        </div>
+      </fieldset>
     <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="building"></span>What else happens <span class="t i" data-tip="Switch on what makes real radar data hard. Warm: buildings grow a little when it is warm (7 millionths of their height per degree, five days behind the weather). Sinking: ground and buildings slowly sink and the buildings shrink. Position: each point's position across the beam is slightly off, which leaks into the measured distance."><span class="info">i</span></span></legend>
-      <div class="chips">
-        <label class="chip-t"><input type="checkbox" name="thermal"><span><i data-icon="sun"></i>Warm buildings grow</span></label>
-        <label class="chip-t"><input type="checkbox" name="sinking"><span><i data-icon="sink"></i>Sinking &amp; shrinking</span></label>
-        <label class="chip-t"><input type="checkbox" name="crossrange"><span><i data-icon="sideways"></i>Position error</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="sliders"></span>Estimation method <span class="t i" data-tip="How the estimation removes the buildings' thermal expansion before it reads the air. Fit α: the flowchart as drawn. α + air prior: our default, sets aside what the weather station predicts first. Jaap's: a 72-hour temperature memory and a temperature-driven air term."><span class="info">i</span></span></legend>
-      <div class="seg" data-control="method">
-        <label><input type="radio" name="method" value="none"><span>Fit α</span></label>
-        <label><input type="radio" name="method" value="air_prior"><span>α + air prior</span></label>
-        <label><input type="radio" name="method" value="jaap"><span>Jaap's 72 h</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="layers"></span>Layer thickness <span class="t i" data-tip="How thick each height layer of air is. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
+      <legend><span class="lg-ic" data-icon="layers"></span>Height layers <span class="t i" data-tip="How the air is cut into height layers (m NAP). 20 m and 40 m: equal layers from 3.2 m up. Two layers: 3.2-43.2 m and 43.2 m to the top. One layer: 3.2 m to the top. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
       <div class="seg" data-control="layers">
         <label><input type="radio" name="layers" value="20"><span>20 m</span></label>
         <label><input type="radio" name="layers" value="40"><span>40 m</span></label>
-        <label><input type="radio" name="layers" value="1"><span>One layer</span></label>
+        <label><input type="radio" name="layers" value="2"><span>Two</span></label>
+        <label><input type="radio" name="layers" value="1"><span>One</span></label>
       </div>
     </fieldset>
     <button type="button" class="sim-reset" id="sim-reset"><i data-icon="reset"></i>Reset to realistic</button>
-    <p class="sim-hint" hidden></p>
   </form>
   <p class="asof" id="sim-asof">Synthetic data only. No real radar point is used here. Every combination was computed beforehand with the team's code.</p>
 </aside>
@@ -77,39 +85,44 @@
   <noscript><p class="placeholder">The simulator needs JavaScript to read its precomputed results.</p></noscript>
   <p class="sim-status" id="sim-status" role="status">Loading the simulator results&hellip;</p>
   <div id="sim-out" hidden>
-      <p class="verdict" id="sim-verdict"></p>
-      <div class="stats sim-stats" id="sim-stats"></div>
-    <div class="app-grid">
-      <section class="app-card">
-      <h3 id="sim-profile-h"><i class="h-ic" data-icon="bars"></i>Error per height layer</h3>
-      <ul class="sim-legend" aria-hidden="true">
-        <li><i class="sw" style="background:#d62728"></i>radar estimate, rms error</li>
-        <li><i class="sw" style="background:#9a9a9a"></i>weather station alone, rms error</li>
-        <li><i class="sw" style="background:#c6dbef"></i>true spread of the air</li>
-      </ul>
-      <div class="sim-chart" id="sim-profile" role="img" aria-labelledby="sim-profile-h"></div>
-      <p class="small">Each row is one height layer. A red bar shorter than the grey one means the radar knows that layer better than a weather station on the ground does; a red bar longer than the blue band means the error is larger than the air's own variation, so the estimate says little.</p>
+    <p class="verdict" id="sim-verdict"></p>
+    <div class="stats sim-stats" id="sim-stats"></div>
+    <div class="sim-grid">
+      <section class="app-card sim-ts-card">
+        <h3 id="sim-ts-h"><i class="h-ic" data-icon="timeline"></i>Estimate against the truth, pass by pass</h3>
+        <ul class="sim-legend" aria-hidden="true">
+          <li><i class="ln"></i>truth (layer mean)</li>
+          <li><i class="dt"></i>radar estimate</li>
+          <li><i class="ln grey"></i>weather station alone</li>
+        </ul>
+        <div id="sim-ts" class="sim-multi"></div>
       </section>
-      <section class="app-card">
-      <h3 id="sim-table-h"><i class="h-ic" data-icon="table"></i>Per layer</h3>
-      <div class="tbl"><table class="sim-table" id="sim-table"></table></div>
+      <section class="app-card sim-attr-card">
+        <h3 id="sim-attr-h"><i class="h-ic" data-icon="bars"></i>Where the error comes from</h3>
+        <p class="sim-sub" id="sim-attr-sub"></p>
+        <div class="sim-chart" id="sim-attr" role="img" aria-labelledby="sim-attr-h"></div>
       </section>
-      <section class="app-card wide">
-      <h3 id="sim-passes-h"><i class="h-ic" data-icon="split"></i>The coldest and the warmest pass</h3>
-      <ul class="sim-legend" aria-hidden="true">
-        <li><i class="ln thin"></i>true profile, every 5 m</li>
-        <li><i class="ln dash"></i>true layer mean</li>
-        <li><i class="ln red"></i>estimated layer mean</li>
-      </ul>
-      <div class="sim-pair" id="sim-passes"></div>
+      <section class="app-card sim-sc-card">
+        <h3 id="sim-sc-h"><i class="h-ic" data-icon="scatter"></i>Does it follow the air?</h3>
+        <div class="sim-sc-top">
+          <label class="sim-pick">Layer <select id="sim-sc-layer" aria-label="Layer for the scatter plot"></select></label>
+          <span class="sim-sub">departures from the mean over all passes</span>
+        </div>
+        <div class="sim-chart" id="sim-sc"></div>
+        <ul class="sim-legend sim-sc-legend" id="sim-sc-legend"></ul>
       </section>
-      <section class="app-card wide">
-      <h3 id="sim-series-h"><i class="h-ic" data-icon="timeline"></i>Over the years</h3>
-      <ul class="sim-legend" aria-hidden="true">
-        <li><i class="ln"></i>truth (layer mean)</li>
-        <li><i class="dt"></i>radar estimate, one dot per pass</li>
-      </ul>
-      <div id="sim-series"></div>
+      <section class="app-card sim-cum-card">
+        <h3 id="sim-cum-h"><i class="h-ic" data-icon="waterfall"></i>Cumulative trend: adding the disturbances one by one</h3>
+        <div class="sim-cum">
+          <div>
+            <p class="sim-sub" id="sim-cum-sub"></p>
+            <div class="sim-chart" id="sim-cum" role="img" aria-labelledby="sim-cum-h"></div>
+          </div>
+          <div class="sim-decide">
+            <h4><i data-icon="bulb"></i>What this means</h4>
+            <ul id="sim-decide"></ul>
+          </div>
+        </div>
       </section>
     </div>
   </div>
@@ -117,22 +130,22 @@
   <details class="app-how">
     <summary>How it works</summary>
 <ol class="steps">
-  <li><span class="name">1. Simulate</span><p>A synthetic city and a known atmosphere. The radar distances are worked out pass by pass, with the disturbances you switched on.</p></li>
+  <li><span class="name">1. Simulate</span><p>A synthetic city under a known atmosphere: built from KNMI weather, from the 2025 balloon soundings, or from the Cabauw tower. The radar distances are worked out pass by pass, with the disturbances you switched on.</p></li>
   <li><span class="name">2. Double differences</span><p>Each point is compared with a point lower down, and each pass with a reference pass. What is left is mostly the air between the two heights, plus what the buildings did.</p></li>
-  <li><span class="name">3. Estimate</span><p>The building movement is removed with the chosen method and the remaining delay is turned into refractivity per height layer.</p></li>
+  <li><span class="name">3. Estimate</span><p>The building movement is fitted and removed, and the remaining delay is turned into refractivity per height layer.</p></li>
   <li><span class="name">4. Compare</span><p>The estimate is set against the true layer mean on every pass, and against what a weather station on the ground alone would have said.</p></li>
 </ol>
 <p>The simulation is described on <a href="estimation.html#sim-model">Simulation</a>, the estimation and its limits on <a href="estimation.html">Estimation</a>. A good score here is necessary, not sufficient: the simulated city behaves exactly as the model says it does, the real one does not.</p>
 <div class="tech">
-<p><b>Simulation</b> (settings of <code>06_simulation</code>, rerun through <code>estimation.sim_import</code>). Noise: <code>use_noise</code> and <code>noise_mm</code>, Gaussian per point and pass (the real data: about 2.07 mm). Thermal expansion: <code>use_thermal</code>, &alpha;&eta; = 7 &times; 10<sup>-6</sup> /K with a five-day lag. Sinking &amp; shrinking: <code>use_displacement</code>, ground and building subsidence plus shrinkage. Cross-range error: <code>use_cross_range</code>, a position error across the beam times the perpendicular baseline. One simulation per combination of these four: 32 in all.</p>
-<p><b>Estimation</b> (<code>04_python/estimation</code>, <code>estimate(thermal, air_prior, bin_width_m)</code>). &ldquo;Fit &alpha; only&rdquo; fits the thermal coefficient without an air prior, as in the flowchart; &ldquo;&alpha; + air prior&rdquo; adds a prior on the air, our default; Jaap de Ruiter's method uses a 72-hour temperature memory for the buildings and a temperature-driven air term. Layer thickness is <code>bin_width_m</code>: 20 m, 40 m, or one layer from 3.2 m to the top. Nine estimations per simulation.</p>
-<p><b>Comparison.</b> Radar error: the calibrated layer refractivity minus the true layer mean (true atmosphere on 5 m levels), rms over the passes. Weather station alone: KNMI ground refractivity carried up with &minus;55 N/km. True spread: the standard deviation of the true layer mean over the passes. &alpha;: median of the fitted thermal coefficients. Everything is written by <code>04_python/estimation/site_simulator.py</code> into <code>data/simulator/</code>; the page only reads those files.</p>
+<p><b>Simulation</b> (settings of <code>06_simulation</code> on main, seed 0, rerun through <code>estimation.sim_import</code>). Sinking: <code>use_sinking</code>; shrinking: <code>use_shrinking</code>; thermal dilation: <code>use_thermal</code> (five-day lag); cross-range: <code>use_cross_range</code>, a position error across the beam times the perpendicular baseline; noise: <code>use_noise</code> and <code>noise_mm</code>, Gaussian per point and pass (the real data: about 2.07 mm). One simulation per atmosphere, disturbance set, noise level and point count: 384 in all.</p>
+<p><b>Estimation</b> (<code>04_python/estimation</code>, defaults: thermal fitted, air prior from the ground, mean boundary, KNMI 344 daily temperature with a five-day lag as the building temperature). Each simulation is estimated with four layer setups: 20 m, 40 m, two layers (3.2-43.2 m and above) and one layer.</p>
+<p><b>Comparison.</b> Radar error: the estimated layer refractivity minus the true layer mean, rms over the passes. Weather station alone: the run's own ground refractivity carried up with &minus;55 N/km. Skill: 1 minus the radar's squared error over the station's; above 0 the radar adds something. Column error: the same for the thickness-weighted mean of all layers. The attribution and the cumulative trend read the column error of the other combinations from the manifest. Everything is written by <code>04_python/estimation/site_simulator.py</code> into <code>data/simulator/</code>; the page only reads those files.</p>
 </div>
   </details>
 </section>
 </div>
 <script defer src="js/nav.js?v=20261012e"></script>
-<script defer src="js/icons.js?v=20261012d"></script>
-<script defer src="js/simulator.js?v=20261012g"></script>
+<script defer src="js/icons.js?v=20261013a"></script>
+<script defer src="js/simulator.js?v=20261013a"></script>
 </body>
 </html>

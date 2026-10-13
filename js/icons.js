@@ -45,7 +45,11 @@
     table: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4.5v15"/>',
     bars: '<path d="M4 6h10M4 12h16M4 18h7"/>',
     timeline: '<path d="M3 20h18"/><circle cx="6" cy="14" r="1.2"/><circle cx="10" cy="9" r="1.2"/><circle cx="14" cy="12" r="1.2"/><circle cx="18" cy="6" r="1.2"/>',
-    split: '<path d="M12 3v18"/><path d="M8 7c-3 0-4 3-4 5s1 5 4 5M16 7c3 0 4 3 4 5s-1 5-4 5"/>'
+    split: '<path d="M12 3v18"/><path d="M8 7c-3 0-4 3-4 5s1 5 4 5M16 7c3 0 4 3 4 5s-1 5-4 5"/>',
+    shrink: '<path d="M6 21V11h12v10M3 21h18"/><path d="M12 2.5v5.5M9.3 5.6L12 8.3l2.7-2.7"/><path d="M10 15h4"/>',
+    scatter: '<path d="M3.5 3.5v17h17"/><circle cx="8.5" cy="15" r="1.3"/><circle cx="11.5" cy="11.5" r="1.3"/><circle cx="15" cy="12.5" r="1.3"/><circle cx="17.5" cy="7.5" r="1.3"/><path d="M7 18L19.5 5.5" stroke-dasharray="2 2.4"/>',
+    waterfall: '<path d="M3.5 20.5h17"/><path d="M5 20.5v-6h3.5v6M10.25 14.5v-4h3.5v4M15.5 10.5v-5H19v5"/>',
+    bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>'
   };
   window.VRS_ICONS = ICONS;
   window.VRS_ICON = function (name, cls) {
