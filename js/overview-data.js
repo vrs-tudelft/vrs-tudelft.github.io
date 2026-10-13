@@ -156,7 +156,7 @@ window.VRS_FLOW = {
       number: "3.3–4.9 N per full layer; 1.1 N as one layer (station 3.0)", code: "sim_import.py, sim_outputs.py",
       link: "estimation.html#simulation", linkText: "Tested on the simulation" },
     { id: "e_sim", lane: "est", icon: "play", row: 8, col: 1, type: "result", title: "The simulator", sub: "1 536 results to play with",
-      tip: "Every combination of noise, building movement, method and layer thickness, simulated and estimated beforehand.",
+      tip: "Every combination of atmosphere, building movement, noise level, number of points and layer thickness, simulated and estimated beforehand, with where the error comes from.",
       number: "3 atmospheres × 16 disturbance mixes × 4 noise levels × 2 point counts = 384 simulations, each with 4 layer setups", code: "site_simulator.py → data/simulator/",
       link: "simulator.html", linkText: "Open the simulator" },
     { id: "e_real", lane: "est", icon: "chart", row: 9, type: "result", title: "Real profiles 2020–2026", sub: "first results, Kop van Zuid",
