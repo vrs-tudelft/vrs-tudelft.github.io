@@ -1,15 +1,15 @@
 {
- "generated": "2026-10-12",
+ "generated": "2026-10-13",
  "code": {
-  "virtual_radiosonde": "d7349095c8a3e83943c2cd3c0db1f41929240d11",
+  "virtual_radiosonde": "a216d641a8064fdf5290129bfa0ff16a61b1eb3b",
   "note": "06_simulation rerun via estimation.sim_import"
  },
  "scene": {
   "points": 12000,
   "buildings": 16,
-  "passes": 288,
-  "first": "2014-01-10",
-  "last": "2023-12-30",
+  "passes": 213,
+  "first": "2020-01-08",
+  "last": "2026-08-24",
   "atmosphere": "simulated from KNMI 344 weather",
   "alpha_true_per_K": 7e-06
  },
