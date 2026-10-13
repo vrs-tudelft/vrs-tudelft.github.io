@@ -54,14 +54,14 @@ header.top {
 .brand { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
 .brand:hover { text-decoration: none; color: var(--ink); }
 .brand svg { width: 20px; height: 20px; flex: none; }
-header.top nav { display: flex; gap: 4px; margin-left: auto; font-size: .94rem; }
-header.top nav a { color: var(--muted); padding: 6px 11px; border-radius: 7px; white-space: nowrap; }
+header.top nav { display: flex; gap: 2px; margin-left: auto; font-size: .92rem; }
+header.top nav a { color: var(--muted); padding: 6px 10px; border-radius: 7px; white-space: nowrap; }
 header.top nav a:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 5%, transparent); text-decoration: none; }
 header.top nav a[aria-current="page"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
 @media (max-width: 760px) {
   .top-inner { padding: 8px 12px 6px; gap: 6px; display: block; }
-  header.top nav { margin: 4px 0 0; display: flex; gap: 2px; font-size: .8rem; }
-  header.top nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 5px 2px; overflow: hidden; text-overflow: ellipsis; }
+  header.top nav { margin: 4px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; font-size: .8rem; }
+  header.top nav a { min-width: 0; text-align: center; padding: 4px 2px; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* ---------------------------------------------------------------- shell */

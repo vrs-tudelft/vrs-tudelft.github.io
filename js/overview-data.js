@@ -104,7 +104,7 @@ window.VRS_FLOW = {
     { id: "s_nuis", lane: "sim", icon: "zap", row: 4, type: "process", title: "Add what makes it hard", sub: "step 6: sinking, warm buildings, noise",
       tip: "Ground and buildings sink and shrink, buildings expand when warm (five days behind the KNMI temperature), each point has a small position error, and 2 mm of noise. Each can be switched off.",
       number: "α·η = 7 × 10⁻⁶ /K, noise 2.07 mm", code: "step6_nuisances.py --use_displacement --use_thermal --use_cross_range --use_noise",
-      link: "simulator.html", linkText: "Switch them on and off in the simulator" },
+      link: "simulator.html", linkText: "Switch them on and off in the simulation" },
     { id: "s_dd", lane: "sim", icon: "compare", row: 5, type: "process", title: "Double differences", sub: "step 7: against the street and the first pass",
       tip: "Every point compared with the street, every pass with the first: the same form as the real satellite data.",
       code: "step7_differencing.py (single_mother)", link: "estimation.html#sim-chain", linkText: "The radar's view" },
@@ -132,10 +132,10 @@ window.VRS_FLOW = {
     { id: "e_prior", lane: "est", icon: "shield", row: 3, type: "process", title: "Air prior", sub: "set aside what the station predicts",
       tip: "Before the building fit, the delay the ground station predicts is set aside and added back afterwards. Otherwise the warm-building term swallows part of the air.",
       number: "fitted α 7.02 × 10⁻⁶ /K (true 7.00); without the prior 9.05", code: "estimate(air_prior=\"ground\")",
-      link: "estimation.html#buildings", linkText: "Telling the buildings from the air" },
+      link: "buildings.html", linkText: "How the buildings move" },
     { id: "e_method", lane: "est", icon: "history", row: 4, col: 1, type: "decision", title: "Which memory?", sub: "5 days or Jaap's 72 h",
       tip: "How the buildings remember the temperature: the default 5-day memory (like the simulation), or Jaap de Ruiter's 72-hour memory with a temperature-driven air term.",
-      code: "dilation_method=\"jaap\": ground.temperature_memory (D10)", link: "simulator.html", linkText: "Compare them in the simulator" },
+      code: "dilation_method=\"jaap\": ground.temperature_memory (D10)", link: "simulator.html", linkText: "Compare them in the simulation" },
     { id: "e_motion", lane: "est", icon: "building", row: 4, type: "process", title: "Remove what the buildings do", sub: "sinking, shrinking, growing when warm",
       tip: "Per building: a steady sink, slow shrinking, and expansion with temperature (α fitted per building). What is left is the air plus noise.",
       code: "deformation.fit_report_group (D2)", link: "estimation.html#buildings", linkText: "Telling the buildings from the air" },
@@ -158,11 +158,11 @@ window.VRS_FLOW = {
     { id: "e_sim", lane: "est", icon: "play", row: 8, col: 1, type: "result", title: "The simulator", sub: "1 536 results to play with",
       tip: "Every combination of atmosphere, building movement, noise level, number of points and layer thickness, simulated and estimated beforehand. As in Jaap's figure, each estimate is also run with parts of the chain switched off (layer inversion only, + shrinking, standard), so you see what each part adds.",
       number: "3 atmospheres × 16 disturbance mixes × 4 noise levels × 2 point counts = 384 simulations, each with 4 layer setups, each estimated 3 ways step by step", code: "site_simulator.py → data/simulator/",
-      link: "simulator.html", linkText: "Open the simulator" },
+      link: "simulator.html", linkText: "Open the simulation" },
     { id: "e_real", lane: "est", icon: "chart", row: 9, type: "result", title: "Real profiles 2020–2026", sub: "first results, Kop van Zuid",
       tip: "The first profiles from the real radar data. The lowest layer follows the ground station (r = 0.45; 0.35 without the seasons).",
       number: "r = 0.45 with the station, lowest layer", code: "05_results/24_estimation_refractivity_profile/",
-      link: "estimation.html#real", linkText: "First results on the real data" }
+      link: "results.html", linkText: "Results on the real data" }
   ],
 
   edges: [

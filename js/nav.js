@@ -1,10 +1,15 @@
 /* Header, on-page section nav with scroll-spy, footer, and tooltips on touch. */
 (function () {
+  /* the story of the report: introduction, theory, methodology (overview, end-to-end simulation,
+     estimation), the buildings' functional model, results, and the data as appendix */
   var pages = [
     { href: "index.html", label: "Home" },
+    { href: "theory.html", label: "Theory" },
     { href: "overview.html", label: "Overview" },
+    { href: "simulator.html", label: "Simulation" },
     { href: "estimation.html", label: "Estimation" },
-    { href: "simulator.html", label: "Simulator" },
+    { href: "buildings.html", label: "Buildings", also: ["animations.html"] },
+    { href: "results.html", label: "Results" },
     { href: "data.html", label: "Data" }
   ];
   var root = document.documentElement.getAttribute("data-root") || "";
@@ -22,7 +27,8 @@
       var a = document.createElement("a");
       a.href = root + p.href;
       a.textContent = p.label;
-      if (p.href === "data.html" ? (in3d || here === p.href || here === "animations.html") : (!in3d && p.href === here)) a.setAttribute("aria-current", "page");
+      var cur = p.href === "buildings.html" ? (in3d || here === p.href || (p.also || []).indexOf(here) >= 0) : (!in3d && p.href === here);
+      if (cur) a.setAttribute("aria-current", "page");
       nav.appendChild(a);
     });
     inner.appendChild(nav);

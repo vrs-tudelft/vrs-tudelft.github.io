@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Estimation simulator · Virtual Radiosonde</title>
+<title>Simulation · Virtual Radiosonde</title>
 <meta name="description" content="Choose the air and what disturbs simulated radar data, and see how well the team's estimation recovers the air refractivity per height layer, compared with a weather station alone. Precomputed, synthetic data only.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -21,7 +21,7 @@
     </svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="overview.html">Overview</a> <a href="estimation.html">Estimation</a> <a href="simulator.html">Simulator</a> <a href="data.html">Data</a></nav></noscript>
+  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Overview</a> <a href="simulator.html">Simulation</a> <a href="estimation.html">Estimation</a> <a href="buildings.html">Buildings</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
 <div class="app" id="sim">
@@ -29,7 +29,7 @@
   <div class="sim-head">
     <span class="sim-head-ic" data-icon="play"></span>
     <div>
-      <h1>Estimation simulator</h1>
+      <h1>Simulation</h1>
       <p class="app-intro">Pick the air, switch on what disturbs the fake radar data of a synthetic city, and see how well the <a href="estimation.html">estimation</a> finds the true <span class="t" data-tip="Refractivity N says how much the air slows the radar signal, in N-units: about 1 N-unit per 1 part per million of extra delay. It depends on pressure, temperature and above all humidity.">air refractivity</span>.</p>
     </div>
   </div>
@@ -135,7 +135,7 @@
     <div class="sim-view" id="view-how" role="tabpanel" aria-labelledby="tab-how" hidden>
       <section class="app-card sim-how">
 <ol class="steps">
-  <li><span class="name">1. Simulate</span><p>A synthetic city under a known atmosphere: built from KNMI weather, from the 2025 balloon soundings, or from the Cabauw tower. The radar distances are worked out pass by pass, with the disturbances you switched on.</p></li>
+  <li><span class="name">1. Simulate</span><p>The end-to-end chain of the paper (section 3.1): pressure, temperature and humidity per metre of height &rarr; refractivity N &rarr; the delay integrated up to each height &rarr; the delay at every radar point's height on every pass &rarr; differences between two passes &rarr; mapped onto the satellite's line of sight &rarr; with the building's own movement and the radar noise added on top. A synthetic city under a known atmosphere: built from KNMI weather, from the 2025 balloon soundings, or from the Cabauw tower. The radar distances are worked out pass by pass, with the disturbances you switched on.</p></li>
   <li><span class="name">2. Double differences</span><p>Each point is compared with a point lower down, and each pass with a reference pass. What is left is mostly the air between the two heights, plus what the buildings did.</p></li>
   <li><span class="name">3. Estimate</span><p>The building movement is fitted and removed, and the remaining delay is turned into refractivity per height layer.</p></li>
   <li><span class="name">4. Compare</span><p>The estimate is set against the true layer mean on every pass, and against what a weather station on the ground alone would have said.</p></li>
