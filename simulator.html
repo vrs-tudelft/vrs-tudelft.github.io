@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261013c">
+<link rel="stylesheet" href="style.css?v=20261013d">
 </head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
@@ -85,53 +85,55 @@
   <noscript><p class="placeholder">The simulator needs JavaScript to read its precomputed results.</p></noscript>
   <p class="sim-status" id="sim-status" role="status">Loading the simulator results&hellip;</p>
   <div id="sim-out" hidden>
-    <p class="verdict" id="sim-verdict"></p>
-    <div class="stats sim-stats" id="sim-stats"></div>
-    <div class="sim-grid">
-      <section class="app-card sim-pass-card">
-        <h3 id="sim-pass-h"><i class="h-ic" data-icon="timeline"></i>(a) Error per pass, step by step</h3>
-        <p class="sim-sub" id="sim-pass-sub"></p>
-        <ul class="sim-legend sim-steps-legend" id="sim-pass-legend"></ul>
-        <div class="sim-chart" id="sim-pass"></div>
-      </section>
-      <section class="app-card sim-lay-card">
-        <h3 id="sim-lay-h"><i class="h-ic" data-icon="bars"></i>(b) Error per layer, step by step</h3>
-        <p class="sim-sub" id="sim-lay-sub"></p>
-        <div class="sim-chart" id="sim-lay" role="img" aria-labelledby="sim-lay-h"></div>
-        <ul class="sim-legend sim-sc-legend" id="sim-lay-legend"></ul>
-      </section>
-      <section class="app-card sim-sc-card">
-        <h3 id="sim-sc-h"><i class="h-ic" data-icon="scatter"></i>(c) Standard estimate against the truth</h3>
-        <div class="sim-sc-top">
-          <label class="sim-pick">Layer <select id="sim-sc-layer" aria-label="Layer for the scatter plot"></select></label>
-          <span class="sim-sub">N anomaly: departure from the mean over the passes</span>
-        </div>
-        <div class="sim-chart" id="sim-sc"></div>
-        <ul class="sim-legend sim-sc-legend" id="sim-sc-legend"></ul>
-      </section>
-      <section class="app-card sim-attr-card">
-        <h3 id="sim-attr-h"><i class="h-ic" data-icon="bars"></i>Which disturbance costs what</h3>
-        <p class="sim-sub" id="sim-attr-sub"></p>
-        <div class="sim-chart" id="sim-attr" role="img" aria-labelledby="sim-attr-h"></div>
-      </section>
-      <section class="app-card sim-cum-card">
-        <h3 id="sim-cum-h"><i class="h-ic" data-icon="waterfall"></i>Cumulative trend: adding the disturbances one by one</h3>
-        <div class="sim-cum">
-          <div>
-            <p class="sim-sub" id="sim-cum-sub"></p>
-            <div class="sim-chart" id="sim-cum" role="img" aria-labelledby="sim-cum-h"></div>
-          </div>
-          <div class="sim-decide">
-            <h4><i data-icon="bulb"></i>What this means</h4>
-            <ul id="sim-decide"></ul>
-          </div>
-        </div>
-      </section>
+    <div class="sim-tabs" role="tablist" aria-label="Views">
+      <button type="button" role="tab" id="tab-steps" aria-controls="view-steps" data-tab="steps"><i data-icon="timeline"></i>Step by step</button>
+      <button type="button" role="tab" id="tab-dist" aria-controls="view-dist" data-tab="dist"><i data-icon="bars"></i>Disturbances</button>
+      <button type="button" role="tab" id="tab-decide" aria-controls="view-decide" data-tab="decide"><i data-icon="bulb"></i>What this means</button>
+      <button type="button" role="tab" id="tab-how" aria-controls="view-how" data-tab="how"><i data-icon="info"></i>How it works</button>
     </div>
-  </div>
-
-  <details class="app-how">
-    <summary>How it works</summary>
+    <div class="sim-top">
+      <p class="verdict" id="sim-verdict"></p>
+      <div class="stats sim-stats" id="sim-stats"></div>
+    </div>
+    <div class="sim-view sim-dash" id="view-steps" role="tabpanel" aria-labelledby="tab-steps">
+        <section class="app-card sim-pass-card">
+          <div class="sim-card-head">
+            <h3 id="sim-pass-h"><i class="h-ic" data-icon="timeline"></i>(a) Error per pass, step by step <span class="t i left" id="sim-pass-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
+            <ul class="sim-legend sim-steps-legend" id="sim-pass-legend"></ul>
+          </div>
+          <div class="sim-chart sim-fill" id="sim-pass"></div>
+        </section>
+        <section class="app-card sim-lay-card">
+          <div class="sim-card-head">
+            <h3 id="sim-lay-h"><i class="h-ic" data-icon="bars"></i>(b) Error per layer <span class="t i left" id="sim-lay-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
+          </div>
+          <div class="sim-chart sim-fill" id="sim-lay" role="img" aria-labelledby="sim-lay-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="sim-lay-legend"></ul>
+        </section>
+        <section class="app-card sim-sc-card">
+          <div class="sim-card-head">
+            <h3 id="sim-sc-h"><i class="h-ic" data-icon="scatter"></i>(c) Standard vs truth <span class="t i left" tabindex="0" data-tip="The standard estimate's N anomaly (departure from its mean over the passes) against the true one, one dot per pass and layer. On the dashed 1 : 1 line the radar is exactly right; a slope above 1 means it exaggerates the swings."><span class="info">i</span></span></h3>
+            <label class="sim-pick">Layer <select id="sim-sc-layer" aria-label="Layer for the scatter plot"></select></label>
+          </div>
+          <div class="sim-chart sim-fill" id="sim-sc"></div>
+          <ul class="sim-legend sim-mini-legend" id="sim-sc-legend"></ul>
+        </section>
+    </div>
+    <div class="sim-view sim-dash sim-dash-2" id="view-dist" role="tabpanel" aria-labelledby="tab-dist" hidden>
+        <section class="app-card sim-attr-card">
+          <div class="sim-card-head"><h3><i class="h-ic" data-icon="bars"></i><span id="sim-attr-h">Cost per disturbance</span> <span class="t i left" id="sim-attr-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="sim-attr" role="img" aria-labelledby="sim-attr-h"></div>
+        </section>
+        <section class="app-card sim-cum-card">
+          <div class="sim-card-head"><h3><i class="h-ic" data-icon="waterfall"></i><span id="sim-cum-h">Cumulative: adding them one by one</span> <span class="t i left" id="sim-cum-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="sim-cum" role="img" aria-labelledby="sim-cum-h"></div>
+        </section>
+    </div>
+    <div class="sim-view" id="view-decide" role="tabpanel" aria-labelledby="tab-decide" hidden>
+      <section class="app-card sim-decide"><ul id="sim-decide"></ul></section>
+    </div>
+    <div class="sim-view" id="view-how" role="tabpanel" aria-labelledby="tab-how" hidden>
+      <section class="app-card sim-how">
 <ol class="steps">
   <li><span class="name">1. Simulate</span><p>A synthetic city under a known atmosphere: built from KNMI weather, from the 2025 balloon soundings, or from the Cabauw tower. The radar distances are worked out pass by pass, with the disturbances you switched on.</p></li>
   <li><span class="name">2. Double differences</span><p>Each point is compared with a point lower down, and each pass with a reference pass. What is left is mostly the air between the two heights, plus what the buildings did.</p></li>
@@ -145,11 +147,16 @@
 <p><b>Estimation</b> (<code>04_python/estimation</code>, defaults: thermal fitted, air prior from the ground, mean boundary; as building temperature the one the simulation used: KNMI 344 daily with the five-day lag for the KNMI-built air, the air's own surface temperature at the pass, no lag, for the soundings and the tower). Each simulation is estimated with four layer setups: 20 m, 40 m, two layers (3.2-43.2 m and above) and one layer.</p>
 <p><b>Comparison.</b> Radar error: the estimated layer refractivity minus the true layer mean, rms over the passes. Weather station alone: the run's own ground refractivity carried up with &minus;55 N/km. Skill: 1 minus the radar's squared error over the station's; above 0 the radar adds something. Column error: the same for the thickness-weighted mean of all layers. <b>Step by step</b> (Jaap's <code>05_results/26_long_term_temperature/cabauw_ideal.py</code>): the estimation's N anomaly minus the truth's, with only the point offsets removed (<code>fit_report_group</code> replaced), with <code>thermal="none"</code>, and standard; the station alone is the ground N anomaly in every layer; the predicted error is minus the straight line through the truth anomaly minus the ground anomaly (mean of the layers), with its mean removed. The attribution and the cumulative trend read the column error of the other combinations from the manifest. Everything is written by <code>04_python/estimation/site_simulator.py</code> into <code>data/simulator/</code>; the page only reads those files.</p>
 </div>
-  </details>
+  </section>
+    </div>
+  </div>
+  <div class="sim-floattip" id="sim-floattip" role="tooltip" hidden></div>
+
+
 </section>
 </div>
 <script defer src="js/nav.js?v=20261012e"></script>
 <script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/simulator.js?v=20261013c"></script>
+<script defer src="js/simulator.js?v=20261013d"></script>
 </body>
 </html>
