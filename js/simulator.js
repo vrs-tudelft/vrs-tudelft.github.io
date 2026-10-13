@@ -1,8 +1,10 @@
 /* Estimation simulator (v2): reads the precomputed results in data/simulator/ (manifest.json with a
    compact summary of every combination, and one runs/<key>.json per simulation, fetched when first
-   needed and kept) and draws, as inline SVG, the estimate against the truth per layer, where the error
-   comes from, a scatter of the departures, and the cumulative trend when the disturbances are added
-   one by one. Plain script, no libraries. Nothing is computed here beyond picking entries, means,
+   needed and kept) and draws, as inline SVG, Jaap's step-by-step figure (05_results/
+   26_long_term_temperature/cabauw_ideal.py): (a) the error per pass with parts of the chain switched
+   off and the predicted drift, (b) the error per layer step by step against the station alone, (c) the
+   standard estimate against the truth; then which disturbance costs what, and the cumulative trend
+   when the disturbances are added one by one. Plain script, no libraries. Nothing is computed here beyond picking entries, means,
    departures and the station's correlation, and formatting them. */
 (function () {
   "use strict";
@@ -25,6 +27,13 @@
   };
   var ATM_NAME = { simulated: "KNMI-built air", radiosonde: "the balloon soundings of 2025", cabauw: "the Cabauw tower air of 2025" };
   var LAYERS_NAME = { "20": "20 m layers", "40": "40 m layers", "2": "two layers", "1": "one layer" };
+  /* Jaap's steps: the same estimation chain with parts switched off */
+  var STAGES = [
+    { key: "layers", label: "layer inversion only (no deformation fit)", short: "layers only", color: "#b9cbe3", w: 1.3 },
+    { key: "shrink", label: "+ shrinking term", short: "+ shrinking", color: "#6f95c8", w: 1.3 },
+    { key: "std", label: "+ thermal term = standard", short: "standard", color: "#1f5fa8", w: 1.9 }
+  ];
+  var PRED = "#d1662b";
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   var form = document.getElementById("sim-controls");
@@ -33,7 +42,8 @@
   var scSel = document.getElementById("sim-sc-layer");
   if (!form || !out) return;
 
-  var manifest = null, state = {}, runs = {}, last = null, token = 0, scLayer = 0;
+  var manifest = null, state = {}, runs = {}, last = null, token = 0, scLayer = -1;
+  var shown = { layers: true, shrink: true, std: true, pred: true };
 
   /* ------------------------------------------------------------ small helpers */
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -153,7 +163,7 @@
   function update() {
     var prevLayers = state.layers;
     state = fromForm();
-    if (state.layers !== prevLayers) scLayer = 0;
+    if (state.layers !== prevLayers) scLayer = -1;
     writeUrl(state);
     var key = runKey(state), my = ++token;
     var slow = setTimeout(function () { if (my === token) { setStatus("Loading the results for this combination…"); out.classList.add("busy"); } }, 120);
@@ -188,9 +198,10 @@
     document.getElementById("sim-verdict").textContent = verdict(e, s, sm);
     renderStats(e, s, sm);
     fillLayerPick(e);
-    renderAttr(document.getElementById("sim-attr"), s);
+    renderPass(document.getElementById("sim-pass"), e, last.run, s);
+    renderLay(document.getElementById("sim-lay"), e);
     renderScatter(document.getElementById("sim-sc"), e);
-    renderSeries(document.getElementById("sim-ts"), e, last.run);
+    renderAttr(document.getElementById("sim-attr"), s);
     renderCum(document.getElementById("sim-cum"), s);
     renderDecide(document.getElementById("sim-decide"), e, s, sm);
   }
@@ -237,52 +248,85 @@
     var y0 = a.getUTCFullYear(), y1 = b.getUTCFullYear();
     return { ticks: t, title: y0 === y1 ? String(y0) : y0 + "–" + y1 };
   }
-  function renderSeries(el, e, run) {
-    var w = width(el), nl = e.series.length;
-    var tx = run.epochs.map(day), GAP = 30, d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
-    var m = { l: 46, r: 10 }, narrow = w < 520, head = narrow ? 30 : 19, gap = 9, bottom = 34;
-    /* fill the height of the two cards beside it when the layout puts them there */
-    var card = el.closest(".app-card"), side = document.querySelector(".sim-attr-card"), sc = document.querySelector(".sim-sc-card");
-    var ph = nl === 1 ? 290 : nl === 2 ? 210 : nl <= 4 ? 150 : 104;
-    if (card && side && sc && side.offsetLeft > card.offsetLeft + 40) {
-      var target = sc.offsetTop + sc.offsetHeight - card.offsetTop - (el.offsetTop - card.offsetTop) - 14;
-      ph = clamp((target - bottom) / nl - head - gap, 58, 300);
-    }
-    var xs = lin(d0 - pad, d1 + pad, m.l, w - m.r), tt = timeTicks(d0, d1, w);
-    var H = nl * (head + ph + gap) + bottom, body = "", y = 0, r = tx.length > 300 ? 1.4 : narrow ? 1.7 : 2.1;
-    for (var i = nl - 1; i >= 0; i--) {
-      var sr = e.series[i], k = sr.layer !== undefined ? sr.layer : i;
-      var vals = sr.truth.concat(sr.est, sr.station || []).filter(ok);
-      var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), p = (hi - lo) * 0.05 || 1;
-      var top = y + head, bot = top + ph, ys = lin(lo - p, hi + p, bot, top);
-      var label = sr.label ? sr.label.replace(/(\d)-(\d)/, "$1–$2") : layerLabel(e.edges, k);
-      var stats = tspan("radar ", C.muted) + tspan(num(e.rmse[k], 2) + " N", C.radar, 600) + tspan("  ·  station ", C.muted) + tspan(num(e.station_rmse[k], 2) + " N", C.ink2, 600) +
-        tspan("  ·  skill ", C.muted) + tspan(signed(e.skill[k], 2), skillColor(e.skill[k]), 650);
-      if (narrow) {
-        body += text(m.l - 40, y + 11, label, { fill: C.truth, weight: 650, size: 12 });
-        body += text(m.l - 40, y + 25, stats, { size: 11, raw: 1 });
-      } else {
-        body += text(m.l, y + 12, tspan(label, C.truth, 650) + tspan("    ", C.muted) + stats, { size: 11.5, raw: 1 });
-      }
-      body += rect(m.l, top, w - m.l - m.r, ph, "#fcfbf8");
-      ticks(lo - p, hi + p, ph < 90 ? 2 : 3).forEach(function (v) {
-        var yy = ys(v); body += line(m.l, yy, w - m.r, yy, C.grid) + text(m.l - 6, yy, tickLabel(v), { anchor: "end", base: "middle", size: 10 });
+  function rmsMean(a) { var t = 0, n = 0; (a || []).forEach(function (v) { if (ok(v)) { t += v * v; n++; } }); return n ? Math.sqrt(t / n) : NaN; }
+  function noSteps(el, what) {
+    el.innerHTML = '<p class="sim-sub" style="padding:14px">' + esc(what) + " is not in the published results for this combination yet.</p>";
+  }
+
+  /* ---- (a) error per pass, step by step: mean of the layers of (estimate anomaly - truth anomaly) */
+  function passLegend(st) {
+    var el = document.getElementById("sim-pass-legend"), h = "";
+    STAGES.forEach(function (g) {
+      h += '<li class="tg" role="button" tabindex="0" data-k="' + g.key + '" aria-pressed="' + shown[g.key] + '"><i class="ln c" style="border-top-color:' + g.color + '"></i>' + esc(g.label) +
+        ' <b style="color:' + C.ink2 + '">' + num(rmsMean(st.pass_error[g.key]), 2) + " N</b></li>";
+    });
+    h += '<li class="tg" role="button" tabindex="0" data-k="pred" aria-pressed="' + shown.pred + '"><i class="ln pred"></i>predicted: the straight-line drift of the air the ground correction misses (' +
+      signed(st.drift_N_per_month, 2) + " N per month), sign flipped</li>";
+    el.innerHTML = h;
+  }
+  function renderPass(el, e, run, s) {
+    var st = e.steps;
+    if (!st) { noSteps(el, "The step-by-step breakdown"); document.getElementById("sim-pass-legend").innerHTML = ""; return; }
+    passLegend(st);
+    var tx = run.epochs.map(day), GAP = s.atm === "simulated" ? 75 : 30, d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
+    var w = width(el), narrow = w < 520, m = { l: 48, r: 12, t: 12, b: 38 }, H = narrow ? 250 : 300;
+    var series = STAGES.filter(function (g) { return shown[g.key]; }).map(function (g) { return { v: st.pass_error[g.key], color: g.color, w: g.w }; });
+    if (shown.pred) series.push({ v: st.predicted, color: PRED, w: 2, dash: true });
+    var vals = [0];
+    series.forEach(function (x) { x.v.forEach(function (v) { if (ok(v)) vals.push(v); }); });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), p = (hi - lo) * 0.06 || 0.5;
+    var xs = lin(d0 - pad, d1 + pad, m.l, w - m.r), ys = lin(lo - p, hi + p, H - m.b, m.t), tt = timeTicks(d0, d1, w);
+    var body = rect(m.l, m.t, w - m.l - m.r, H - m.t - m.b, "#fcfbf8");
+    ticks(lo - p, hi + p, narrow ? 4 : 6).forEach(function (v) { body += line(m.l, ys(v), w - m.r, ys(v), C.grid) + text(m.l - 6, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 }); });
+    tt.ticks.forEach(function (t) { var x = xs(t.d); body += line(x, m.t, x, H - m.b, C.grid) + text(x, H - m.b + 15, t.s, { anchor: "middle", size: 10.5 }); });
+    if (tt.title) body += text(w - m.r, H - 4, tt.title, { anchor: "end", size: 10.5, fill: C.ink2 });
+    body += line(m.l, ys(0), w - m.r, ys(0), "#17191c", 0.8);
+    body += line(m.l, H - m.b, w - m.r, H - m.b, C.axis) + line(m.l, m.t, m.l, H - m.b, C.axis);
+    series.forEach(function (x) {
+      body += '<path d="' + path(x.v.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, GAP) + '" fill="none" stroke="' + x.color + '" stroke-width="' + x.w + '"' +
+        (x.dash ? ' stroke-dasharray="6 4"' : "") + ' stroke-linejoin="round"/>';
+    });
+    if (!narrow) body += text(13, (m.t + H - m.b) / 2, "estimate − truth (N), mean of the layers", { anchor: "middle", fill: C.ink2, size: 11, rot: -90, base: "middle" });
+    el.innerHTML = svg(w, H, body, "Error per pass, mean of the layers, on " + tx.length + " passes. rms: " + STAGES.map(function (g) { return g.short + " " + num(rmsMean(st.pass_error[g.key]), 2) + " N"; }).join(", ") +
+      "; predicted drift " + signed(st.drift_N_per_month, 2) + " N per month.");
+    var sub = document.getElementById("sim-pass-sub");
+    if (sub) sub.innerHTML = "The same estimation run three times with parts switched off; each line is the estimated N anomaly minus the true one, averaged over the layers. Click a legend entry to hide it; the axis follows what is shown." +
+      (ok(st.corr_error_predicted) ? " The standard error follows the predicted drift with r = <b>" + num(st.corr_error_predicted, 2) + "</b>." : "");
+  }
+
+  /* ---- (b) error per layer, step by step, with the station alone for scale; highest layer on top */
+  function renderLay(el, e) {
+    var st = e.steps, leg = document.getElementById("sim-lay-legend");
+    if (!st) { noSteps(el, "The per-layer breakdown"); leg.innerHTML = ""; return; }
+    var nl = e.edges.length - 1, w = width(el), narrow = w < 420;
+    var bh = nl > 4 ? 9 : nl > 2 ? 14 : 18, rowH = STAGES.length * bh + (nl > 4 ? 10 : 18), m = { l: narrow ? 66 : 74, r: 40, t: 8, b: 32 };
+    var H = m.t + nl * rowH + m.b;
+    var vals = [0];
+    STAGES.forEach(function (g) { st.rms[g.key].forEach(function (v) { if (ok(v)) vals.push(v); }); });
+    st.rms.ground.forEach(function (v) { if (ok(v)) vals.push(v); });
+    var vmax = Math.max.apply(null, vals) * 1.08, xt = ticks(0, vmax, narrow ? 4 : 5), xmax = Math.max(vmax, xt[xt.length - 1]), xs = lin(0, xmax, m.l, w - m.r);
+    var body = "", plotB = H - m.b;
+    xt.forEach(function (v) { var x = xs(v); body += line(x, m.t, x, plotB, C.grid) + text(x, plotB + 14, tickLabel(v), { anchor: "middle", size: 10 }); });
+    body += line(m.l, m.t, m.l, plotB, C.axis);
+    body += text((m.l + w - m.r) / 2, H - 3, "rms error of the anomaly (N)", { anchor: "middle", size: 10.5, fill: C.ink2 });
+    for (var r = 0; r < nl; r++) {
+      var k = nl - 1 - r, y0 = m.t + r * rowH + (rowH - STAGES.length * bh) / 2;
+      body += text(m.l - 8, y0 + STAGES.length * bh / 2, layerLabel(e.edges, k), { anchor: "end", base: "middle", size: narrow ? 10 : 11, fill: C.truth });
+      STAGES.forEach(function (g, i) {
+        var v = st.rms[g.key][k], y = y0 + i * bh;
+        if (!ok(v)) return;
+        body += rect(m.l, y + 0.5, xs(v) - m.l, bh - 1, g.color);
+        if (bh >= 12) body += text(xs(v) + 3, y + bh / 2 + 0.5, num(v, 2), { base: "middle", size: 10, fill: "#333" });
       });
-      tt.ticks.forEach(function (t) { var xx = xs(t.d); body += line(xx, top, xx, bot, C.grid); });
-      body += line(m.l, bot, w - m.r, bot, C.axis) + line(m.l, top, m.l, bot, C.axis);
-      if (sr.station) body += '<path d="' + path(sr.station.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, GAP) + '" fill="none" stroke="' + C.station + '" stroke-width="1" stroke-opacity=".9" stroke-linejoin="round"/>';
-      body += '<path d="' + path(sr.truth.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, GAP) + '" fill="none" stroke="' + C.truth + '" stroke-width="1.15" stroke-linejoin="round"/>';
-      var dots = "";
-      sr.est.forEach(function (v, j) { if (ok(v)) dots += '<circle cx="' + xs(tx[j]).toFixed(1) + '" cy="' + ys(v).toFixed(1) + '" r="' + r + '"/>'; });
-      body += '<g fill="' + C.radar + '" fill-opacity=".75">' + dots + "</g>";
-      y = bot + gap;
+      var gv = st.rms.ground[k];
+      if (ok(gv)) body += line(xs(gv), y0 - 3, xs(gv), y0 + STAGES.length * bh + 3, "#17191c", 2.2);
     }
-    var axisY = y - gap;
-    tt.ticks.forEach(function (t) { body += text(xs(t.d), axisY + 15, t.s, { anchor: "middle", size: 10.5 }); });
-    if (tt.title) body += text(w - m.r, axisY + 30, tt.title, { anchor: "end", size: 10.5, fill: C.ink2 });
-    if (!narrow) body += text(12, (axisY) / 2, "N (N-units)", { anchor: "middle", fill: C.ink2, size: 11, rot: -90, base: "middle" });
-    el.innerHTML = svg(w, H, body, "Per layer, highest first: the true layer mean, the radar estimate and the weather station alone on each of " + tx.length + " passes. Radar rms error " +
-      e.rmse.map(function (v) { return num(v, 2); }).join(", ") + " N; station " + e.station_rmse.map(function (v) { return num(v, 2); }).join(", ") + " N, lowest layer first.");
+    el.innerHTML = svg(w, H, body, "rms error per layer, lowest first. " + STAGES.map(function (g) { return g.short + ": " + st.rms[g.key].map(function (v) { return num(v, 2); }).join(", "); }).join("; ") +
+      "; station alone: " + st.rms.ground.map(function (v) { return num(v, 2); }).join(", ") + " N.");
+    leg.innerHTML = STAGES.map(function (g) { return '<li><i class="sw" style="background:' + g.color + '"></i>' + esc(g.short) + "</li>"; }).join("") +
+      '<li><i class="tick"></i>ground station alone, for scale</li>';
+    var sub = document.getElementById("sim-lay-sub");
+    if (sub) sub.textContent = "rms over the passes of the N anomaly error, per layer; the black mark is the station's N anomaly carried to every layer.";
   }
 
   /* ---- 2. attribution: column error for air only, each disturbance alone, and everything selected */
@@ -328,28 +372,25 @@
       thousands(s.points) + " points, " + LAYERS_NAME[s.layers] + ". The pale start of each bar is what the air alone gives; faded bars are switched off.";
   }
 
-  /* ---- 3. scatter of departures: estimate against truth, one dot per pass, for one layer */
+  /* ---- (c) standard estimate against the truth: N anomalies, every layer and pass, or one layer */
   function fillLayerPick(e) {
-    var nl = e.series.length, h = "";
-    if (scLayer >= nl) scLayer = 0;
+    var nl = e.edges.length - 1, h = '<option value="-1"' + (scLayer < 0 ? " selected" : "") + ">All layers</option>";
+    if (scLayer >= nl) scLayer = -1;
     for (var k = nl - 1; k >= 0; k--) h += '<option value="' + k + '"' + (k === scLayer ? " selected" : "") + ">" + esc(layerLabel(e.edges, k)) + (k === 0 ? " (lowest)" : "") + "</option>";
     scSel.innerHTML = h;
     scSel.disabled = nl < 2;
   }
-  function anomalies(a) { var m = mean(a); return a.map(function (v) { return ok(v) ? v - m : null; }); }
-  function corr(x, y) {
-    var px = [], py = [];
-    x.forEach(function (v, i) { if (ok(v) && ok(y[i])) { px.push(v); py.push(y[i]); } });
-    var mx = mean(px), my = mean(py), sxy = 0, sxx = 0, syy = 0;
-    px.forEach(function (v, i) { sxy += (v - mx) * (py[i] - my); sxx += (v - mx) * (v - mx); syy += (py[i] - my) * (py[i] - my); });
-    return sxy / Math.sqrt(sxx * syy);
-  }
+  function range(a) { var v = a.filter(ok); return v.length ? [Math.min.apply(null, v), Math.max.apply(null, v)] : [NaN, NaN]; }
   function renderScatter(el, e) {
-    var k = scLayer, sr = e.series[k], f = (e.fit || [])[k] || null;
-    var ta = anomalies(sr.truth), ea = anomalies(sr.est), sa = sr.station ? anomalies(sr.station) : null;
+    var st = e.steps, leg = document.getElementById("sim-sc-legend");
+    if (!st) { noSteps(el, "The scatter"); leg.innerHTML = ""; return; }
+    var nl = st.truth_anomaly.length, ks = scLayer < 0 ? [] : [scLayer];
+    if (scLayer < 0) for (var q = 0; q < nl; q++) ks.push(q);
+    var xs_ = [], ys_ = [];
+    ks.forEach(function (k) { st.truth_anomaly[k].forEach(function (v, i) { var y = st.est_anomaly[k][i]; if (ok(v) && ok(y)) { xs_.push(v); ys_.push(y); } }); });
     var lim = 0;
-    ta.concat(ea, sa || []).forEach(function (v) { if (ok(v)) lim = Math.max(lim, Math.abs(v)); });
-    lim = ticks(0, lim * 1.06, 3).pop() >= lim * 1.06 ? ticks(0, lim * 1.06, 3).pop() : lim * 1.06;
+    xs_.concat(ys_).forEach(function (v) { lim = Math.max(lim, Math.abs(v)); });
+    lim = lim * 1.06 || 1;
     var w = width(el), m = { l: 46, r: 12, t: 10, b: 40 };
     var side = Math.min(w - m.l - m.r, 340), H = side + m.t + m.b, x0 = m.l + Math.max(0, (w - m.l - m.r - side) / 2);
     var xs = lin(-lim, lim, x0, x0 + side), ys = lin(-lim, lim, m.t + side, m.t), tk = ticks(-lim, lim, side < 260 ? 4 : 6);
@@ -359,25 +400,24 @@
       body += text(xs(v), m.t + side + 14, tickLabel(v), { anchor: "middle", size: 10 }) + text(x0 - 6, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 });
     });
     body += '<rect x="' + x0 + '" y="' + m.t + '" width="' + side + '" height="' + side + '" fill="none" stroke="' + C.axis + '"/>';
-    body += text(x0 + side / 2, H - 6, "true departure (N)", { anchor: "middle", size: 11, fill: C.ink2 });
-    body += text(x0 - 34, m.t + side / 2, "estimated departure (N)", { anchor: "middle", size: 11, fill: C.ink2, rot: -90, base: "middle" });
-    var clip = "sc-clip-" + k;
+    body += text(x0 + side / 2, H - 6, "truth N anomaly (N)", { anchor: "middle", size: 11, fill: C.ink2 });
+    body += text(x0 - 34, m.t + side / 2, "estimated N anomaly (N)", { anchor: "middle", size: 11, fill: C.ink2, rot: -90, base: "middle" });
+    var clip = "sc-clip";
     body += '<defs><clipPath id="' + clip + '"><rect x="' + x0 + '" y="' + m.t + '" width="' + side + '" height="' + side + '"/></clipPath></defs><g clip-path="url(#' + clip + ')">';
-    var r = ta.length > 300 ? 1.7 : 2.3, d = "";
-    if (sa) { sa.forEach(function (v, i) { if (ok(v) && ok(ta[i])) d += '<circle cx="' + xs(ta[i]).toFixed(1) + '" cy="' + ys(v).toFixed(1) + '" r="' + (r * 0.85) + '"/>'; }); body += '<g fill="' + C.station + '" fill-opacity=".45">' + d + "</g>"; }
-    d = "";
-    ea.forEach(function (v, i) { if (ok(v) && ok(ta[i])) d += '<circle cx="' + xs(ta[i]).toFixed(1) + '" cy="' + ys(v).toFixed(1) + '" r="' + r + '"/>'; });
-    body += '<g fill="' + C.radar + '" fill-opacity=".6">' + d + "</g>";
-    body += line(xs(-lim), ys(-lim), xs(lim), ys(lim), C.truth, 1.2, ' stroke-dasharray="5 4"');
-    if (f) body += line(xs(-lim), ys(f.slope * -lim + f.intercept), xs(lim), ys(f.slope * lim + f.intercept), C.radar, 2);
+    var r = xs_.length > 600 ? 1.5 : xs_.length > 250 ? 1.9 : 2.4, d = "";
+    xs_.forEach(function (v, i) { d += '<circle cx="' + xs(v).toFixed(1) + '" cy="' + ys(ys_[i]).toFixed(1) + '" r="' + r + '"/>'; });
+    body += '<g fill="#1f5fa8" fill-opacity=".55">' + d + "</g>";
+    body += line(xs(-lim), ys(-lim), xs(lim), ys(lim), C.truth, 1, ' stroke-dasharray="5 4"');
+    var sl = scLayer >= 0 ? st.slope[scLayer] : null;
+    if (ok(sl)) body += line(xs(-lim), ys(sl * -lim), xs(lim), ys(sl * lim), "#1f5fa8", 2);
     body += "</g>";
-    var label = layerLabel(e.edges, k);
-    el.innerHTML = svg(w, H, body, "Layer " + label + ": estimated against true departure from the mean, one dot per pass" + (f ? "; fitted slope " + num(f.slope, 2) + ", r " + num(f.r, 2) : "") + ".");
-    var rs = sa ? corr(ta, sa) : NaN;
-    document.getElementById("sim-sc-legend").innerHTML =
-      '<li><i class="dt"></i><span>radar' + (f ? ": slope <b>" + num(f.slope, 2) + "</b>, r <b>" + num(f.r, 2) + "</b>" : "") + ", rms error <b>" + num(e.rmse[k], 2) + " N</b></span></li>" +
-      (sa ? '<li><i class="dt grey"></i><span>station: r <b>' + num(rs, 2) + "</b>, rms error <b>" + num(e.station_rmse[k], 2) + " N</b></span></li>" : "") +
-      '<li><i class="ln red"></i>fitted line</li><li><i class="ln dash"></i>1 : 1, perfect</li>';
+    var rr = scLayer >= 0 ? [st.rms.std[scLayer], st.rms.std[scLayer]] : range(st.rms.std);
+    var ss = scLayer >= 0 ? [st.slope[scLayer], st.slope[scLayer]] : range(st.slope);
+    function span(a) { return a[0] === a[1] ? num(a[0], 2) : num(a[0], 2) + "–" + num(a[1], 2); }
+    el.innerHTML = svg(w, H, body, "Standard estimate against the truth, N anomaly, " + (scLayer < 0 ? "all layers" : layerLabel(e.edges, scLayer)) + ": rms error " + span(rr) + " N, slope " + span(ss) + ".");
+    leg.innerHTML = '<li><i class="dt" style="background:#1f5fa8"></i><span>standard, ' + (scLayer < 0 ? "all layers and passes" : "every pass") + ": rms error <b>" + span(rr) + " N</b>, slope <b>" + span(ss) + "</b>" +
+      (scLayer >= 0 && ok(st.r[scLayer]) ? ", r <b>" + num(st.r[scLayer], 2) + "</b>" : "") + "</span></li>" +
+      (ok(sl) ? '<li><i class="ln" style="border-top-color:#1f5fa8"></i>fitted slope</li>' : "") + '<li><i class="ln dash"></i>1 : 1</li>';
   }
 
   /* ---- 4. cumulative trend: from air only, add the selected disturbances in a fixed order */
@@ -439,6 +479,17 @@
   /* ---- 5. what this means: plain-language reading of the numbers above */
   function renderDecide(el, e, s, sm) {
     var items = [], nl = e.rmse.length, sel = selected(s), air = summ(airOnly(s));
+    /* Jaap's steps: what each part of the chain does, column of the per-layer rms errors */
+    if (e.steps) {
+      var R = e.steps.rms, mL = mean(R.layers), mS = mean(R.shrink), mD = mean(R.std), mG = mean(R.ground);
+      var gain = mD < mL ? "the deformation fit brings the error down from " + num(mL, 2) + " N (layer inversion only) to " + num(mD, 2) + " N"
+        : (mD > mL * 1.1 ? "the deformation fit makes it worse here" : "the deformation fit changes little here") + ": " + num(mL, 2) + " N with the layer inversion only, " + num(mD, 2) + " N with the standard chain";
+      var th = mS - mD;
+      items.push("<b>Step by step</b> (mean over the layers): " + gain + "; the thermal term " + (th > 0.05 ? "takes off " + num(th, 2) + " N of that" : th < -0.05 ? "adds " + num(-th, 2) + " N" : "changes little") +
+        ". The station alone is off by " + num(mG, 2) + " N, so the radar's anomaly " + (mD < mG ? "<b>beats</b>" : "<b>does not beat</b>") + " it." +
+        (ok(e.steps.corr_error_predicted) && Math.abs(e.steps.corr_error_predicted) >= 0.5 ? " What is left follows the predicted drift (r " + num(e.steps.corr_error_predicted, 2) + ", " + signed(e.steps.drift_N_per_month, 2) +
+          " N per month): the trend terms take the slow drift of the air the ground correction misses as building motion." : ""));
+    }
     /* largest contributor: the biggest rise in the cumulative order, checked against each one alone */
     if (sel.length && air) {
       var steps = cumSteps(s), best = null;
@@ -524,6 +575,17 @@
     toForm(initialState());
     form.addEventListener("change", update);
     scSel.addEventListener("change", function () { scLayer = +scSel.value; if (last) renderScatter(document.getElementById("sim-sc"), last.entry); });
+    var pl = document.getElementById("sim-pass-legend");
+    function flip(ev) {
+      var li = ev.target.closest && ev.target.closest("li.tg");
+      if (!li || (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ")) return;
+      ev.preventDefault();
+      var k = li.getAttribute("data-k");
+      shown[k] = !shown[k];
+      if (last && !last.entry.error) renderPass(document.getElementById("sim-pass"), last.entry, last.run, last.state);
+    }
+    pl.addEventListener("click", flip);
+    pl.addEventListener("keydown", flip);
     document.getElementById("sim-reset").addEventListener("click", function () { toForm(manifest.defaults); update(); });
     var t = null;
     window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(render, 150); });
