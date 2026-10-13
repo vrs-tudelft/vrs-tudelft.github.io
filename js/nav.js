@@ -28,6 +28,15 @@
     inner.appendChild(nav);
   }
 
+  /* ---- tables: label each cell with its column, so phones can show rows as cards ---- */
+  [].slice.call(document.querySelectorAll(".tbl table")).forEach(function (t) {
+    var heads = [].slice.call(t.querySelectorAll("thead th")).map(function (th) { return th.textContent.trim(); });
+    if (!heads.length) return;
+    [].slice.call(t.querySelectorAll("tbody tr")).forEach(function (tr) {
+      [].slice.call(tr.children).forEach(function (td, i) { if (heads[i] && !td.hasAttribute("data-label")) td.setAttribute("data-label", heads[i]); });
+    });
+  });
+
   /* ---- on-page section nav, built from the h2 headings ---- */
   var side = document.querySelector("nav.side");
   var heads = [].slice.call(document.querySelectorAll("main h2[id]"));
