@@ -12,7 +12,7 @@ site updates within a minute or two.
 | `index.html` | Home: the idea in plain language, the result in one picture, where each stage stands, what holds so far, the paper and the team, about and licences |
 | `data.html` | The two TerraSAR-X processings, where the zero sits (the shared-ground reference), building heights (3DBAG/AHN5), soundings, stations and towers, the air near the ground (the low-level reconstruction), links to Explore, and the rule on what may be published |
 | `overview.html` | The whole project as one interactive flowchart (air near the ground, simulation, estimation), each part foldable, every box with an icon, a card and a link to its section, six paths that walk through their boxes step by step and open the parts they need; full-window like the simulator. The chart is data in `js/overview-data.js` (with its sources in the header comment), drawn by `js/overview.js` |
-| `simulator.html` | The estimation simulator (v2), a full-window page (controls left, results right; `body.app-page` in `style.css`): pick the atmosphere (KNMI-built, the 2025 balloon soundings or the Cabauw tower), switch sinking, shrinking, thermal dilation and the cross-range error on or off, and choose the noise, the number of points and the height layers. It shows the estimate against the truth and the station per layer over time, where the error comes from, a scatter of the departures with its fitted line, and the cumulative trend when the disturbances are added one by one, with a short reading in plain words. The settings are kept in the address, so a link shares them. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
+| `simulator.html` | The estimation simulator (v2), a full-window page (controls left, results right; `body.app-page` in `style.css`): pick the atmosphere (KNMI-built, the 2025 balloon soundings or the Cabauw tower), switch sinking, shrinking, thermal dilation and the cross-range error on or off, and choose the noise, the number of points and the height layers. It shows the estimate against the truth and the station per layer over time, where the error comes from, a scatter of the departures with its fitted line, and the cumulative trend when the disturbances are added one by one, with a short reading in plain words. The settings are kept in the address, so a link shares them. Every chart card has PNG and SVG buttons that save it as a clean figure (title, legend, settings caption) for reports. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
 | `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the end-to-end simulation, the first pass, the test on the simulation (figures 41-43, 45), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
 | `animations.html` | Explore (linked from Data, no menu tab of its own): six animations from the aggregate files, with a data-input switch (see below) |
 | `3d/index.html` | The experimental 3D view, with the same switch and the gull easter egg |
@@ -116,6 +116,25 @@ setups; everything it writes is synthetic. `manifest.json` holds the choices, th
 compact summary of every combination (per-layer and column errors, station errors, skill), which the
 page uses for the attribution and the cumulative trend; `runs/<key>.json` holds the per-pass series of
 one run, fetched when it is selected. The run key is `<atm>_s<sinking><shrinking><thermal><crossrange>_n<noise>_p<points>`.
+Each estimation also holds `pte`, the simulator's "P, T, e" tab: P (hydrostatic from the ground) and T
+(6.5 K/km) from the station, e from the radar's N as section C5 of the team's `estimation_with_pte.ipynb`
+(`estimation/pte.py`), with N shifted to the ground (`shift`) or not (`level`, the one the page shows); per layer the rms error, bias
+and true spread against the run's own P, T, e, the station alone for e, the median uncertainty of e per pass
+(jackknife, or the formal one where the jackknife cannot run: `sigma_source`), and the coldest, median and
+warmest pass as profiles.
+
+The simulator's "Real" atmosphere reads `data/simulator/real.json`: the same step-by-step breakdown on the
+real 2020-2026 passes, per layer setup and air prior (radar only, or from the ground), with KNMI 344 at
+06 UTC carried up with -55 N/km as the truth and the constant air as the reference, and `pte`: P and T
+carried up from KNMI 344 (no error: nothing measures them above the street), e against KNMI 344's e carried
+up, with the radar's jackknife uncertainty per pass, and three passes as profiles. With Real selected the
+disturbances, noise and points are greyed out and the Disturbances and What this means tabs say they belong
+to the simulation; old links to `simulator.html#real` open the Real atmosphere. Aggregates per layer
+and pass only (at least 100 points per layer); the exporter runs the aggregation check before writing:
+
+```
+python 04_python/estimation/site_real_sim.py --out ../vrs-tudelft.github.io/data/simulator
+```
 
 To test locally, run `python tools/serve.py` and open `http://localhost:8000/`. It sends
 `Cache-Control: no-store`, because a plain `python -m http.server` lets the browser keep

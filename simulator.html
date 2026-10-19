@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261013g">
+<link rel="stylesheet" href="style.css?v=20261019a">
 </head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
@@ -35,15 +35,16 @@
   </div>
   <form class="sim-controls" id="sim-controls" aria-label="Simulation and estimation settings" onsubmit="return false">
     <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="cloud"></span>Atmosphere <span class="t i" data-tip="The true air the simulation puts over the city. KNMI-built: made from the Rotterdam station's weather on the 213 radar passes of 2020-2026. Balloon soundings: the 2025 reconstruction from the 453 De Bilt balloon launches. Cabauw tower: 116 mornings of January to April 2025 measured along the KNMI mast, 1.5 to 200 m (the continuous record; the few August mornings after the gap are left out)."><span class="info">i</span></span></legend>
-      <div class="tiles tiles-3" data-control="atm">
+      <legend><span class="lg-ic" data-icon="cloud"></span>Atmosphere <span class="t i" data-tip="The true air the simulation puts over the city. KNMI-built: made from the Rotterdam station's weather on the 213 radar passes of 2020-2026. Balloon soundings: the 2025 reconstruction from the 453 De Bilt balloon launches. Cabauw tower: 116 mornings of January to April 2025 measured along the KNMI mast, 1.5 to 200 m (the continuous record; the few August mornings after the gap are left out). Real: the real TerraSAR-X passes of 2020-2026 over the real city; there is no measured air above the street, so the KNMI station at Rotterdam The Hague Airport (344) is taken as the truth."><span class="info">i</span></span></legend>
+      <div class="tiles tiles-4" data-control="atm">
         <label class="tile"><input type="radio" name="atm" value="simulated"><span><i data-icon="cloud"></i><b>Simulated</b><small data-atm-sub="simulated">KNMI-built</small></span></label>
         <label class="tile"><input type="radio" name="atm" value="radiosonde"><span><i data-icon="balloon"></i><b>Radiosonde</b><small data-atm-sub="radiosonde">balloons 2025</small></span></label>
         <label class="tile"><input type="radio" name="atm" value="cabauw"><span><i data-icon="tower"></i><b>Cabauw</b><small data-atm-sub="cabauw">tower 2025</small></span></label>
+        <label class="tile"><input type="radio" name="atm" value="real"><span><i data-icon="satellite"></i><b>Real</b><small data-atm-sub="real">TerraSAR-X 2020-26</small></span></label>
       </div>
     </fieldset>
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="building"></span>Disturbances <span class="t i" data-tip="Switch on what makes real radar data hard; any combination. Sinking: the buildings sink as a whole. Shrinking: higher points sink faster, slowing down over the years. Thermal: buildings grow a little when it is warm. Cross-range: each point's position across the beam is slightly off, which leaks into the measured distance."><span class="info">i</span></span></legend>
+    <fieldset class="sim-field sim-only">
+      <legend><span class="lg-ic" data-icon="building"></span>Disturbances <span class="t i" data-tip="Switch on what makes real radar data hard; any combination. Sinking: the buildings sink as a whole (half of them, each at its own rate); the estimation compares points within one building, so a building moving as a whole cancels exactly and switching sinking on or off changes nothing. Shrinking: higher points sink faster, slowing down over the years. Thermal: buildings grow a little when it is warm. Cross-range: each point's position across the beam is slightly off, which leaks into the measured distance."><span class="info">i</span></span></legend>
       <div class="tiles tiles-4" data-control="dist">
         <label class="tile tog" data-dist="sinking"><input type="checkbox" name="sinking"><span><i data-icon="sink"></i><b>Sinking</b></span></label>
         <label class="tile tog" data-dist="shrinking"><input type="checkbox" name="shrinking"><span><i data-icon="shrink"></i><b>Shrinking</b></span></label>
@@ -51,7 +52,7 @@
         <label class="tile tog" data-dist="crossrange"><input type="checkbox" name="crossrange"><span><i data-icon="sideways"></i><b>Cross-range</b></span></label>
       </div>
     </fieldset>
-    <fieldset class="sim-field">
+    <fieldset class="sim-field sim-only">
       <legend><span class="lg-ic" data-icon="noise"></span>Radar noise <span class="t i" data-tip="Random error on every radar point on every pass, in millimetres. The real data have about 2 mm."><span class="info">i</span></span></legend>
       <div class="seg" data-control="noise">
         <label><input type="radio" name="noise" value="0"><span>0 mm</span></label>
@@ -60,13 +61,21 @@
         <label><input type="radio" name="noise" value="4"><span>4 mm</span></label>
       </div>
     </fieldset>
-      <fieldset class="sim-field">
+      <fieldset class="sim-field sim-only">
         <legend><span class="lg-ic" data-icon="grid"></span>Points <span class="t i" data-tip="How many radar points the synthetic city has. The real Rotterdam set has about 12 000 in this area; 3000 shows what a sparser city or a stricter selection does."><span class="info">i</span></span></legend>
         <div class="seg" data-control="points">
           <label><input type="radio" name="points" value="3000"><span>3000</span></label>
           <label><input type="radio" name="points" value="12000"><span>12&nbsp;000</span></label>
         </div>
       </fieldset>
+    <fieldset class="sim-field real-only" hidden>
+      <legend><span class="lg-ic" data-icon="thermo"></span>Air prior <span class="t i" data-tip="Radar only: the estimation on the radar alone, the independent check against the station. From the ground: the estimation's default, as in the simulation: the station's anomaly is taken out before the building fit and put back into every layer afterwards, so comparing with the same station is partly circular."><span class="info">i</span></span></legend>
+      <div class="seg" data-control="prior">
+        <label><input type="radio" name="prior" value="none" checked><span>Radar only</span></label>
+        <label><input type="radio" name="prior" value="ground"><span>From the ground</span></label>
+      </div>
+    </fieldset>
+    <p class="sim-real-note real-only" hidden>Real data: the air, the disturbances, the noise and the points are what they are. Only the layers and the air prior can be chosen.</p>
     <fieldset class="sim-field">
       <legend><span class="lg-ic" data-icon="layers"></span>Height layers <span class="t i" data-tip="How the air is cut into height layers (m NAP). 20 m and 40 m: equal layers from 3.2 m up. Two layers: 3.2-43.2 m and 43.2 m to the top. One layer: 3.2 m to the top. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
       <div class="seg" data-control="layers">
@@ -88,6 +97,7 @@
     <div class="sim-tabs" role="tablist" aria-label="Views">
       <button type="button" role="tab" id="tab-steps" aria-controls="view-steps" data-tab="steps"><i data-icon="timeline"></i>Step by step</button>
       <button type="button" role="tab" id="tab-dist" aria-controls="view-dist" data-tab="dist"><i data-icon="bars"></i>Disturbances</button>
+      <button type="button" role="tab" id="tab-pte" aria-controls="view-pte" data-tab="pte"><i data-icon="thermo"></i>P, T, e</button>
       <button type="button" role="tab" id="tab-decide" aria-controls="view-decide" data-tab="decide"><i data-icon="bulb"></i>What this means</button>
       <button type="button" role="tab" id="tab-how" aria-controls="view-how" data-tab="how"><i data-icon="info"></i>How it works</button>
     </div>
@@ -101,7 +111,7 @@
             <h3 id="sim-pass-h"><i class="h-ic" data-icon="timeline"></i>(a) Error per pass, step by step <span class="t i left" id="sim-pass-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
             <ul class="sim-legend sim-steps-legend" id="sim-pass-legend"></ul>
           </div>
-          <div class="sim-chart sim-fill" id="sim-pass"></div>
+          <div class="sim-chart sim-fill" id="sim-pass" data-pick></div>
         </section>
         <section class="app-card sim-lay-card">
           <div class="sim-card-head">
@@ -129,6 +139,56 @@
           <div class="sim-chart sim-fill" id="sim-cum" role="img" aria-labelledby="sim-cum-h"></div>
         </section>
     </div>
+    <div class="sim-view sim-dash sim-dash-3" id="view-pte" role="tabpanel" aria-labelledby="tab-pte" hidden>
+        <div class="pte-bar">
+          <div class="seg pte-seg" role="radiogroup" aria-label="What to show">
+            <label><input type="radio" name="pte-show" value="errors" checked><span>Error per layer</span></label>
+            <label><input type="radio" name="pte-show" value="coldest"><span>Coldest pass</span></label>
+            <label><input type="radio" name="pte-show" value="median"><span>Median pass</span></label>
+            <label><input type="radio" name="pte-show" value="warmest"><span>Warmest pass</span></label>
+          </div>
+          <p class="pte-note" id="pte-note"></p>
+        </div>
+        <section class="app-card">
+          <div class="sim-card-head"><h3 id="pte-P-h"><i class="h-ic" data-icon="gauge"></i><span>Pressure P</span> <span class="t i left" id="pte-P-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="pte-P" role="img" aria-labelledby="pte-P-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="pte-P-legend"></ul>
+        </section>
+        <section class="app-card">
+          <div class="sim-card-head"><h3 id="pte-T-h"><i class="h-ic" data-icon="thermo"></i><span>Temperature T</span> <span class="t i left" id="pte-T-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="pte-T" role="img" aria-labelledby="pte-T-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="pte-T-legend"></ul>
+        </section>
+        <section class="app-card">
+          <div class="sim-card-head"><h3 id="pte-e-h"><i class="h-ic" data-icon="cloud"></i><span>Water-vapour pressure e</span> <span class="t i left" id="pte-e-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="pte-e" role="img" aria-labelledby="pte-e-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="pte-e-legend"></ul>
+        </section>
+    </div>
+    <div class="sim-view sim-dash" id="view-real" role="tabpanel" aria-labelledby="tab-steps" hidden>
+        <section class="app-card sim-pass-card">
+          <div class="sim-card-head">
+            <h3 id="real-pass-h"><i class="h-ic" data-icon="timeline"></i>(a) Error per pass against KNMI 344, step by step <span class="t i left" id="real-pass-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
+            <ul class="sim-legend sim-steps-legend" id="real-pass-legend"></ul>
+          </div>
+          <div class="sim-chart sim-fill" id="real-pass" data-pick></div>
+        </section>
+        <section class="app-card sim-lay-card">
+          <div class="sim-card-head">
+            <h3 id="real-lay-h"><i class="h-ic" data-icon="bars"></i>(b) Error per layer <span class="t i left" id="real-lay-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
+          </div>
+          <div class="sim-chart sim-fill" id="real-lay" role="img" aria-labelledby="real-lay-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="real-lay-legend"></ul>
+        </section>
+        <section class="app-card sim-sc-card">
+          <div class="sim-card-head">
+            <h3 id="real-sc-h"><i class="h-ic" data-icon="scatter"></i>(c) Standard vs KNMI 344 <span class="t i left" tabindex="0" data-tip="The standard estimate's N anomaly against the station's, one dot per pass and layer. On the dashed 1 : 1 line the radar says exactly what the station says. The station's anomaly is the same in every layer (it is carried up with a fixed gradient), so this asks whether the radar sees the air near the ground change, not what the air higher up does."><span class="info">i</span></span></h3>
+            <label class="sim-pick">Layer <select id="real-sc-layer" aria-label="Layer for the scatter plot"></select></label>
+          </div>
+          <div class="sim-chart sim-fill" id="real-sc"></div>
+          <ul class="sim-legend sim-mini-legend" id="real-sc-legend"></ul>
+        </section>
+    </div>
     <div class="sim-view" id="view-decide" role="tabpanel" aria-labelledby="tab-decide" hidden>
       <section class="app-card sim-decide"><ul id="sim-decide"></ul></section>
     </div>
@@ -141,6 +201,8 @@
   <li><span class="name">4. Compare</span><p>The estimate is set against the true layer mean on every pass, and against what a weather station on the ground alone would have said.</p></li>
   <li><span class="name">5. Step by step</span><p>The same estimation is run twice more with parts switched off: once removing only each point's own offset (the layer inversion alone), once with the building motion fitted but no thermal term. Panels (a) and (b) show what each part adds, as in Jaap's figure.</p></li>
 </ol>
+<p><b>P, T and e.</b> As section C5 of the estimation notebook: P is carried up from the ground pressure (hydrostatic) and T falls 6.5 K per km from the ground temperature, both from the station alone; e follows from the radar's refractivity with P and T known, N = 77.6 (P &minus; e)/T + 72 e/T + 3.75&middot;10<sup>5</sup> e/T<sup>2</sup>. It is compared with the simulation's true P, T and e, averaged over each layer, and e with the station alone (the ground refractivity carried up with &minus;55 N/km, converted the same way).</p>
+<p><b>Real.</b> Picked as the atmosphere: the same three-step estimation on the 213 real TerraSAR-X passes of 2020-2026 (the run of the <a href="results.html">Results</a> page), in the same four layer setups. There is no measured air above the street, so the truth is the KNMI weather station at Rotterdam The Hague Airport (344): its refractivity at the 06 UTC overpass, carried up with &minus;55 N/km. Because the station is the truth there, the reference is the constant air (predicting no change) instead of the station alone, and there is no predicted drift. Under P, T, e, P and T are KNMI 344's alone, with nothing above the street to check them against; the radar's e is set against KNMI 344's e carried up, next to its own uncertainty per pass (the jackknife, one building left out at a time). The disturbances, the noise and the number of points belong to the simulation; in the real data they are what they are.</p>
 <p>The simulation is described on <a href="estimation.html#sim-model">Simulation</a>, the estimation and its limits on <a href="estimation.html">Estimation</a>. A good score here is necessary, not sufficient: the simulated city behaves exactly as the model says it does, the real one does not.</p>
 <div class="tech">
 <p><b>Simulation</b> (settings of <code>06_simulation</code> on main, seed 0, rerun through <code>estimation.sim_import</code>). Sinking: <code>use_sinking</code>; shrinking: <code>use_shrinking</code>; thermal dilation: <code>use_thermal</code>; cross-range: <code>use_cross_range</code>, a position error across the beam times the perpendicular baseline; noise: <code>use_noise</code> and <code>noise_mm</code>, Gaussian per point and pass (the real data: about 2.07 mm). One simulation per atmosphere, disturbance set, noise level and point count: 384 in all.</p>
@@ -157,6 +219,6 @@
 </div>
 <script defer src="js/nav.js?v=20261013g"></script>
 <script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/simulator.js?v=20261013d"></script>
+<script defer src="js/simulator.js?v=20261019a"></script>
 </body>
 </html>

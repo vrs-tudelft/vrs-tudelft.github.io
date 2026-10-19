@@ -4,7 +4,9 @@
    26_long_term_temperature/cabauw_ideal.py): (a) the error per pass with parts of the chain switched
    off and the predicted drift, (b) the error per layer step by step against the station alone, (c) the
    standard estimate against the truth; then which disturbance costs what, and the cumulative trend
-   when the disturbances are added one by one. Plain script, no libraries. Nothing is computed here beyond picking entries, means,
+   when the disturbances are added one by one. The "Real data" tab draws (a)-(c) from real.json: the same
+   breakdown on the real 2020-2026 passes, with KNMI 344 as the truth and the constant air as the reference
+   (team repo 04_python/estimation/site_real_sim.py). Plain script, no libraries. Nothing is computed here beyond picking entries, means,
    departures and the station's correlation, and formatting them. */
 (function () {
   "use strict";
@@ -34,6 +36,9 @@
     { key: "std", label: "+ thermal term = standard", short: "standard", color: "#1f5fa8", w: 1.9 }
   ];
   var PRED = "#d1662b";
+  /* the words that change between the simulation and the real data */
+  var W_SIM = { truth: "truth", truthAnom: "truth N anomaly", base: "station alone", baseLong: "the weather station alone: its N anomaly carried to every layer" };
+  var W_REAL = { truth: "KNMI 344", truthAnom: "KNMI 344 N anomaly", base: "constant air", baseLong: "the constant air: predicting no change, an error as large as the station's own swings" };
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   var form = document.getElementById("sim-controls");
@@ -43,6 +48,7 @@
   if (!form || !out) return;
 
   var manifest = null, state = {}, runs = {}, last = null, token = 0, scLayer = -1;
+  var realP = null, realDoc = null, realScLayer = -1, simAsof = "";
   var shown = { layers: true, shrink: true, std: true, pred: true };
 
   /* ------------------------------------------------------------ small helpers */
@@ -129,10 +135,18 @@
     });
     TOGGLES.forEach(function (k) { form.elements[k].checked = String(s[k]) === "1"; });
   }
-  function valid(k, v) { return manifest.controls[k] && manifest.controls[k].map(String).indexOf(String(v)) >= 0; }
+  function valid(k, v) {
+    if (k === "atm" && v === "real") return true;          /* the real data: data/simulator/real.json */
+    return manifest.controls[k] && manifest.controls[k].map(String).indexOf(String(v)) >= 0;
+  }
+  function isReal() { return state.atm === "real"; }
   function initialState() {
     var q = new URLSearchParams(location.search), s = {};
     KEYS.forEach(function (k) { var v = q.get(k); s[k] = v !== null && valid(k, v) ? v : String(manifest.defaults[k]); });
+    if (location.hash === "#real") {                                        /* links to the former Real data tab */
+      if (q.get("atm") === null) s.atm = "real";
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* file:// */ }
+    }
     return s;
   }
   function writeUrl(s) {
@@ -140,6 +154,7 @@
       var q = new URLSearchParams(location.search), def = true;
       KEYS.forEach(function (k) { if (String(s[k]) !== String(manifest.defaults[k])) def = false; });
       KEYS.forEach(function (k) { if (def) q.delete(k); else q.set(k, s[k]); });
+      if (realPrior() === "none") q.delete("prior"); else q.set("prior", realPrior());
       var qs = q.toString();
       history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
     } catch (e) { /* file:// or sandboxed: not important */ }
@@ -166,11 +181,14 @@
     statusEl.hidden = !msg;
   }
 
+  /* a simulated atmosphere fetches its run; the real data come from real.json */
+  var simMsg = "";
   function update() {
     var prevLayers = state.layers;
     state = fromForm();
-    if (state.layers !== prevLayers) scLayer = -1;
+    if (state.layers !== prevLayers) { scLayer = -1; realScLayer = -1; }
     writeUrl(state);
+    if (isReal()) { token++; out.classList.remove("busy"); renderView(); return; }
     var key = runKey(state), my = ++token;
     var slow = setTimeout(function () { if (my === token) { setStatus("Loading the results for this combination…"); out.classList.add("busy"); } }, 120);
     getRun(key).then(function (run) {
@@ -179,49 +197,50 @@
       var entry = run.results && run.results[state.layers];
       if (!entry) throw new Error("no result for " + state.layers + " in " + key);
       last = { run: run, entry: entry, state: state };
-      render();
+      simMsg = entry.error ? "The estimation could not run for this combination: " + entry.error + ". Thinner layers need more radar points; try thicker layers, more points or less noise." : "";
+      renderView();
     }).catch(function (err) {
       if (my !== token) return;
       clearTimeout(slow); out.classList.remove("busy");
-      out.hidden = true; last = null;
-      setStatus(err && err.missing ? "This combination (" + err.message + ") is not in the published results yet. Try another setting, or press “Reset to realistic”."
-        : "The results for this combination could not be loaded (" + (err && err.message) + "). Try another setting, or reload the page.", "error");
+      last = null;
+      simMsg = err && err.missing ? "This combination (" + err.message + ") is not in the published results yet. Try another setting, or press “Reset to realistic”."
+        : "The results for this combination could not be loaded (" + (err && err.message) + "). Try another setting, or reload the page.";
+      renderView();
     });
   }
 
   /* ------------------------------------------------------------ rendering */
-  function render() {
-    if (!last) return;
-    var e = last.entry, s = last.state;
-    if (e.error) {
-      out.hidden = true;
-      setStatus("The estimation could not run for this combination: " + e.error + ". Thinner layers need more radar points; try thicker layers, more points or less noise.", "error");
-      return;
-    }
-    setStatus("");
-    out.hidden = false;
-    var sm = summ(s) || { rmse: e.rmse, station_rmse: e.station_rmse, skill: e.skill, column_rmse: ok(e.column_rmse) ? e.column_rmse : NaN, column_station_rmse: ok(e.column_station_rmse) ? e.column_station_rmse : NaN, edges: e.edges };
-    document.getElementById("sim-verdict").textContent = verdict(e, s, sm);
-    renderStats(e, s, sm);
-    fillLayerPick(e);
-    renderView();
-  }
   /* the views behind the tabs: only the visible one is drawn (a hidden chart has no size) */
-  var VIEWS = ["steps", "dist", "decide", "how"], view = "steps";
+  var VIEWS = ["steps", "dist", "pte", "decide", "how"], view = "steps";
   try { var v0 = localStorage.getItem("vrs-sim-view"); if (VIEWS.indexOf(v0) >= 0) view = v0; } catch (err) { /* storage blocked */ }
   if (VIEWS.indexOf(location.hash.slice(1)) >= 0) view = location.hash.slice(1);
   function showTabs() {
     document.querySelectorAll(".sim-tabs [data-tab]").forEach(function (b) { var on = b.getAttribute("data-tab") === view; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
-    VIEWS.forEach(function (k) { document.getElementById("view-" + k).hidden = k !== view; });
+    /* with the real data, "Step by step" shows the real data's own cards */
+    VIEWS.forEach(function (k) { document.getElementById("view-" + k).hidden = k !== view || (k === "steps" && isReal()); });
+    document.getElementById("view-real").hidden = !(view === "steps" && isReal());
   }
+  /* a message instead of the numbers and the charts; the tabs stay, so another view can be picked */
+  function failed(msg) { out.classList.toggle("failed", !!msg); setStatus(msg, msg ? "error" : ""); }
+  function render() { renderView(); }
   function renderView() {
+    out.hidden = false;
     showTabs();
-    if (!last || last.entry.error) return;
-    var e = last.entry, s = last.state, sm = summ(s) || { column_rmse: e.column_rmse, column_station_rmse: e.column_station_rmse };
+    realMode(isReal());
+    if (isReal()) { renderReal(); return; }
+    failed(simMsg);
+    if (!last || simMsg) return;
+    var e = last.entry, s = last.state;
+    var sm = summ(s) || { rmse: e.rmse, station_rmse: e.station_rmse, skill: e.skill, column_rmse: ok(e.column_rmse) ? e.column_rmse : NaN, column_station_rmse: ok(e.column_station_rmse) ? e.column_station_rmse : NaN, edges: e.edges };
+    document.getElementById("sim-verdict").textContent = verdict(e, s, sm);
+    renderStats(e, s, sm);
     if (view === "steps") {
-      renderPass(document.getElementById("sim-pass"), e, last.run, s);
-      renderLay(document.getElementById("sim-lay"), e);
-      renderScatter(document.getElementById("sim-sc"), e);
+      scLayer = fillLayerPick(e, scSel, scLayer);
+      renderPass(document.getElementById("sim-pass"), e, last.run.epochs, s.atm === "simulated" ? 75 : 30, W_SIM);
+      renderLay(document.getElementById("sim-lay"), e, W_SIM);
+      renderScatter(document.getElementById("sim-sc"), e, last.run.epochs, scLayer, W_SIM);
+    } else if (view === "pte") {
+      renderPte(e);
     } else if (view === "dist") {
       renderAttr(document.getElementById("sim-attr"), s);
       renderCum(document.getElementById("sim-cum"), s);
@@ -246,9 +265,9 @@
     if (y + r.height > window.innerHeight - 8) y = cy - r.height - 14;
     tipEl.style.left = Math.max(8, x) + "px"; tipEl.style.top = Math.max(8, y) + "px";
   }
-  function hideTip() { tipEl.hidden = true; var c = document.querySelector("#sim-pass .sim-cross"); if (c) c.setAttribute("visibility", "hidden"); }
+  function hideTip() { tipEl.hidden = true; out.querySelectorAll(".sim-cross").forEach(function (c) { c.setAttribute("visibility", "hidden"); }); }
   out.addEventListener("mousemove", function (ev) {
-    var pass = ev.target.closest && ev.target.closest("#sim-pass");
+    var pass = ev.target.closest && ev.target.closest("[data-pick]");
     if (pass && pass._pick) {
       var box = pass.getBoundingClientRect(), hit = pass._pick(ev.clientX - box.left), cr = pass.querySelector(".sim-cross");
       if (hit) {
@@ -309,24 +328,25 @@
   }
 
   /* ---- (a) error per pass, step by step: mean of the layers of (estimate anomaly - truth anomaly) */
-  function passLegend(st) {
-    var el = document.getElementById("sim-pass-legend"), h = "";
+  function passLegend(st, id) {
+    var el = document.getElementById(id), h = "";
     STAGES.forEach(function (g) {
       h += '<li class="tg" role="button" tabindex="0" data-k="' + g.key + '" aria-pressed="' + shown[g.key] + '"' + ft("<b>" + esc(g.label) + "</b><br>rms of this line " + num(rmsMean(st.pass_error[g.key]), 2) + " N. Click to hide or show.") +
         '><i class="ln c" style="border-top-color:' + g.color + '"></i>' + esc(g.short) + ' <b style="color:' + C.ink2 + '">' + num(rmsMean(st.pass_error[g.key]), 2) + "</b></li>";
     });
-    h += '<li class="tg" role="button" tabindex="0" data-k="pred" aria-pressed="' + shown.pred + '"' + ft("<b>Predicted error</b><br>The straight-line drift of the air that the ground correction misses (truth anomaly minus the station's, mean of the layers), sign flipped: the trend terms of the deformation fit take that drift for building motion and remove it. " +
+    if (st.predicted) h += '<li class="tg" role="button" tabindex="0" data-k="pred" aria-pressed="' + shown.pred + '"' + ft("<b>Predicted error</b><br>The straight-line drift of the air that the ground correction misses (truth anomaly minus the station's, mean of the layers), sign flipped: the trend terms of the deformation fit take that drift for building motion and remove it. " +
       signed(st.drift_N_per_month, 2) + " N per month.") + '><i class="ln pred"></i>predicted drift ' + signed(st.drift_N_per_month, 2) + " N/month</li>";
     el.innerHTML = h;
   }
-  function renderPass(el, e, run, s) {
+  /* epochs: the pass dates; GAP: days without a pass that break a line; W: W_SIM or W_REAL */
+  function renderPass(el, e, epochs, GAP, W) {
     var st = e.steps;
-    if (!st) { noSteps(el, "The step-by-step breakdown"); document.getElementById("sim-pass-legend").innerHTML = ""; el._pick = null; return; }
-    passLegend(st);
-    var tx = run.epochs.map(day), GAP = s.atm === "simulated" ? 75 : 30, d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
+    if (!st) { noSteps(el, "The step-by-step breakdown"); document.getElementById(el.id + "-legend").innerHTML = ""; el._pick = null; return; }
+    passLegend(st, el.id + "-legend");
+    var tx = epochs.map(day), d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
     var w = width(el), narrow = w < 520, m = { l: narrow ? 34 : 44, r: 10, t: 8, b: 22 }, H = height(el, 250);
     var series = STAGES.filter(function (g) { return shown[g.key]; }).map(function (g) { return { v: st.pass_error[g.key], color: g.color, w: g.w, name: g.short }; });
-    if (shown.pred) series.push({ v: st.predicted, color: PRED, w: 2, dash: true, name: "predicted" });
+    if (shown.pred && st.predicted) series.push({ v: st.predicted, color: PRED, w: 2, dash: true, name: "predicted" });
     var vals = [0];
     series.forEach(function (x) { x.v.forEach(function (v) { if (ok(v)) vals.push(v); }); });
     var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), p = (hi - lo) * 0.06 || 0.5;
@@ -342,28 +362,29 @@
         (x.dash ? ' stroke-dasharray="6 4"' : "") + ' stroke-linejoin="round"/>';
     });
     body += '<line class="sim-cross" x1="0" y1="' + m.t + '" x2="0" y2="' + (H - m.b) + '" stroke="#17191c" stroke-width="1" stroke-dasharray="2 2" visibility="hidden"/>';
-    if (!narrow) body += text(10, (m.t + H - m.b) / 2, "estimate − truth (N)", { anchor: "middle", fill: C.ink2, size: 10.5, rot: -90, base: "middle" });
+    if (!narrow) body += text(10, (m.t + H - m.b) / 2, "estimate − " + W.truth + " (N)", { anchor: "middle", fill: C.ink2, size: 10.5, rot: -90, base: "middle" });
     el.innerHTML = svg(w, H, body, "Error per pass, mean of the layers, on " + tx.length + " passes. rms: " + STAGES.map(function (g) { return g.short + " " + num(rmsMean(st.pass_error[g.key]), 2) + " N"; }).join(", ") +
-      "; predicted drift " + signed(st.drift_N_per_month, 2) + " N per month.");
+      (st.predicted ? "; predicted drift " + signed(st.drift_N_per_month, 2) + " N per month." : "."));
     /* hover: the nearest pass, every line shown */
     el._pick = function (px) {
       if (px < m.l || px > w - m.r) return null;
       var d = d0 - pad + (px - m.l) / (w - m.l - m.r) * (d1 - d0 + 2 * pad), j = 0;
       for (var i = 1; i < tx.length; i++) if (Math.abs(tx[i] - d) < Math.abs(tx[j] - d)) j = i;
-      var h = "<b>" + fmtDate(run.epochs[j]) + "</b>";
+      var h = "<b>" + fmtDate(epochs[j]) + "</b>";
       series.forEach(function (x) { h += '<br><i class="sw" style="background:' + x.color + '"></i>' + esc(x.name) + " " + signed(x.v[j], 2) + " N"; });
       return { html: h, x: xs(tx[j]) };
     };
-    setTip("sim-pass-sub", "The same estimation run three times with parts switched off: only each point's own offset removed (layer inversion only), then the building motion fitted (+ shrinking), then also the thermal term (standard). Each line is the estimated N anomaly minus the true one, averaged over the layers. Click a legend entry to hide it; the axis follows what is shown." +
+    setTip(el.id + "-sub", "The same estimation run three times with parts switched off: only each point's own offset removed (layer inversion only), then the building motion fitted (+ shrinking), then also the thermal term (standard). Each line is the estimated N anomaly minus " +
+      (W === W_REAL ? "the KNMI 344 station's (its 06 UTC refractivity carried up with −55 N/km, so the same anomaly in every layer)" : "the true one") + ", averaged over the layers. Click a legend entry to hide it; the axis follows what is shown." +
       (ok(st.corr_error_predicted) ? " The standard error follows the predicted drift with r = " + num(st.corr_error_predicted, 2) + "." : ""));
   }
 
   /* ---- (b) error per layer, step by step, with the station alone for scale; highest layer on top */
-  function renderLay(el, e) {
-    var st = e.steps, leg = document.getElementById("sim-lay-legend");
+  function renderLay(el, e, W) {
+    var st = e.steps, leg = document.getElementById(el.id + "-legend");
     if (!st) { noSteps(el, "The per-layer breakdown"); leg.innerHTML = ""; return; }
     leg.innerHTML = STAGES.map(function (g) { return '<li><i class="sw" style="background:' + g.color + '"></i>' + esc(g.short) + "</li>"; }).join("") +
-      '<li><i class="tick"></i>station alone</li>';
+      '<li><i class="tick"></i>' + W.base + "</li>";
     var nl = e.edges.length - 1, w = width(el), narrow = w < 420, H = height(el, Math.max(200, nl * 46 + 40));
     var m = { l: narrow ? 62 : 68, r: 34, t: 6, b: 30 }, rowH = (H - m.t - m.b) / nl;
     var bh = Math.max(3, Math.min(18, rowH * 0.8 / STAGES.length));
@@ -380,7 +401,7 @@
       body += text(m.l - 6, y0 + STAGES.length * bh / 2, lab, { anchor: "end", base: "middle", size: narrow ? 9.5 : 10.5, fill: C.truth });
       var tip = "<b>" + lab + "</b>";
       STAGES.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.short) + " " + num(st.rms[g.key][k], 2) + " N"; });
-      tip += "<br>station alone " + num(st.rms.ground[k], 2) + " N";
+      tip += "<br>" + W.base + " " + num(st.rms.ground[k], 2) + " N" + (e.layer_points ? "<br>" + thousands(e.layer_points[k].n) + " radar points" : "");
       body += '<rect x="' + m.l + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (w - m.r - m.l) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
       STAGES.forEach(function (g, i) {
         var v = st.rms[g.key][k], y = y0 + i * bh;
@@ -392,8 +413,8 @@
       if (ok(gv)) body += line(xs(gv), y0 - 3, xs(gv), y0 + STAGES.length * bh + 3, "#17191c", 2.2, ' pointer-events="none"');
     }
     el.innerHTML = svg(w, H, body, "rms error per layer, lowest first. " + STAGES.map(function (g) { return g.short + ": " + st.rms[g.key].map(function (v) { return num(v, 2); }).join(", "); }).join("; ") +
-      "; station alone: " + st.rms.ground.map(function (v) { return num(v, 2); }).join(", ") + " N.");
-    setTip("sim-lay-sub", "Per layer, the rms over the passes of the N anomaly error, for the three steps of (a). The black mark is the weather station alone: its N anomaly carried to every layer. Bars left of the mark: the radar beats the station in that layer. Hover a layer for the numbers.");
+      "; " + W.base + ": " + st.rms.ground.map(function (v) { return num(v, 2); }).join(", ") + " N.");
+    setTip(el.id + "-sub", "Per layer, the rms over the passes of the N anomaly error, for the three steps of (a). The black mark is " + W.baseLong + ". Bars left of the mark: the radar beats it in that layer. Hover a layer for the numbers.");
   }
 
   /* ---- 2. attribution: column error for air only, each disturbance alone, and everything selected */
@@ -439,16 +460,19 @@
   }
 
   /* ---- (c) standard estimate against the truth: N anomalies, every layer and pass, or one layer */
-  function fillLayerPick(e) {
-    var nl = e.edges.length - 1, h = '<option value="-1"' + (scLayer < 0 ? " selected" : "") + ">All layers</option>";
-    if (scLayer >= nl) scLayer = -1;
-    for (var k = nl - 1; k >= 0; k--) h += '<option value="' + k + '"' + (k === scLayer ? " selected" : "") + ">" + esc(layerLabel(e.edges, k)) + (k === 0 ? " (lowest)" : "") + "</option>";
-    scSel.innerHTML = h;
-    scSel.disabled = nl < 2;
+  /* fills a layer picker; returns the picked layer, -1 (all) when it no longer exists */
+  function fillLayerPick(e, sel, cur) {
+    var nl = e.edges.length - 1;
+    if (cur >= nl) cur = -1;
+    var h = '<option value="-1"' + (cur < 0 ? " selected" : "") + ">All layers</option>";
+    for (var k = nl - 1; k >= 0; k--) h += '<option value="' + k + '"' + (k === cur ? " selected" : "") + ">" + esc(layerLabel(e.edges, k)) + (k === 0 ? " (lowest)" : "") + "</option>";
+    sel.innerHTML = h;
+    sel.disabled = nl < 2;
+    return cur;
   }
   function range(a) { var v = a.filter(ok); return v.length ? [Math.min.apply(null, v), Math.max.apply(null, v)] : [NaN, NaN]; }
-  function renderScatter(el, e) {
-    var st = e.steps, leg = document.getElementById("sim-sc-legend"), ep = last ? last.run.epochs : [];
+  function renderScatter(el, e, ep, scLayer, W) {
+    var st = e.steps, leg = document.getElementById(el.id + "-legend");
     if (!st) { noSteps(el, "The scatter"); leg.innerHTML = ""; return; }
     var nl = st.truth_anomaly.length, ks = scLayer < 0 ? [] : [scLayer];
     if (scLayer < 0) for (var q = 0; q < nl; q++) ks.push(q);
@@ -472,23 +496,20 @@
       body += text(xs(v), m.t + side + 13, tickLabel(v), { anchor: "middle", size: 10 }) + text(x0 - 5, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 });
     });
     body += '<rect x="' + x0 + '" y="' + m.t + '" width="' + side + '" height="' + side + '" fill="none" stroke="' + C.axis + '"/>';
-    body += text(x0 + side / 2, H - 3, "truth N anomaly (N)", { anchor: "middle", size: 10.5, fill: C.ink2 });
+    body += text(x0 + side / 2, H - 3, W.truthAnom + " (N)", { anchor: "middle", size: 10.5, fill: C.ink2 });
     body += text(x0 - 30, m.t + side / 2, "estimated (N)", { anchor: "middle", size: 10.5, fill: C.ink2, rot: -90, base: "middle" });
-    body += '<defs><clipPath id="sc-clip"><rect x="' + x0 + '" y="' + m.t + '" width="' + side + '" height="' + side + '"/></clipPath></defs><g clip-path="url(#sc-clip)">';
+    body += '<defs><clipPath id="' + el.id + '-clip"><rect x="' + x0 + '" y="' + m.t + '" width="' + side + '" height="' + side + '"/></clipPath></defs><g clip-path="url(#' + el.id + '-clip)">';
     var r = P.length > 600 ? 1.6 : P.length > 250 ? 2 : 2.5, d = "";
     P.forEach(function (p) {
       d += '<circle cx="' + xs(p[0]).toFixed(1) + '" cy="' + ys(p[1]).toFixed(1) + '" r="' + r + '"' +
-        ft("<b>" + (ep[p[3]] ? fmtDate(ep[p[3]]) : "pass " + (p[3] + 1)) + "</b>, " + layerLabel(e.edges, p[2]) + "<br>truth " + signed(p[0], 1) + " N, estimate " + signed(p[1], 1) + " N<br>error " + signed(p[1] - p[0], 1) + " N") + "/>";
+        ft("<b>" + (ep[p[3]] ? fmtDate(ep[p[3]]) : "pass " + (p[3] + 1)) + "</b>, " + layerLabel(e.edges, p[2]) + "<br>" + W.truth + " " + signed(p[0], 1) + " N, estimate " + signed(p[1], 1) + " N<br>error " + signed(p[1] - p[0], 1) + " N") + "/>";
     });
     body += '<g fill="#1f5fa8" fill-opacity=".55">' + d + "</g>";
     body += line(xs(-lim), ys(-lim), xs(lim), ys(lim), C.truth, 1, ' stroke-dasharray="5 4" pointer-events="none"');
     var sl = scLayer >= 0 ? st.slope[scLayer] : null;
     if (ok(sl)) body += line(xs(-lim), ys(sl * -lim), xs(lim), ys(sl * lim), "#1f5fa8", 2, ' pointer-events="none"');
     body += "</g>";
-    var sl = scLayer >= 0 ? st.slope[scLayer] : null;
-    if (ok(sl)) body += line(xs(-lim), ys(sl * -lim), xs(lim), ys(sl * lim), "#1f5fa8", 2, ' pointer-events="none"');
-    body += "</g>";
-    el.innerHTML = svg(w, H, body, "Standard estimate against the truth, N anomaly, " + (scLayer < 0 ? "all layers" : layerLabel(e.edges, scLayer)) + ": rms error " + span(rr) + " N, slope " + span(ss) + ".");
+    el.innerHTML = svg(w, H, body, "Standard estimate against the " + W.truth + ", N anomaly, " + (scLayer < 0 ? "all layers" : layerLabel(e.edges, scLayer)) + ": rms error " + span(rr) + " N, slope " + span(ss) + ".");
   }
 
   /* ---- 4. cumulative trend: from air only, add the selected disturbances in a fixed order */
@@ -547,6 +568,178 @@
       (off.length === STEPS.length ? " Nothing is switched on, so there is nothing to add." : "") + " Hover a bar for its numbers.");
   }
 
+  /* ---- P, T, e (the estimation notebook's section C5): error per layer, or one pass's profiles */
+  var PTE = {
+    P: { unit: "hPa", name: "pressure", d: 2 },
+    T: { unit: "K", name: "temperature", d: 2 },
+    e: { unit: "hPa", name: "water-vapour pressure", d: 2 }
+  };
+  var PTE_C = { spread: "#cfd6de", est: "#1f5fa8", station: "#7a7f86", truth: "#17191c" };
+  /* e in the estimation's own (level-only) calibration; the run files also hold the notebook's
+     per-pass shift to the ground ("shift"), which the page does not show */
+  var pteShow = "errors", pteCal = "level";
+  function pteScore(pt, q) { return q === "e" ? pt.e[pteCal] : pt[q]; }
+  /* error per layer: grouped bars per layer, highest on top */
+  function pteBars(el, q, edges, groups) {
+    var nl = edges.length - 1, w = width(el), narrow = w < 360, H = height(el, Math.max(220, nl * (groups.length * 13 + 18) + 40));
+    var m = { l: narrow ? 58 : 66, r: 36, t: 6, b: 30 }, rowH = (H - m.t - m.b) / nl;
+    var bh = Math.max(3, Math.min(16, rowH * 0.8 / groups.length));
+    var vals = [0];
+    groups.forEach(function (g) { g.vals.forEach(function (v) { if (ok(v)) vals.push(v); }); });
+    var vmax = Math.max.apply(null, vals) * 1.08 || 1, xt = ticks(0, vmax, narrow ? 3 : 4), xmax = Math.max(vmax, xt[xt.length - 1]), xs = lin(0, xmax, m.l, w - m.r);
+    var body = "", plotB = H - m.b;
+    xt.forEach(function (v) { var x = xs(v); body += line(x, m.t, x, plotB, C.grid) + text(x, plotB + 13, tickLabel(v), { anchor: "middle", size: 10 }); });
+    body += line(m.l, m.t, m.l, plotB, C.axis);
+    body += text((m.l + w - m.r) / 2, H - 3, PTE[q].unit, { anchor: "middle", size: 10, fill: C.ink2 });
+    for (var r = 0; r < nl; r++) {
+      var k = nl - 1 - r, y0 = m.t + r * rowH + (rowH - groups.length * bh) / 2, lab = layerLabel(edges, k);
+      body += text(m.l - 6, y0 + groups.length * bh / 2, lab, { anchor: "end", base: "middle", size: narrow ? 9.5 : 10.5, fill: C.truth });
+      var tip = "<b>" + lab + "</b>";
+      groups.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.label) + " " + num(g.vals[k], PTE[q].d) + " " + PTE[q].unit; });
+      if (groups.bias) tip += "<br>" + (groups.biasLabel || "mean error (bias)") + " " + signed(groups.bias[k], PTE[q].d) + " " + PTE[q].unit;
+      body += '<rect x="' + m.l + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (w - m.r - m.l) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
+      groups.forEach(function (g, i) {
+        var v = g.vals[k], y = y0 + i * bh;
+        if (!ok(v)) return;
+        body += rect(m.l, y + 0.5, xs(v) - m.l, bh - 1, g.color, ' pointer-events="none"');
+        if (bh >= 10) body += text(xs(v) + 3, y + bh / 2 + 0.5, num(v, PTE[q].d), { base: "middle", size: 9.5, fill: "#333" });
+      });
+    }
+    el.innerHTML = svg(w, H, body, PTE[q].name + ", error per layer, lowest first. " + groups.map(function (g) { return g.label + ": " + g.vals.map(function (v) { return num(v, PTE[q].d); }).join(", "); }).join("; ") + " " + PTE[q].unit + ".");
+  }
+  /* one pass: the true profile (real data: the profile carried up from KNMI 344, for P and T only),
+     the estimate per layer with an error bar (simulation: the rms error over all passes; real data,
+     e only: its own uncertainty on this pass), for e the station alone; P relative to the ground */
+  function pteProfile(el, q, ps, edges, err, real) {
+    var ref = q === "P" ? ps.ground.P : 0, nl = edges.length - 1, top = edges[nl];
+    var est = (q === "e" ? ps.est.e[pteCal] : ps.est[q]).map(function (v) { return v - ref; });
+    var src = real ? ps.model && ps.model[q] : ps.truth[q];
+    var tr = src ? src.map(function (v) { return v - ref; }) : null, st = q === "e" ? ps.station_e : null, eb = err || [];
+    var stName = real ? "KNMI 344 carried up" : "station alone";
+    var xsv = [ps.ground[q] - ref];
+    if (tr) tr.forEach(function (v, i) { if (ps.z[i] <= top && ok(v)) xsv.push(v); });
+    est.forEach(function (v, k) { if (ok(v)) { xsv.push(v - (eb[k] || 0)); xsv.push(v + (eb[k] || 0)); } });
+    if (st) st.forEach(function (v) { if (ok(v)) xsv.push(v); });
+    var lo = Math.min.apply(null, xsv), hi = Math.max.apply(null, xsv), pad = (hi - lo) * 0.06 || 0.5;
+    var w = width(el), H = height(el, 300), m = { l: 40, r: 10, t: 8, b: 30 };
+    var xs = lin(lo - pad, hi + pad, m.l, w - m.r), ys = lin(0, top, H - m.b, m.t);
+    var body = rect(m.l, m.t, w - m.l - m.r, H - m.t - m.b, "#fcfbf8");
+    /* as many decimals as the tick step needs: a temperature profile may span less than a kelvin */
+    var xt = ticks(lo - pad, hi + pad, w < 320 ? 3 : 4), dec = xt.length > 1 ? Math.max(0, Math.ceil(-Math.log10(xt[1] - xt[0]) - 1e-9)) : 0;
+    xt.forEach(function (v) { body += line(xs(v), m.t, xs(v), H - m.b, C.grid) + text(xs(v), H - m.b + 13, v.toFixed(dec).replace("-", "−"), { anchor: "middle", size: 10 }); });
+    ticks(0, top, 4).forEach(function (v) { body += line(m.l, ys(v), w - m.r, ys(v), C.grid) + text(m.l - 5, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 }); });
+    body += line(m.l, H - m.b, w - m.r, H - m.b, C.axis) + line(m.l, m.t, m.l, H - m.b, C.axis);
+    body += text((m.l + w - m.r) / 2, H - 3, (q === "P" ? "P − P at the ground" : q) + " (" + PTE[q].unit + ")", { anchor: "middle", size: 10, fill: C.ink2 });
+    body += text(10, (m.t + H - m.b) / 2, "height (m NAP)", { anchor: "middle", size: 10, fill: C.ink2, rot: -90, base: "middle" });
+    if (tr) {
+      var pts = [];
+      ps.z.forEach(function (z, i) { if (z <= top && ok(tr[i])) pts.push([xs(tr[i]), ys(z)]); });
+      body += '<path d="' + path(pts) + '" fill="none" stroke="' + (real ? PTE_C.station : PTE_C.truth) + '" stroke-width="1.6"/>';
+    }
+    function steps(v, color, wd, dash) {
+      var d = "";
+      for (var k = 0; k < nl; k++) if (ok(v[k])) d += "M" + xs(v[k]).toFixed(1) + " " + ys(edges[k]).toFixed(1) + "V" + ys(edges[k + 1]).toFixed(1) + (k + 1 < nl && ok(v[k + 1]) ? "H" + xs(v[k + 1]).toFixed(1) : "");
+      return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + wd + '"' + (dash ? ' stroke-dasharray="5 3"' : "") + "/>";
+    }
+    if (st) body += steps(st, PTE_C.station, 1.4, true);
+    body += steps(est, PTE_C.est, 2.2);
+    for (var k = 0; k < nl; k++) {
+      if (!ok(est[k])) continue;
+      var y = ys((edges[k] + edges[k + 1]) / 2), lab = layerLabel(edges, k);
+      if (ok(eb[k])) {
+        var x0 = xs(est[k] - eb[k]), x1 = xs(est[k] + eb[k]);
+        body += line(x0, y, x1, y, PTE_C.est, 1.2) + line(x0, y - 4, x0, y + 4, PTE_C.est, 1.2) + line(x1, y - 4, x1, y + 4, PTE_C.est, 1.2);
+      }
+      var tip = "<b>" + lab + "</b><br>" + (real && q !== "e" ? "from KNMI 344 alone " : "estimate ") + num(est[k] + ref, PTE[q].d) + " " + PTE[q].unit +
+        (ok(eb[k]) ? " (± " + num(eb[k], PTE[q].d) + (real ? ", its uncertainty on this pass" : ", the rms error over all passes") + ")" : "") +
+        (st ? "<br>" + stName + " " + num(st[k], PTE[q].d) + " " + PTE[q].unit : "") +
+        (!real && q === "e" && ps.sigma_e ? "<br>uncertainty on this pass ± " + num(ps.sigma_e[pteCal][k], 2) + " hPa" : "");
+      body += '<rect x="' + m.l + '" y="' + ys(edges[k + 1]).toFixed(1) + '" width="' + (w - m.l - m.r) + '" height="' + (ys(edges[k]) - ys(edges[k + 1])).toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
+    }
+    body += '<circle cx="' + xs(ps.ground[q] - ref).toFixed(1) + '" cy="' + ys(3.2).toFixed(1) + '" r="4" fill="' + PTE_C.truth + '"' + ft("<b>" + (real ? "KNMI 344" : "The station") + " at the ground</b><br>" + num(ps.ground[q], PTE[q].d) + " " + PTE[q].unit) + "/>";
+    el.innerHTML = svg(w, H, body, PTE[q].name + " on " + fmtDate(ps.date) + ": estimate per layer " + est.map(function (v) { return num(v + ref, PTE[q].d); }).join(", ") + " " + PTE[q].unit + ".");
+  }
+  /* real data, e: per layer the correlation with KNMI 344's e carried up, over the passes */
+  function pteR(el, edges, r) {
+    var nl = edges.length - 1, w = width(el), H = height(el, Math.max(200, nl * 60 + 50));
+    var m = { l: w < 360 ? 58 : 66, r: 36, t: 22, b: 30 }, rowH = (H - m.t - m.b) / nl, bh = Math.min(22, rowH * 0.5);
+    var rx = lin(Math.min(0, Math.min.apply(null, r.filter(ok).concat([0]))), 1, m.l, w - m.r);
+    var body = text(m.l, 13, "correlation r with KNMI 344's e carried up", { size: 10.5, fill: C.ink2, weight: 600 });
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) { body += line(rx(v), m.t, rx(v), H - m.b, C.grid) + text(rx(v), H - m.b + 13, String(v), { anchor: "middle", size: 10 }); });
+    body += line(rx(0), m.t, rx(0), H - m.b, C.axis);
+    for (var i = 0; i < nl; i++) {
+      var k = nl - 1 - i, cy = m.t + i * rowH + rowH / 2, lab = layerLabel(edges, k);
+      body += text(m.l - 6, cy, lab, { anchor: "end", base: "middle", size: 10.5, fill: C.truth });
+      body += '<rect x="' + m.l + '" y="' + (m.t + i * rowH).toFixed(1) + '" width="' + (w - m.l - m.r) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' +
+        ft("<b>" + lab + "</b><br>r " + num(r[k], 2) + " with KNMI 344's e carried up, over the passes") + "/>";
+      if (ok(r[k])) {
+        var x0 = rx(Math.min(0, r[k])), x1 = rx(Math.max(0, r[k]));
+        body += rect(x0, cy - bh / 2, x1 - x0, bh, PTE_C.est, ' pointer-events="none"') + text(x1 + 4, cy, num(r[k], 2), { base: "middle", size: 10, fill: "#333" });
+      }
+    }
+    el.innerHTML = svg(w, H, body, "e: correlation with KNMI 344's e carried up, lowest layer first: " + r.map(function (v) { return num(v, 2); }).join(", ") + ".");
+  }
+  function li(color, label, kind) {
+    return kind === "dash" ? '<li><i class="ln dash"></i>' + esc(label) + "</li>"
+      : kind === "line" ? '<li><i class="ln c" style="border-top-color:' + color + '"></i>' + esc(label) + "</li>"
+        : '<li><i class="sw" style="background:' + color + '"></i>' + esc(label) + "</li>";
+  }
+  /* real: the entry of real.json (no truth above the street: e against KNMI 344 carried up) */
+  function renderPte(e, real) {
+    var pt = e.pte, note = document.getElementById("pte-note");
+    if (!pt) {
+      ["P", "T", "e"].forEach(function (q) { noSteps(document.getElementById("pte-" + q), "P, T and e"); document.getElementById("pte-" + q + "-legend").innerHTML = ""; });
+      note.textContent = "";
+      return;
+    }
+    var ps = null;
+    pt.passes.forEach(function (x) { if (x.label === pteShow) ps = x; });
+    note.textContent = (ps ? fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
+      (real ? "P and T come from KNMI 344 alone (hydrostatic, 6.5 K per km); nothing measures them above the street. Only e uses the radar, set against KNMI 344's e carried up."
+        : "P and T come from the station alone (hydrostatic, 6.5 K per km); only e uses the radar.");
+    ["P", "T", "e"].forEach(function (q) {
+      var el = document.getElementById("pte-" + q), leg = document.getElementById("pte-" + q + "-legend"), groups;
+      if (!ps && real) {
+        if (q === "e") {
+          pteR(el, e.edges, pt.e[pteCal].r);
+          leg.innerHTML = "";
+        } else {
+          el.innerHTML = '<p class="sim-sub" style="padding:14px">' + (q === "P" ? "Pressure" : "Temperature") +
+            " is KNMI 344's own, carried up from the ground, so against KNMI 344 it has no error (r = 1) by construction. Pick a pass above to see its profile.</p>";
+          leg.innerHTML = "";
+        }
+        return;
+      }
+      if (!ps) {
+        var s2 = pteScore(pt, q);
+        groups = [{ label: "true spread over the passes", vals: s2.spread, color: PTE_C.spread }, { label: "estimate, rms error", vals: s2.rmse, color: PTE_C.est }];
+        if (q === "e") groups.push({ label: "station alone, rms error", vals: s2.station_rmse, color: PTE_C.station });
+        groups.bias = s2.bias;
+        pteBars(el, q, e.edges, groups);
+        leg.innerHTML = groups.map(function (g) { return li(g.color, g.label); }).join("");
+      } else if (real) {
+        pteProfile(el, q, ps, e.edges, q === "e" ? ps.sigma_e[pteCal] : null, true);
+        leg.innerHTML = q === "e" ? li(PTE_C.est, "radar ± its uncertainty on this pass", "line") + li(null, "KNMI 344 carried up", "dash")
+          : li(PTE_C.station, "carried up from KNMI 344", "line") + li(PTE_C.est, "layer mean", "line");
+      } else {
+        pteProfile(el, q, ps, e.edges, pteScore(pt, q).rmse, false);
+        leg.innerHTML = li(PTE_C.truth, "truth", "line") + li(PTE_C.est, "estimate ± rms error", "line") + (q === "e" ? li(null, "station alone", "dash") : "");
+      }
+    });
+    if (real) {
+      setTip("pte-P-sub", "Carried up from KNMI 344's ground pressure with the hydrostatic equation (temperature falling 6.5 K per km). The radar adds nothing to it, and nothing measures it above the street.");
+      setTip("pte-T-sub", "KNMI 344's ground temperature falling 6.5 K per km. Nothing measures it above the street; in the simulation this assumption is off by 0.4-1.7 K, more with height and on mornings with an inversion.");
+      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other two cards (the three-term formula, solved for e). There is no truth above the street, so it is set against KNMI 344's own e carried up (its ground refractivity carried up with −55 N per km, converted the same way): per layer the correlation r over the passes (1: the radar's e rises and falls exactly with KNMI's; 0: no relation). The seasons are in both, so r is partly the yearly cycle." +
+        (realPrior() === "ground" ? " With the air prior from the ground, KNMI 344's own anomaly is inside the radar's estimate, so it agrees with KNMI partly by construction; pick Radar only to judge the radar." : ""));
+    } else {
+      setTip("pte-P-sub", "Carried up from the ground pressure with the hydrostatic equation (temperature falling 6.5 K per km): the station's alone, the radar adds nothing to it. Bars: its error per layer against the simulation's true pressure, next to how much the true pressure changes from pass to pass.");
+      setTip("pte-T-sub", "The ground temperature falling 6.5 K per km: the station's alone. Its error grows with height where the real air does not follow that rate, for example in morning inversions (warmer air above colder air at the ground).");
+      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other two cards (the three-term formula, solved for e)." +
+        " Grey: the station alone, its ground refractivity carried up with −55 N per km. Where the blue bar is shorter than the grey one, the radar adds something." +
+        (pt.sigma_source === "formal" ? " The per-pass uncertainty here is the formal one, a lower bound (the jackknife needs more buildings per layer)." : ""));
+    }
+  }
+
   /* ---- 5. what this means: plain-language reading of the numbers above */
   function renderDecide(el, e, s, sm) {
     var items = [], nl = e.rmse.length, sel = selected(s), air = summ(airOnly(s));
@@ -580,6 +773,7 @@
     } else if (air) {
       items.push("<b>Nothing is switched on.</b> What is left, " + num(air.column_rmse, 2) + " N, is the estimation's own error on clean data with this air.");
     }
+    if (s.sinking === "1") items.push("<b>Sinking changes nothing here.</b> The simulation sinks each building as a whole, and the estimation only compares points within one building, so a movement every point of a building shares cancels exactly, on every pass and in every step.");
     /* radar against the station, per layer and for the column */
     var w = wins(e), cs = colSkill(sm);
     var wl = w.map(function (k) { return layerLabel(e.edges, k); }), ll = [];
@@ -612,6 +806,179 @@
     el.innerHTML = items.map(function (t) { return "<li>" + t + "</li>"; }).join("");
   }
 
+  /* ------------------------------------------------------------ the real data */
+  var realSel = document.getElementById("real-sc-layer");
+  function realPrior() { var r = form.querySelector('input[name="prior"]:checked'); return r ? r.value : "none"; }
+  /* with the real data only the atmosphere, the layers and the air prior can be chosen */
+  function realMode(on) {
+    var sub = document.querySelector('[data-atm-sub="real"]');
+    if (sub && realDoc) sub.textContent = realDoc.passes + " passes";
+    form.querySelectorAll(".sim-only").forEach(function (f) { f.disabled = on; });
+    form.querySelectorAll(".real-only").forEach(function (f) { f.hidden = !on; });
+    var rb = document.getElementById("sim-reset"), asof = document.getElementById("sim-asof");
+    if (rb) rb.style.display = on ? "none" : "";
+    if (asof) asof.textContent = on && realDoc ? "Real TerraSAR-X passes " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + ", shown only as means over each layer's points; KNMI 344 weather (CC BY 4.0). Generated on " + fmtDate(realDoc.generated) +
+      (realDoc.code && realDoc.code.virtual_radiosonde ? " with the team's code at " + String(realDoc.code.virtual_radiosonde).slice(0, 7) : "") + "." : simAsof;
+  }
+  function getReal() {
+    if (!realP) {
+      realP = getJson(BASE + "real.json").then(function (d) { realDoc = d; return d; });
+      realP.catch(function () { realP = null; });
+    }
+    return realP;
+  }
+  function realVerdict(e, prior) {
+    var nl = e.rmse.length, k = wins(e).length, col = e.column_rmse < e.column_station_rmse;
+    var who = prior === "none" ? "The radar alone" : "With the station's air put back in, the estimate";
+    var t;
+    if (nl === 1) t = who + (col ? " follows KNMI 344 better than constant air" : " does not follow KNMI 344 better than constant air");
+    else if (!k) t = who + " follows KNMI 344 worse than constant air in every layer" + (col ? ", though better on the column" : " and on the column");
+    else t = who + " follows KNMI 344 better than constant air in " + (k === nl ? "all " + nl : k + " of " + nl) + " layers" + (col ? " and on the column" : ", but not on the column");
+    return t + (prior === "ground" ? " (partly circular: the station's anomaly is inside this estimate)." : ".");
+  }
+  function renderRealStats(e) {
+    var nl = e.rmse.length, w = wins(e), cs = colSkill(e), r0 = e.station_r && e.station_r[0];
+    document.getElementById("sim-stats").innerHTML =
+      stat(num(e.column_rmse, 2), "N", "radar vs KNMI 344, rms error" + (nl > 1 ? " of the column" : ""), "radar", "s-radar") +
+      stat(num(e.column_station_rmse, 2), "N", "constant air (the station's own swings)", "thermo", "s-station") +
+      stat('<span style="color:' + skillColor(cs) + '">' + signed(cs, 2) + "</span>", "", "skill vs constant air" + (nl > 1 ? ", better in " + w.length + "/" + nl + " layers" : "") +
+        (r0 && ok(r0.r) ? "; r " + num(r0.r, 2) + " with KNMI 344 in the lowest layer" : ""), "target", "s-skill") +
+      stat(thousands(e.points_used), "points", "on " + e.buildings + " buildings, " + realDoc.passes + " passes", "grid");
+  }
+  function renderReal() {
+    if (!realDoc) {
+      failed("");
+      setStatus("Loading the real-data results…");
+      getReal().then(function () { if (isReal()) renderView(); },
+        function (err) { if (isReal()) failed("The real-data results could not be loaded (" + err.message + "). Reload the page to try again."); });
+      return;
+    }
+    if (view === "dist" || view === "decide") {
+      failed((view === "dist" ? "The disturbances are switched on and off in the simulation only" : "This reading is written for the simulation") +
+        "; in the real data they are what they are. Pick a simulated atmosphere, or see Step by step and P, T, e for the real data.");
+      return;
+    }
+    var prior = realPrior(), L = state.layers, byPrior = realDoc.results[prior] || {}, e = byPrior[L];
+    if (!e || e.error) { failed("The estimation on the real data could not run with " + (LAYERS_NAME[L] || L) + (e && e.error ? ": " + e.error : "") + ". Try other layers."); return; }
+    failed("");
+    realMode(true);
+    document.getElementById("sim-verdict").textContent = realVerdict(e, prior);
+    renderRealStats(e);
+    if (view === "steps") {
+      realScLayer = fillLayerPick(e, realSel, realScLayer);
+      renderPass(document.getElementById("real-pass"), e, realDoc.epochs, 75, W_REAL);
+      renderLay(document.getElementById("real-lay"), e, W_REAL);
+      renderScatter(document.getElementById("real-sc"), e, realDoc.epochs, realScLayer, W_REAL);
+    } else if (view === "pte") {
+      renderPte(e, true);
+    }
+  }
+
+  /* ------------------------------------------------------------ save a chart as a clean figure */
+  /* the card's chart with its title on top, its legend (only the lines shown) and a caption with
+     the settings below, on white: as SVG, or as PNG at three times the screen size */
+  function figCaption(card) {
+    var s = state, L = LAYERS_NAME[s.layers] || s.layers;
+    if (isReal()) {
+      var rp = "";
+      if (card.closest("#view-pte") && pteShow !== "errors" && realDoc) {
+        var re = (realDoc.results[realPrior()] || {})[s.layers];
+        if (re && re.pte) re.pte.passes.forEach(function (x) { if (x.label === pteShow) rp = "; " + x.label + " pass, " + fmtDate(x.date); });
+      }
+      return "Real TerraSAR-X data" + (realDoc ? ", " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + " (" + realDoc.passes + " passes)" : "") +
+        "; truth: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + L + rp + ". Virtual Radiosonde.";
+    }
+    var on = TOGGLES.filter(function (k) { return s[k] === "1"; }).map(function (k) { return DIST[k].label.toLowerCase(); });
+    var pass = "";
+    if (card.closest("#view-pte") && pteShow !== "errors" && last && last.entry.pte) {
+      last.entry.pte.passes.forEach(function (x) { if (x.label === pteShow) pass = "; " + x.label + " pass, " + fmtDate(x.date); });
+    }
+    return "Simulation: " + (ATM_NAME[s.atm] || s.atm).replace(/^the /, "") + "; " + (on.length ? listWords(on) : "no disturbances") + "; " + s.noise + " mm noise; " +
+      thousands(s.points) + " points; " + L + pass + ". Synthetic data, Virtual Radiosonde simulator.";
+  }
+  function figLegend(card) {
+    var out = [];
+    card.querySelectorAll(".sim-legend li").forEach(function (li) {
+      if (li.getAttribute("aria-pressed") === "false") return;
+      var i = li.querySelector("i"), cls = i ? i.className : "", cs = i ? getComputedStyle(i) : null;
+      var kind = !i ? "none" : /\bsw\b/.test(cls) ? "box" : /\btick\b/.test(cls) ? "tick" : "line";
+      out.push({ kind: kind, color: kind === "box" ? cs.backgroundColor : kind === "line" ? cs.borderTopColor : C.truth,
+        dash: kind === "line" && /dash|dot/.test(cs.borderTopStyle), text: li.textContent.replace(/\s+/g, " ").trim() });
+    });
+    return out;
+  }
+  function wrapWords(s, chars) {
+    var lines = [], cur = "";
+    s.split(" ").forEach(function (w) { if ((cur + " " + w).trim().length > chars && cur) { lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function figure(card) {
+    var chart = card.querySelector(".sim-chart svg");
+    if (!chart) return null;
+    var h3 = card.querySelector("h3").cloneNode(true);
+    h3.querySelectorAll(".t, .h-ic").forEach(function (n) { n.remove(); });
+    var title = h3.textContent.replace(/\s+/g, " ").trim();
+    var cw = +chart.getAttribute("width"), ch = +chart.getAttribute("height"), pad = 18, W = Math.max(cw + 2 * pad, 420);
+    var y = 30, body = '<rect width="100%" height="100%" fill="#ffffff"/>';
+    body += text(pad, y, title, { size: 15, weight: 650, fill: C.truth });
+    y += 12;
+    var c = chart.cloneNode(true);
+    c.setAttribute("x", (W - cw) / 2); c.setAttribute("y", y);
+    ["role", "aria-label", "aria-hidden"].forEach(function (a) { c.removeAttribute(a); });
+    body += new XMLSerializer().serializeToString(c);
+    y += ch + 18;
+    var x = pad, items = figLegend(card);
+    items.forEach(function (it) {
+      var wd = 26 + it.text.length * 6.4 + 14;
+      if (x + wd > W - pad && x > pad) { x = pad; y += 18; }
+      var cy = y - 4;
+      if (it.kind === "box") body += rect(x, cy - 5, 14, 10, it.color, ' rx="2"');
+      else if (it.kind === "tick") body += line(x + 7, cy - 7, x + 7, cy + 7, it.color, 2.2);
+      else if (it.kind === "line") body += line(x, cy, x + 20, cy, it.color, 2.2, it.dash ? ' stroke-dasharray="5 3"' : "");
+      body += text(x + (it.kind === "none" ? 0 : 26), y, it.text, { size: 11.5, fill: C.ink2 });
+      x += wd;
+    });
+    if (items.length) y += 22;
+    wrapWords(figCaption(card), Math.floor((W - 2 * pad) / 5.6)).forEach(function (l) { body += text(pad, y, l, { size: 10, fill: C.muted }); y += 14; });
+    var H = Math.ceil(y + 6);
+    return { name: "vrs-" + title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), W: W, H: H,
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">' + body + "</svg>" };
+  }
+  function download(blob, name) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function saveFigure(card, kind) {
+    var f = figure(card);
+    if (!f) return;
+    if (kind === "svg") { download(new Blob([f.svg], { type: "image/svg+xml" }), f.name + ".svg"); return; }
+    var img = new Image(), k = 3;
+    img.onload = function () {
+      var cv = document.createElement("canvas");
+      cv.width = f.W * k; cv.height = f.H * k;
+      var g = cv.getContext("2d");
+      g.scale(k, k); g.drawImage(img, 0, 0);
+      cv.toBlob(function (b) { download(b, f.name + ".png"); }, "image/png");
+    };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(f.svg);
+  }
+  out.querySelectorAll(".app-card").forEach(function (card) {
+    var head = card.querySelector(".sim-card-head");
+    if (!head || !card.querySelector(".sim-chart")) return;
+    var s = document.createElement("span");
+    s.className = "sim-save";
+    s.innerHTML = '<button type="button" data-save="png" title="Save this figure as a PNG image, with its title, legend and settings">PNG</button>' +
+      '<button type="button" data-save="svg" title="Save this figure as an SVG drawing (scalable, for reports)">SVG</button>';
+    head.appendChild(s);
+  });
+  out.addEventListener("click", function (ev) {
+    var b = ev.target.closest && ev.target.closest("[data-save]");
+    if (b) saveFigure(b.closest(".app-card"), b.getAttribute("data-save"));
+  });
+
   /* ------------------------------------------------------------ start */
   function fillScene() {
     var at = manifest.atmospheres || {};
@@ -626,6 +993,7 @@
     var asof = document.getElementById("sim-asof");
     if (asof && manifest.generated) asof.textContent = "Synthetic data only, no real radar point is used. Results generated on " + fmtDate(manifest.generated) +
       (manifest.code && manifest.code.virtual_radiosonde ? " with the team's code at " + String(manifest.code.virtual_radiosonde).slice(0, 7) : "") + ".";
+    if (asof) simAsof = asof.textContent;
   }
   function fail(msg) {
     form.querySelectorAll("input, button").forEach(function (i) { i.disabled = true; });
@@ -639,13 +1007,20 @@
     manifest = m;
     /* only offer values the manifest has */
     form.querySelectorAll('input[type="radio"]').forEach(function (r) {
-      if (!valid(r.name, r.value)) { r.disabled = true; r.closest("label").hidden = true; }
+      if (r.name !== "prior" && !valid(r.name, r.value)) { r.disabled = true; r.closest("label").hidden = true; }
     });
     TOGGLES.forEach(function (k) { if (!valid(k, 1)) { form.elements[k].disabled = true; form.elements[k].closest("label").hidden = true; } });
     fillScene();
     toForm(initialState());
+    var p0 = new URLSearchParams(location.search).get("prior");
+    form.querySelectorAll('input[name="prior"]').forEach(function (r) { if (p0) r.checked = r.value === p0; });
     form.addEventListener("change", update);
-    scSel.addEventListener("change", function () { scLayer = +scSel.value; if (last) renderScatter(document.getElementById("sim-sc"), last.entry); });
+    scSel.addEventListener("change", function () { scLayer = +scSel.value; if (last && !simMsg) renderScatter(document.getElementById("sim-sc"), last.entry, last.run.epochs, scLayer, W_SIM); });
+    document.getElementById("view-pte").addEventListener("change", function (ev) {
+      if (ev.target.name === "pte-show") pteShow = ev.target.value;
+      renderView();
+    });
+    realSel.addEventListener("change", function () { realScLayer = +realSel.value; if (isReal()) renderReal(); });
     var tabs = document.querySelector(".sim-tabs");
     tabs.addEventListener("click", function (ev) { var b = ev.target.closest("[data-tab]"); if (b) setView(b.getAttribute("data-tab")); });
     tabs.addEventListener("keydown", function (ev) {
@@ -653,17 +1028,19 @@
       if (d) { ev.preventDefault(); setView(VIEWS[(i + d + VIEWS.length) % VIEWS.length], true); }
     });
     showTabs();
-    var pl = document.getElementById("sim-pass-legend");
     function flip(ev) {
       var li = ev.target.closest && ev.target.closest("li.tg");
       if (!li || (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ")) return;
       ev.preventDefault();
       var k = li.getAttribute("data-k");
       shown[k] = !shown[k];
-      if (last && !last.entry.error) renderPass(document.getElementById("sim-pass"), last.entry, last.run, last.state);
+      renderView();
     }
-    pl.addEventListener("click", flip);
-    pl.addEventListener("keydown", flip);
+    ["sim-pass-legend", "real-pass-legend"].forEach(function (id) {
+      var pl = document.getElementById(id);
+      pl.addEventListener("click", flip);
+      pl.addEventListener("keydown", flip);
+    });
     document.getElementById("sim-reset").addEventListener("click", function () { toForm(manifest.defaults); update(); });
     var t = null;
     window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(render, 150); });
