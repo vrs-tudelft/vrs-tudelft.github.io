@@ -97,7 +97,7 @@
     <div class="sim-tabs" role="tablist" aria-label="Views">
       <button type="button" role="tab" id="tab-steps" aria-controls="view-steps" data-tab="steps"><i data-icon="timeline"></i>Step by step</button>
       <button type="button" role="tab" id="tab-dist" aria-controls="view-dist" data-tab="dist"><i data-icon="bars"></i>Disturbances</button>
-      <button type="button" role="tab" id="tab-pte" aria-controls="view-pte" data-tab="pte"><i data-icon="thermo"></i>P, T, e</button>
+      <button type="button" role="tab" id="tab-pte" aria-controls="view-pte" data-tab="pte"><i data-icon="thermo"></i>N, P, T, e</button>
       <button type="button" role="tab" id="tab-decide" aria-controls="view-decide" data-tab="decide"><i data-icon="bulb"></i>What this means</button>
       <button type="button" role="tab" id="tab-how" aria-controls="view-how" data-tab="how"><i data-icon="info"></i>How it works</button>
     </div>
@@ -139,7 +139,7 @@
           <div class="sim-chart sim-fill" id="sim-cum" role="img" aria-labelledby="sim-cum-h"></div>
         </section>
     </div>
-    <div class="sim-view sim-dash sim-dash-3" id="view-pte" role="tabpanel" aria-labelledby="tab-pte" hidden>
+    <div class="sim-view sim-dash sim-dash-4" id="view-pte" role="tabpanel" aria-labelledby="tab-pte" hidden>
         <div class="pte-bar">
           <div class="seg pte-seg" role="radiogroup" aria-label="What to show">
             <label><input type="radio" name="pte-show" value="errors" checked><span>Error per layer</span></label>
@@ -147,8 +147,19 @@
             <label><input type="radio" name="pte-show" value="median"><span>Median pass</span></label>
             <label><input type="radio" name="pte-show" value="warmest"><span>Warmest pass</span></label>
           </div>
+          <div class="seg pte-seg" role="radiogroup" aria-label="T and e">
+            <label><input type="radio" name="pte-lump" value="0" checked><span>T, e separate</span></label>
+            <label><input type="radio" name="pte-lump" value="1"><span>T and e lumped</span></label>
+          </div>
+          <label class="pte-check"><input type="checkbox" name="pte-mother"><span>Show mother</span></label>
+          <button type="button" class="pte-rand" id="pte-random" aria-pressed="false" title="Show a pass picked at random; every click picks another one"><i data-icon="reset"></i>Random pass</button>
           <p class="pte-note" id="pte-note"></p>
         </div>
+        <section class="app-card">
+          <div class="sim-card-head"><h3 id="pte-N-h"><i class="h-ic" data-icon="wave"></i><span>Refractivity N</span> <span class="t i left" id="pte-N-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
+          <div class="sim-chart sim-fill" id="pte-N" role="img" aria-labelledby="pte-N-h"></div>
+          <ul class="sim-legend sim-mini-legend" id="pte-N-legend"></ul>
+        </section>
         <section class="app-card">
           <div class="sim-card-head"><h3 id="pte-P-h"><i class="h-ic" data-icon="gauge"></i><span>Pressure P</span> <span class="t i left" id="pte-P-sub" tabindex="0" data-tip=""><span class="info">i</span></span></h3></div>
           <div class="sim-chart sim-fill" id="pte-P" role="img" aria-labelledby="pte-P-h"></div>
@@ -201,7 +212,7 @@
   <li><span class="name">4. Compare</span><p>The estimate is set against the true layer mean on every pass, and against what a weather station on the ground alone would have said.</p></li>
   <li><span class="name">5. Step by step</span><p>The same estimation is run twice more with parts switched off: once removing only each point's own offset (the layer inversion alone), once with the building motion fitted but no thermal term. Panels (a) and (b) show what each part adds, as in Jaap's figure.</p></li>
 </ol>
-<p><b>P, T and e.</b> As section C5 of the estimation notebook: P is carried up from the ground pressure (hydrostatic) and T falls 6.5 K per km from the ground temperature, both from the station alone; e follows from the radar's refractivity with P and T known, N = 77.6 (P &minus; e)/T + 72 e/T + 3.75&middot;10<sup>5</sup> e/T<sup>2</sup>. It is compared with the simulation's true P, T and e, averaged over each layer, and e with the station alone (the ground refractivity carried up with &minus;55 N/km, converted the same way).</p>
+<p><b>N, P, T and e.</b> N is the radar's refractivity per layer, as the estimation gives it; P, T and e as section C5 of the estimation notebook: P is carried up from the ground pressure (hydrostatic) and T falls 6.5 K per km from the ground temperature, both from the station alone; e follows from the radar's refractivity with P and T known, N = 77.6 (P &minus; e)/T + 72 e/T + 3.75&middot;10<sup>5</sup> e/T<sup>2</sup>. Pick the coldest, median or warmest pass, or press Random pass for a new one each time. Each is compared with the simulation's true N, P, T and e, averaged over each layer, and e with the station alone (the ground refractivity carried up with &minus;55 N/km, converted the same way).</p>
 <p><b>Real.</b> Picked as the atmosphere: the same three-step estimation on the 213 real TerraSAR-X passes of 2020-2026 (the run of the <a href="results.html">Results</a> page), in the same four layer setups. There is no measured air above the street, so the truth is the KNMI weather station at Rotterdam The Hague Airport (344): its refractivity at the 06 UTC overpass, carried up with &minus;55 N/km. Because the station is the truth there, the reference is the constant air (predicting no change) instead of the station alone, and there is no predicted drift. Under P, T, e, P and T are KNMI 344's alone, with nothing above the street to check them against; the radar's e is set against KNMI 344's e carried up, next to its own uncertainty per pass (the jackknife, one building left out at a time). The disturbances, the noise and the number of points belong to the simulation; in the real data they are what they are.</p>
 <p>The simulation is described on <a href="estimation.html#sim-model">Simulation</a>, the estimation and its limits on <a href="estimation.html">Estimation</a>. A good score here is necessary, not sufficient: the simulated city behaves exactly as the model says it does, the real one does not.</p>
 <div class="tech">

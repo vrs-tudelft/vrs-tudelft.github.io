@@ -401,7 +401,8 @@
       body += text(m.l - 6, y0 + STAGES.length * bh / 2, lab, { anchor: "end", base: "middle", size: narrow ? 9.5 : 10.5, fill: C.truth });
       var tip = "<b>" + lab + "</b>";
       STAGES.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.short) + " " + num(st.rms[g.key][k], 2) + " N"; });
-      tip += "<br>" + W.base + " " + num(st.rms.ground[k], 2) + " N" + (e.layer_points ? "<br>" + thousands(e.layer_points[k].n) + " radar points" : "");
+      var nk = layerN(e, W === W_REAL);
+      tip += "<br>" + W.base + " " + num(st.rms.ground[k], 2) + " N" + (nk && ok(nk[k]) ? "<br>" + thousands(nk[k]) + " radar points" : "");
       body += '<rect x="' + m.l + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (w - m.r - m.l) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
       STAGES.forEach(function (g, i) {
         var v = st.rms[g.key][k], y = y0 + i * bh;
@@ -484,8 +485,11 @@
     var rr = scLayer >= 0 ? [st.rms.std[scLayer], st.rms.std[scLayer]] : range(st.rms.std);
     var ss = scLayer >= 0 ? [st.slope[scLayer], st.slope[scLayer]] : range(st.slope);
     function span(a) { return a[0] === a[1] ? num(a[0], 2) : num(a[0], 2) + "–" + num(a[1], 2); }
-    leg.innerHTML = "<li>rms error <b>" + span(rr) + " N</b></li><li>slope <b>" + span(ss) + "</b></li>" +
-      (scLayer >= 0 && ok(st.r[scLayer]) ? "<li>r <b>" + num(st.r[scLayer], 2) + "</b></li>" : "") + '<li><i class="ln dash"></i>1 : 1</li>';
+    /* r: the chosen layer's, or with all layers the r over every dot together (and the layers' range) */
+    var rShow = scLayer >= 0 ? st.r[scLayer] : pcorr(P.map(function (p) { return p[0]; }), P.map(function (p) { return p[1]; }));
+    var rRange = scLayer < 0 ? range(st.r) : null;
+    leg.innerHTML = "<li>r <b>" + num(rShow, 2) + "</b>" + (rRange && ok(rRange[0]) ? " (per layer " + span(rRange) + ")" : "") + "</li>" +
+      "<li>rms error <b>" + span(rr) + " N</b></li><li>slope <b>" + span(ss) + "</b></li>" + '<li><i class="ln dash"></i>1 : 1</li>';
     var w = width(el), H = height(el, 320), m = { l: 40, r: 8, t: 6, b: 32 };
     var side = Math.max(120, Math.min(w - m.l - m.r, H - m.t - m.b)), x0 = m.l + Math.max(0, (w - m.l - m.r - side) / 2);
     H = side + m.t + m.b;
@@ -506,6 +510,7 @@
     });
     body += '<g fill="#1f5fa8" fill-opacity=".55">' + d + "</g>";
     body += line(xs(-lim), ys(-lim), xs(lim), ys(lim), C.truth, 1, ' stroke-dasharray="5 4" pointer-events="none"');
+    if (ok(rShow)) body += '<text x="' + (x0 + 8) + '" y="' + (m.t + 20) + '" font-size="15" font-weight="700" fill="' + C.truth + '" stroke="#fcfbf8" stroke-width="4" paint-order="stroke" pointer-events="none">r = ' + num(rShow, 2) + "</text>";
     var sl = scLayer >= 0 ? st.slope[scLayer] : null;
     if (ok(sl)) body += line(xs(-lim), ys(sl * -lim), xs(lim), ys(sl * lim), "#1f5fa8", 2, ' pointer-events="none"');
     body += "</g>";
@@ -568,58 +573,198 @@
       (off.length === STEPS.length ? " Nothing is switched on, so there is nothing to add." : "") + " Hover a bar for its numbers.");
   }
 
-  /* ---- P, T, e (the estimation notebook's section C5): error per layer, or one pass's profiles */
+  /* ---- N, P, T, e (the estimation notebook's section C5): error per layer, or one pass's profiles */
   var PTE = {
+    N: { unit: "N", name: "refractivity", d: 1 },
     P: { unit: "hPa", name: "pressure", d: 2 },
     T: { unit: "K", name: "temperature", d: 2 },
-    e: { unit: "hPa", name: "water-vapour pressure", d: 2 }
+    e: { unit: "hPa", name: "water-vapour pressure", d: 2 },
+    Nte: { unit: "N", name: "T and e lumped (N − 77.6 P/T0)", d: 1 }
   };
+  var MOTHER = "#7d6bb0";
+  var QS = ["N", "P", "T", "e"];
   var PTE_C = { spread: "#cfd6de", est: "#1f5fa8", station: "#7a7f86", truth: "#17191c" };
   /* e in the estimation's own (level-only) calibration; the run files also hold the notebook's
      per-pass shift to the ground ("shift"), which the page does not show */
-  var pteShow = "errors", pteCal = "level";
+  var pteShow = "errors", pteCal = "level", pteIdx = 0, pteCur = null, atmP = {}, atmReady = {};
   function pteScore(pt, q) { return q === "e" ? pt.e[pteCal] : pt[q]; }
-  /* error per layer: grouped bars per layer, highest on top */
-  function pteBars(el, q, edges, groups) {
-    var nl = edges.length - 1, w = width(el), narrow = w < 360, H = height(el, Math.max(220, nl * (groups.length * 13 + 18) + 40));
-    var m = { l: narrow ? 58 : 66, r: 36, t: 6, b: 30 }, rowH = (H - m.t - m.b) / nl;
-    var bh = Math.max(3, Math.min(16, rowH * 0.8 / groups.length));
+  var pteLump = false, pteMother = false;
+  /* legend entries for the measured points and, in the N card, the mother */
+  function extraLegend(ps, q) {
+    var h = "", seen = {};
+    (ps.meas || []).forEach(function (m) {
+      if (!m[q] || seen[m.src]) return;
+      seen[m.src] = 1;
+      h += '<li><i class="pt' + (/sounding/i.test(m.src) ? " dia" : "") + '"></i>' + esc(m.src) + (/mast/i.test(m.src) ? " (measured)" : " (reported level)") + "</li>";
+    });
+    if (q === "N" && ps.mother && pteMother) {
+      h += '<li><i class="ln c" style="border-top-color:' + MOTHER + '"></i>mother ' + fmtDate(ps.mother.date) + "</li>" +
+        '<li><i class="ln c" style="border-top-color:' + MOTHER + ';border-top-style:dotted"></i>mother: estimate</li>';
+    }
+    return h;
+  }
+  function pcorr(a, b) {
+    var x = [], y = [];
+    for (var i = 0; i < a.length; i++) if (ok(a[i]) && ok(b[i])) { x.push(+a[i]); y.push(+b[i]); }
+    if (x.length < 3) return NaN;
+    var mx = mean(x), my = mean(y), sxy = 0, sxx = 0, syy = 0;
+    for (var j = 0; j < x.length; j++) { sxy += (x[j] - mx) * (y[j] - my); sxx += (x[j] - mx) * (x[j] - mx); syy += (y[j] - my) * (y[j] - my); }
+    return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+  /* the simulated air per atmosphere and point count (data/simulator/atm/), fetched when a pass is shown */
+  function getAtm(s) {
+    var key = s.atm + "|" + s.points, p = manifest.profiles && manifest.profiles[key];
+    if (!atmP[key]) {
+      atmP[key] = p ? getJson(BASE + p) : Promise.reject(new Error("no profiles for " + key));
+      atmP[key].catch(function () { delete atmP[key]; });
+    }
+    return atmP[key];
+  }
+  /* the pass to show: its index in the run's passes */
+  function passIndex(pt, epochs) {
+    if (pteShow === "random") return Math.min(pteIdx, epochs.length - 1);
+    var j = -1;
+    pt.passes.forEach(function (x) { if (x.label === pteShow) j = epochs.indexOf(x.date); });
+    return j;
+  }
+  function col(series, key, j) { return series.map(function (s) { return s[key][j]; }); }
+  /* one pass as the profile charts read it; real: from real.json (no truth above the street) */
+  /* T and e lumped: N minus its pressure part at a fixed reference temperature, N − 77.6 P / T0. Given P
+     (known from the ground to about 0.1 hPa) this is all the radar's N says about T and e together: the
+     dry term's T dependence and the whole wet term, with no assumption about the temperature aloft. */
+  var T0 = 288.15;
+  function nte(N, P) {
+    if (Array.isArray(N)) return N.map(function (v, i) { return nte(v, Array.isArray(P) ? P[i] : P); });
+    return ok(N) && ok(P) ? N - 77.6 * P / T0 : NaN;
+  }
+  function interpZ(z, zs, vs) {
+    for (var i = 1; i < zs.length; i++) if (z <= zs[i]) return vs[i - 1] + (vs[i] - vs[i - 1]) * (z - zs[i - 1]) / (zs[i] - zs[i - 1]);
+    return vs[vs.length - 1];
+  }
+  /* layer means of a profile given on 5 m levels */
+  function layerMeans(zs, vs, edges) {
+    var out = [];
+    for (var k = 0; k < edges.length - 1; k++) {
+      var s = 0, n = 0;
+      for (var z = edges[k]; z <= edges[k + 1] + 1e-9; z += 1) { s += interpZ(z, zs, vs); n++; }
+      out.push(n ? s / n : NaN);
+    }
+    return out;
+  }
+  function withNte(ps) {
+    ps.est.Nte = nte(ps.est.N, ps.est.P);
+    ps.station.Nte = nte(ps.station.N, ps.est.P);
+    ps.ground.Nte = nte(ps.ground.N, ps.ground.P);
+    if (ps.truth) ps.truth.Nte = nte(ps.truth.N, ps.truth.P);
+    var pz = ps.truth ? ps.truth.P : ps.model && ps.model.P;
+    (ps.meas || []).forEach(function (m) {
+      if (!m.N) return;
+      m.Nte = nte(m.N, m.P || (pz ? m.z.map(function (z) { return interpZ(z, ps.z, pz); }) : null));
+    });
+    return ps;
+  }
+  function passOf(e, j, real, atm) {
+    var label = pteShow === "random" ? "random" : pteShow;
+    if (real) {
+      var pp = e.pte.pass, pr = realDoc.profiles, g = pr.ground;
+      return withNte({ label: label, date: realDoc.epochs[j], z: pr.z, model: { P: pr.P[j], T: pr.T[j] },
+        est: { N: pp.N[j], P: pp.P[j], T: pp.T[j], e: { level: pp.e[j] } }, station: { N: pp.N_station[j], e: pp.e_station[j] },
+        sigma_e: { level: pp.sigma_e[j] }, ground: { N: g.N[j], P: g.P[j], T: g.T[j], e: g.e[j] },
+        meas: (pr.meas && pr.meas[j]) || [],
+        mother: { date: realDoc.epochs[0], est: pp.N[0], line: pp.N_station[0] } });
+    }
+    var lay = atm.layers[state.layers], g2 = atm.ground, m = atm.meas && atm.meas[j];
+    return withNte({ label: label, date: atm.epochs[j], z: atm.z,
+      truth: { N: atm.truth.N[j], P: atm.truth.P[j], T: atm.truth.T[j], e: atm.truth.e[j] },
+      est: { N: col(e.series, "est", j), P: lay.P[j], T: lay.T[j], e: { level: e.pte.e_pass[j] } },
+      station: { N: lay.N_station[j], e: lay.e_station[j] }, ground: { N: g2.N[j], P: g2.P[j], T: g2.T[j], e: g2.e[j] },
+      meas: m ? [m] : [],
+      mother: { date: atm.epochs[0], est: col(e.series, "est", 0), line: atm.truth.N[0] } });
+  }
+  /* error per layer: grouped bars per layer, highest on top, between x0 and x1 of the chart */
+  /* radar points per layer: real data from real.json, simulations from the manifest (they depend only on
+     the number of points and the layer setup, not on the air or the disturbances) */
+  var curCounts = null;
+  function layerN(e, real) {
+    if (real || e.layer_points) return e.layer_points ? e.layer_points.map(function (x) { return x.n; }) : null;
+    var c = manifest.layer_points && manifest.layer_points[state.points + "|" + state.layers];
+    return c && c.n.length === e.edges.length - 1 ? c.n : null;
+  }
+  function ptsLabel(k) { return curCounts && ok(curCounts[k]) ? thousands(curCounts[k]) + " pts" : ""; }
+  function barRows(q, edges, groups, x0, x1, H, m, opt) {
+    opt = opt || {};
+    var nl = edges.length - 1, rowH = (H - m.t - m.b) / nl, bh = Math.max(3, Math.min(16, rowH * 0.8 / groups.length));
     var vals = [0];
     groups.forEach(function (g) { g.vals.forEach(function (v) { if (ok(v)) vals.push(v); }); });
-    var vmax = Math.max.apply(null, vals) * 1.08 || 1, xt = ticks(0, vmax, narrow ? 3 : 4), xmax = Math.max(vmax, xt[xt.length - 1]), xs = lin(0, xmax, m.l, w - m.r);
-    var body = "", plotB = H - m.b;
-    xt.forEach(function (v) { var x = xs(v); body += line(x, m.t, x, plotB, C.grid) + text(x, plotB + 13, tickLabel(v), { anchor: "middle", size: 10 }); });
-    body += line(m.l, m.t, m.l, plotB, C.axis);
-    body += text((m.l + w - m.r) / 2, H - 3, PTE[q].unit, { anchor: "middle", size: 10, fill: C.ink2 });
+    var lo = opt.lo !== undefined ? Math.min(opt.lo, Math.min.apply(null, vals)) : 0;
+    var hi = opt.hi !== undefined ? opt.hi : Math.max.apply(null, vals) * 1.08 || 1;
+    var xt = opt.ticks || ticks(lo, hi, x1 - x0 < 200 ? 3 : 4), xmax = opt.hi !== undefined ? hi : Math.max(hi, xt[xt.length - 1]);
+    var xs = lin(lo, xmax, x0, x1), body = "", plotB = H - m.b, d = opt.d !== undefined ? opt.d : PTE[q].d;
+    if (opt.title) body += text(x0, m.t - 8, opt.title, { size: 10.5, fill: C.ink2, weight: 600 });
+    xt.forEach(function (v) { var x = xs(v); body += line(x, m.t, x, plotB, C.grid) + text(x, plotB + 13, opt.ticks ? String(v) : tickLabel(v), { anchor: "middle", size: 10 }); });
+    body += line(xs(0), m.t, xs(0), plotB, C.axis);
+    body += text((x0 + x1) / 2, H - 3, opt.unit !== undefined ? opt.unit : PTE[q].unit, { anchor: "middle", size: 10, fill: C.ink2 });
     for (var r = 0; r < nl; r++) {
       var k = nl - 1 - r, y0 = m.t + r * rowH + (rowH - groups.length * bh) / 2, lab = layerLabel(edges, k);
-      body += text(m.l - 6, y0 + groups.length * bh / 2, lab, { anchor: "end", base: "middle", size: narrow ? 9.5 : 10.5, fill: C.truth });
-      var tip = "<b>" + lab + "</b>";
-      groups.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.label) + " " + num(g.vals[k], PTE[q].d) + " " + PTE[q].unit; });
-      if (groups.bias) tip += "<br>" + (groups.biasLabel || "mean error (bias)") + " " + signed(groups.bias[k], PTE[q].d) + " " + PTE[q].unit;
-      body += '<rect x="' + m.l + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (w - m.r - m.l) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
+      var pl = ptsLabel(k), cy0 = y0 + groups.length * bh / 2;
+      if (opt.labels !== false) {
+        body += text(x0 - 6, pl ? cy0 - 6 : cy0, lab, { anchor: "end", base: "middle", size: 10, fill: C.truth });
+        if (pl) body += text(x0 - 6, cy0 + 7, pl, { anchor: "end", base: "middle", size: 9, fill: C.muted });
+      }
+      var tip = "<b>" + lab + "</b>" + (pl ? " (" + pl.replace("pts", "radar points") + ")" : "");
+      groups.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.label) + " " + num(g.vals[k], d) + (opt.unit === "" ? "" : " " + PTE[q].unit); });
+      if (groups.bias) tip += "<br>" + (groups.biasLabel || "mean error (bias)") + " " + signed(groups.bias[k], d) + " " + PTE[q].unit;
+      body += '<rect x="' + x0 + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (x1 - x0) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
       groups.forEach(function (g, i) {
         var v = g.vals[k], y = y0 + i * bh;
         if (!ok(v)) return;
-        body += rect(m.l, y + 0.5, xs(v) - m.l, bh - 1, g.color, ' pointer-events="none"');
-        if (bh >= 10) body += text(xs(v) + 3, y + bh / 2 + 0.5, num(v, PTE[q].d), { base: "middle", size: 9.5, fill: "#333" });
+        var a = xs(Math.min(0, v)), b = xs(Math.max(0, v));
+        body += rect(a, y + 0.5, b - a, bh - 1, g.color, ' pointer-events="none"');
+        if (bh >= 10) body += text(b + 3, y + bh / 2 + 0.5, num(v, d), { base: "middle", size: 9.5, fill: "#333" });
       });
     }
-    el.innerHTML = svg(w, H, body, PTE[q].name + ", error per layer, lowest first. " + groups.map(function (g) { return g.label + ": " + g.vals.map(function (v) { return num(v, PTE[q].d); }).join(", "); }).join("; ") + " " + PTE[q].unit + ".");
+    return body;
   }
-  /* one pass: the true profile (real data: the profile carried up from KNMI 344, for P and T only),
-     the estimate per layer with an error bar (simulation: the rms error over all passes; real data,
-     e only: its own uncertainty on this pass), for e the station alone; P relative to the ground */
+  function pteBars(el, q, edges, groups) {
+    var w = width(el), nl = edges.length - 1, H = height(el, Math.max(220, nl * (groups.length * 13 + 18) + 40));
+    var m = { l: w < 360 ? 58 : 66, r: 36, t: 6, b: 30 };
+    el.innerHTML = svg(w, H, barRows(q, edges, groups, m.l, w - m.r, H, m),
+      PTE[q].name + ", error per layer, lowest first. " + groups.map(function (g) { return g.label + ": " + g.vals.map(function (v) { return num(v, PTE[q].d); }).join(", "); }).join("; ") + " " + PTE[q].unit + ".");
+  }
+  /* r per layer only (real data) */
+  function pteR(el, q, edges, groups, title) {
+    var w = width(el), nl = edges.length - 1, H = height(el, Math.max(200, nl * 60 + 50));
+    var m = { l: w < 360 ? 58 : 66, r: 36, t: 24, b: 30 };
+    el.innerHTML = svg(w, H, barRows(q, edges, groups, m.l, w - m.r, H, m, { lo: 0, hi: 1, ticks: [0, 0.25, 0.5, 0.75, 1], d: 2, unit: "", title: title }),
+      PTE[q].name + ": " + title + ", lowest layer first: " + groups.map(function (g) { return g.label + " " + g.vals.map(function (v) { return num(v, 2); }).join(", "); }).join("; ") + ".");
+  }
+  /* N, simulation: the rms error (left) and the correlation r with the truth (right), radar and station alone */
+  function pteNScores(el, edges, rmsGroups, rGroups, q) {
+    q = q || "N";
+    var w = width(el), nl = edges.length - 1, H = height(el, Math.max(220, nl * 40 + 60));
+    var m = { l: w < 360 ? 56 : 62, r: 30, t: 24, b: 30 }, gap = 22, pw = (w - m.l - m.r - gap) / 2;
+    var body = barRows(q, edges, rmsGroups, m.l, m.l + pw, H, m, { title: "rms error (N)" }) +
+      barRows(q, edges, rGroups, m.l + pw + gap, w - m.r, H, m, { lo: 0, hi: 1, ticks: [0, 0.5, 1], d: 2, unit: "", title: "r with the truth", labels: false });
+    el.innerHTML = svg(w, H, body, "Refractivity per layer, lowest first: rms error " + rmsGroups.map(function (g) { return g.label + " " + g.vals.map(function (v) { return num(v, 1); }).join(", "); }).join("; ") +
+      "; r with the truth " + rGroups.map(function (g) { return g.label + " " + g.vals.map(function (v) { return num(v, 2); }).join(", "); }).join("; ") + ".");
+  }
+  /* one pass: the true profile (real data: carried up from KNMI 344, for P and T only), the estimate per
+     layer with an error bar (simulation: the rms error over all passes; real data, e only: its own
+     uncertainty on this pass), for N and e the station alone; P relative to the ground */
   function pteProfile(el, q, ps, edges, err, real) {
     var ref = q === "P" ? ps.ground.P : 0, nl = edges.length - 1, top = edges[nl];
     var est = (q === "e" ? ps.est.e[pteCal] : ps.est[q]).map(function (v) { return v - ref; });
     var src = real ? ps.model && ps.model[q] : ps.truth[q];
-    var tr = src ? src.map(function (v) { return v - ref; }) : null, st = q === "e" ? ps.station_e : null, eb = err || [];
+    var tr = src ? src.map(function (v) { return v - ref; }) : null, st = ps.station[q] || null, eb = err || [];
     var stName = real ? "KNMI 344 carried up" : "station alone";
     var xsv = [ps.ground[q] - ref];
     if (tr) tr.forEach(function (v, i) { if (ps.z[i] <= top && ok(v)) xsv.push(v); });
     est.forEach(function (v, k) { if (ok(v)) { xsv.push(v - (eb[k] || 0)); xsv.push(v + (eb[k] || 0)); } });
     if (st) st.forEach(function (v) { if (ok(v)) xsv.push(v); });
+    var meas = (ps.meas || []).filter(function (mm) { return mm[q]; });
+    meas.forEach(function (mm) { mm[q].forEach(function (v, i) { if (ok(v) && mm.z[i] <= top) xsv.push(v - ref); }); });
+    var mo = q === "N" && ps.mother && pteMother ? ps.mother : null;
+    if (mo) { mo.est.forEach(function (v) { if (ok(v)) xsv.push(v); }); mo.line.forEach(function (v, i) { if (ok(v) && (mo.line.length !== ps.z.length || ps.z[i] <= top)) xsv.push(v); }); }
     var lo = Math.min.apply(null, xsv), hi = Math.max.apply(null, xsv), pad = (hi - lo) * 0.06 || 0.5;
     var w = width(el), H = height(el, 300), m = { l: 40, r: 10, t: 8, b: 30 };
     var xs = lin(lo - pad, hi + pad, m.l, w - m.r), ys = lin(0, top, H - m.b, m.t);
@@ -629,7 +774,7 @@
     xt.forEach(function (v) { body += line(xs(v), m.t, xs(v), H - m.b, C.grid) + text(xs(v), H - m.b + 13, v.toFixed(dec).replace("-", "−"), { anchor: "middle", size: 10 }); });
     ticks(0, top, 4).forEach(function (v) { body += line(m.l, ys(v), w - m.r, ys(v), C.grid) + text(m.l - 5, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 }); });
     body += line(m.l, H - m.b, w - m.r, H - m.b, C.axis) + line(m.l, m.t, m.l, H - m.b, C.axis);
-    body += text((m.l + w - m.r) / 2, H - 3, (q === "P" ? "P − P at the ground" : q) + " (" + PTE[q].unit + ")", { anchor: "middle", size: 10, fill: C.ink2 });
+    body += text((m.l + w - m.r) / 2, H - 3, (q === "P" ? "P − P at the ground" : q === "Nte" ? "N − 77.6 P/T₀" : q) + " (" + PTE[q].unit + ")", { anchor: "middle", size: 10, fill: C.ink2 });
     body += text(10, (m.t + H - m.b) / 2, "height (m NAP)", { anchor: "middle", size: 10, fill: C.ink2, rot: -90, base: "middle" });
     if (tr) {
       var pts = [];
@@ -641,8 +786,27 @@
       for (var k = 0; k < nl; k++) if (ok(v[k])) d += "M" + xs(v[k]).toFixed(1) + " " + ys(edges[k]).toFixed(1) + "V" + ys(edges[k + 1]).toFixed(1) + (k + 1 < nl && ok(v[k + 1]) ? "H" + xs(v[k + 1]).toFixed(1) : "");
       return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + wd + '"' + (dash ? ' stroke-dasharray="5 3"' : "") + "/>";
     }
+    if (mo) {                                   /* the mother: the first pass, the reference of every pass */
+      if (mo.line.length === ps.z.length) {
+        var mp = [];
+        ps.z.forEach(function (z, i) { if (z <= top && ok(mo.line[i])) mp.push([xs(mo.line[i]), ys(z)]); });
+        body += '<path d="' + path(mp) + '" fill="none" stroke="' + MOTHER + '" stroke-width="1.4" opacity=".8"/>';
+      } else body += steps(mo.line, MOTHER, 1.2, true);
+      body += steps(mo.est, MOTHER, 2, false).replace("/>", ' stroke-dasharray="2 2" opacity=".9"/>');
+    }
     if (st) body += steps(st, PTE_C.station, 1.4, true);
     body += steps(est, PTE_C.est, 2.2);
+    meas.forEach(function (mm) {                /* the measurements behind the air: open markers */
+      var dia = /sounding/i.test(mm.src);
+      mm[q].forEach(function (v, i) {
+        if (!ok(v) || mm.z[i] > top) return;
+        var cx = xs(v - ref), cy = ys(mm.z[i]);
+        var tip = ft("<b>" + esc(mm.src) + "</b>, " + num(mm.z[i], 0) + " m<br>" + (q === "Nte" ? "N − 77.6 P/T₀" : q) + " " + num(v, PTE[q].d) + " " + PTE[q].unit +
+          (q === "N" || q === "Nte" ? (/mast/i.test(mm.src) ? "<br>from the measured T and e" : "<br>from the reported P, T and e") : "<br>measured"));
+        body += dia ? '<path d="M' + cx.toFixed(1) + " " + (cy - 5.5).toFixed(1) + "l5.5 5.5l-5.5 5.5l-5.5 -5.5z\" fill=\"#fff\" stroke=\"" + C.truth + '" stroke-width="1.6"' + tip + "/>"
+          : '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.2" fill="#fff" stroke="' + C.truth + '" stroke-width="1.6"' + tip + "/>";
+      });
+    });
     for (var k = 0; k < nl; k++) {
       if (!ok(est[k])) continue;
       var y = ys((edges[k] + edges[k + 1]) / 2), lab = layerLabel(edges, k);
@@ -650,94 +814,160 @@
         var x0 = xs(est[k] - eb[k]), x1 = xs(est[k] + eb[k]);
         body += line(x0, y, x1, y, PTE_C.est, 1.2) + line(x0, y - 4, x0, y + 4, PTE_C.est, 1.2) + line(x1, y - 4, x1, y + 4, PTE_C.est, 1.2);
       }
-      var tip = "<b>" + lab + "</b><br>" + (real && q !== "e" ? "from KNMI 344 alone " : "estimate ") + num(est[k] + ref, PTE[q].d) + " " + PTE[q].unit +
+      var pl = ptsLabel(k);
+      if (pl) body += '<text x="' + (m.l + 4) + '" y="' + (ys(edges[k + 1]) + 11).toFixed(1) + '" font-size="9" fill="' + C.muted + '" stroke="#fcfbf8" stroke-width="3" paint-order="stroke" pointer-events="none">' + esc(pl) + "</text>";
+      var tip = "<b>" + lab + "</b>" + (pl ? " (" + pl.replace("pts", "radar points") + ")" : "") + "<br>" + (real && (q === "P" || q === "T") ? "from KNMI 344 alone " : "estimate ") + num(est[k] + ref, PTE[q].d) + " " + PTE[q].unit +
         (ok(eb[k]) ? " (± " + num(eb[k], PTE[q].d) + (real ? ", its uncertainty on this pass" : ", the rms error over all passes") + ")" : "") +
-        (st ? "<br>" + stName + " " + num(st[k], PTE[q].d) + " " + PTE[q].unit : "") +
-        (!real && q === "e" && ps.sigma_e ? "<br>uncertainty on this pass ± " + num(ps.sigma_e[pteCal][k], 2) + " hPa" : "");
+        (st ? "<br>" + stName + " " + num(st[k], PTE[q].d) + " " + PTE[q].unit : "");
       body += '<rect x="' + m.l + '" y="' + ys(edges[k + 1]).toFixed(1) + '" width="' + (w - m.l - m.r) + '" height="' + (ys(edges[k]) - ys(edges[k + 1])).toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
     }
     body += '<circle cx="' + xs(ps.ground[q] - ref).toFixed(1) + '" cy="' + ys(3.2).toFixed(1) + '" r="4" fill="' + PTE_C.truth + '"' + ft("<b>" + (real ? "KNMI 344" : "The station") + " at the ground</b><br>" + num(ps.ground[q], PTE[q].d) + " " + PTE[q].unit) + "/>";
     el.innerHTML = svg(w, H, body, PTE[q].name + " on " + fmtDate(ps.date) + ": estimate per layer " + est.map(function (v) { return num(v + ref, PTE[q].d); }).join(", ") + " " + PTE[q].unit + ".");
-  }
-  /* real data, e: per layer the correlation with KNMI 344's e carried up, over the passes */
-  function pteR(el, edges, r) {
-    var nl = edges.length - 1, w = width(el), H = height(el, Math.max(200, nl * 60 + 50));
-    var m = { l: w < 360 ? 58 : 66, r: 36, t: 22, b: 30 }, rowH = (H - m.t - m.b) / nl, bh = Math.min(22, rowH * 0.5);
-    var rx = lin(Math.min(0, Math.min.apply(null, r.filter(ok).concat([0]))), 1, m.l, w - m.r);
-    var body = text(m.l, 13, "correlation r with KNMI 344's e carried up", { size: 10.5, fill: C.ink2, weight: 600 });
-    [0, 0.25, 0.5, 0.75, 1].forEach(function (v) { body += line(rx(v), m.t, rx(v), H - m.b, C.grid) + text(rx(v), H - m.b + 13, String(v), { anchor: "middle", size: 10 }); });
-    body += line(rx(0), m.t, rx(0), H - m.b, C.axis);
-    for (var i = 0; i < nl; i++) {
-      var k = nl - 1 - i, cy = m.t + i * rowH + rowH / 2, lab = layerLabel(edges, k);
-      body += text(m.l - 6, cy, lab, { anchor: "end", base: "middle", size: 10.5, fill: C.truth });
-      body += '<rect x="' + m.l + '" y="' + (m.t + i * rowH).toFixed(1) + '" width="' + (w - m.l - m.r) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' +
-        ft("<b>" + lab + "</b><br>r " + num(r[k], 2) + " with KNMI 344's e carried up, over the passes") + "/>";
-      if (ok(r[k])) {
-        var x0 = rx(Math.min(0, r[k])), x1 = rx(Math.max(0, r[k]));
-        body += rect(x0, cy - bh / 2, x1 - x0, bh, PTE_C.est, ' pointer-events="none"') + text(x1 + 4, cy, num(r[k], 2), { base: "middle", size: 10, fill: "#333" });
-      }
-    }
-    el.innerHTML = svg(w, H, body, "e: correlation with KNMI 344's e carried up, lowest layer first: " + r.map(function (v) { return num(v, 2); }).join(", ") + ".");
   }
   function li(color, label, kind) {
     return kind === "dash" ? '<li><i class="ln dash"></i>' + esc(label) + "</li>"
       : kind === "line" ? '<li><i class="ln c" style="border-top-color:' + color + '"></i>' + esc(label) + "</li>"
         : '<li><i class="sw" style="background:' + color + '"></i>' + esc(label) + "</li>";
   }
-  /* real: the entry of real.json (no truth above the street: e against KNMI 344 carried up) */
+  function pteMessage(text) {
+    QS.forEach(function (q) { document.getElementById("pte-" + q).innerHTML = '<p class="sim-sub" style="padding:14px">' + esc(text) + "</p>"; document.getElementById("pte-" + q + "-legend").innerHTML = ""; });
+  }
+  /* real: the entry of real.json (no truth above the street: N and e against KNMI 344 carried up) */
   function renderPte(e, real) {
     var pt = e.pte, note = document.getElementById("pte-note");
-    if (!pt) {
-      ["P", "T", "e"].forEach(function (q) { noSteps(document.getElementById("pte-" + q), "P, T and e"); document.getElementById("pte-" + q + "-legend").innerHTML = ""; });
-      note.textContent = "";
-      return;
-    }
-    var ps = null;
-    pt.passes.forEach(function (x) { if (x.label === pteShow) ps = x; });
-    note.textContent = (ps ? fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
-      (real ? "P and T come from KNMI 344 alone (hydrostatic, 6.5 K per km); nothing measures them above the street. Only e uses the radar, set against KNMI 344's e carried up."
-        : "P and T come from the station alone (hydrostatic, 6.5 K per km); only e uses the radar.");
-    ["P", "T", "e"].forEach(function (q) {
-      var el = document.getElementById("pte-" + q), leg = document.getElementById("pte-" + q + "-legend"), groups;
-      if (!ps && real) {
-        if (q === "e") {
-          pteR(el, e.edges, pt.e[pteCal].r);
-          leg.innerHTML = "";
-        } else {
-          el.innerHTML = '<p class="sim-sub" style="padding:14px">' + (q === "P" ? "Pressure" : "Temperature") +
-            " is KNMI 344's own, carried up from the ground, so against KNMI 344 it has no error (r = 1) by construction. Pick a pass above to see its profile.</p>";
-          leg.innerHTML = "";
+    pteCur = null;
+    curCounts = layerN(e, real);
+    if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); note.textContent = ""; return; }
+    var epochs = real ? realDoc.epochs : last.run.epochs, ps = null;
+    document.getElementById("pte-random").setAttribute("aria-pressed", pteShow === "random");
+    if (pteShow !== "errors") {
+      var j = passIndex(pt, epochs);
+      if (real) ps = passOf(e, j, true);
+      else {
+        var key = state.atm + "|" + state.points;
+        if (!atmReady[key]) {
+          pteMessage("Loading the profiles of every pass…");
+          getAtm(state).then(function (d) { atmReady[key] = d; if (view === "pte") renderView(); },
+            function (err) { pteMessage("The profiles could not be loaded (" + err.message + ")."); });
+          return;
         }
+        ps = passOf(e, j, false, atmReady[key]);
+      }
+      pteCur = ps;
+    }
+    note.textContent = (ps ? (ps.label === "random" ? "Random pass: " : "") + fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
+      (real ? "P and T come from KNMI 344 alone (hydrostatic, 6.5 K per km); nothing measures them above the street. N and e come from the radar, set against KNMI 344 carried up."
+        : "P and T come from the station alone (hydrostatic, 6.5 K per km); N and e come from the radar.");
+    var nl = e.edges.length - 1;
+    /* T and e lumped: the T card shows the wet refractivity, the e card is hidden */
+    document.getElementById("pte-e").closest("section").hidden = pteLump;
+    document.getElementById("view-pte").classList.toggle("pte-lumped", pteLump);
+    document.querySelector("#pte-T-h > span").textContent = pteLump ? "T and e lumped: N − 77.6 P/T₀" : "Temperature T";
+    var cards = pteLump ? [["N", "N"], ["P", "P"], ["T", "Nte"]] : [["N", "N"], ["P", "P"], ["T", "T"], ["e", "e"]];
+    cards.forEach(function (cq) {
+      var q = cq[1], el = document.getElementById("pte-" + cq[0]), leg = document.getElementById("pte-" + cq[0] + "-legend"), groups;
+      if (!ps && q === "Nte") {
+        if (real) {
+          var pq = e.pte.pass, rW = [];
+          for (var kk = 0; kk < nl; kk++) {
+            rW.push(pcorr(pq.N.map(function (r, i) { return nte(r[kk], pq.P[i][kk]); }), pq.N_station.map(function (r, i) { return nte(r[kk], pq.P[i][kk]); })));
+          }
+          leg.innerHTML = li(PTE_C.est, "radar, r over all passes");
+          pteR(el, "Nte", e.edges, [{ label: "radar", vals: rW, color: PTE_C.est }], "r with KNMI 344 carried up");
+          return;
+        }
+        /* simulation: against the truth, with the true pressure averaged over each layer */
+        var akey = state.atm + "|" + state.points, atm2 = atmReady[akey];
+        if (!atm2) {
+          el.innerHTML = '<p class="sim-sub" style="padding:14px">Loading…</p>';
+          getAtm(state).then(function (d) { atmReady[akey] = d; if (view === "pte") renderView(); }, function () { /* message stays */ });
+          return;
+        }
+        var lay2 = atm2.layers[state.layers], est2 = [], tru2 = [], sta2 = [];
+        for (var jj = 0; jj < atm2.epochs.length; jj++) {
+          var pT = layerMeans(atm2.z, atm2.truth.P[jj], e.edges);
+          est2.push(e.series.map(function (sr, k) { return nte(sr.est[jj], lay2.P[jj][k]); }));
+          tru2.push(e.series.map(function (sr, k) { return nte(sr.truth[jj], pT[k]); }));
+          sta2.push(lay2.N_station[jj].map(function (v, k) { return nte(v, lay2.P[jj][k]); }));
+        }
+        var colK = function (A, k) { return A.map(function (r) { return r[k]; }); };
+        var rmsK = function (A, B, k) { var a = colK(A, k), b = colK(B, k), s = 0, n = 0; a.forEach(function (v, i) { if (ok(v) && ok(b[i])) { s += (v - b[i]) * (v - b[i]); n++; } }); return n ? Math.sqrt(s / n) : NaN; };
+        var sdK = function (A, k) { var a = colK(A, k).filter(ok), mu = mean(a); return Math.sqrt(mean(a.map(function (v) { return (v - mu) * (v - mu); }))); };
+        var g1 = [], g2 = [], g3 = [], r1 = [], r2 = [];
+        for (var k2 = 0; k2 < nl; k2++) {
+          g1.push(sdK(tru2, k2)); g2.push(rmsK(est2, tru2, k2)); g3.push(rmsK(sta2, tru2, k2));
+          r1.push(pcorr(colK(est2, k2), colK(tru2, k2))); r2.push(pcorr(colK(sta2, k2), colK(tru2, k2)));
+        }
+        leg.innerHTML = li(PTE_C.spread, "true spread") + li(PTE_C.est, "radar") + li(PTE_C.station, "station alone");
+        pteNScores(el, e.edges, [{ label: "true spread over the passes", vals: g1, color: PTE_C.spread },
+          { label: "radar, rms error", vals: g2, color: PTE_C.est }, { label: "station alone, rms error", vals: g3, color: PTE_C.station }],
+          [{ label: "radar", vals: r1, color: PTE_C.est }, { label: "station alone", vals: r2, color: PTE_C.station }], "Nte");
         return;
       }
       if (!ps) {
+        if (q === "N") {
+          if (real) {
+            var pp = e.pte.pass, rN = [];
+            for (var k = 0; k < nl; k++) rN.push(pcorr(pp.N.map(function (r) { return r[k]; }), pp.N_station.map(function (r) { return r[k]; })));
+            leg.innerHTML = li(PTE_C.est, "radar, r over all passes");
+            pteR(el, "N", e.edges, [{ label: "radar", vals: rN, color: PTE_C.est }], "r with KNMI 344 carried up");
+          } else {
+            var rR = [], rS = [];
+            e.series.forEach(function (s) { rR.push(pcorr(s.est, s.truth)); rS.push(pcorr(s.station, s.truth)); });
+            leg.innerHTML = li(PTE_C.spread, "true spread") + li(PTE_C.est, "radar") + li(PTE_C.station, "station alone");
+            pteNScores(el, e.edges, [{ label: "true spread over the passes", vals: e.truth_spread, color: PTE_C.spread },
+              { label: "radar, rms error", vals: e.rmse, color: PTE_C.est }, { label: "station alone, rms error", vals: e.station_rmse, color: PTE_C.station }],
+              [{ label: "radar", vals: rR, color: PTE_C.est }, { label: "station alone", vals: rS, color: PTE_C.station }]);
+          }
+          return;
+        }
+        if (real && (q === "P" || q === "T")) {
+          el.innerHTML = '<p class="sim-sub" style="padding:14px">' + (q === "P" ? "Pressure" : "Temperature") +
+            " is KNMI 344's own, carried up from the ground, so against KNMI 344 it has no error (r = 1) by construction. Pick a pass above to see its profile.</p>";
+          leg.innerHTML = "";
+          return;
+        }
+        if (real) {
+          leg.innerHTML = li(PTE_C.est, "radar, r over all passes");
+          pteR(el, "e", e.edges, [{ label: "radar", vals: pt.e[pteCal].r, color: PTE_C.est }], "r with KNMI 344's e carried up");
+          return;
+        }
         var s2 = pteScore(pt, q);
         groups = [{ label: "true spread over the passes", vals: s2.spread, color: PTE_C.spread }, { label: "estimate, rms error", vals: s2.rmse, color: PTE_C.est }];
         if (q === "e") groups.push({ label: "station alone, rms error", vals: s2.station_rmse, color: PTE_C.station });
         groups.bias = s2.bias;
-        pteBars(el, q, e.edges, groups);
         leg.innerHTML = groups.map(function (g) { return li(g.color, g.label); }).join("");
+        pteBars(el, q, e.edges, groups);
       } else if (real) {
+        leg.innerHTML = (q === "e" ? li(PTE_C.est, "radar ± its uncertainty on this pass", "line") + li(null, "KNMI 344 carried up", "dash")
+          : q === "N" || q === "Nte" ? li(PTE_C.est, "radar", "line") + li(null, "KNMI 344 carried up", "dash")
+            : li(PTE_C.station, "carried up from KNMI 344", "line") + li(PTE_C.est, "layer mean", "line")) + extraLegend(ps, q);
         pteProfile(el, q, ps, e.edges, q === "e" ? ps.sigma_e[pteCal] : null, true);
-        leg.innerHTML = q === "e" ? li(PTE_C.est, "radar ± its uncertainty on this pass", "line") + li(null, "KNMI 344 carried up", "dash")
-          : li(PTE_C.station, "carried up from KNMI 344", "line") + li(PTE_C.est, "layer mean", "line");
       } else {
-        pteProfile(el, q, ps, e.edges, pteScore(pt, q).rmse, false);
-        leg.innerHTML = li(PTE_C.truth, "truth", "line") + li(PTE_C.est, "estimate ± rms error", "line") + (q === "e" ? li(null, "station alone", "dash") : "");
+        leg.innerHTML = li(PTE_C.truth, "truth", "line") + li(PTE_C.est, "estimate ± rms error", "line") +
+          (q === "e" || q === "N" || q === "Nte" ? li(null, "station alone", "dash") : "") + extraLegend(ps, q);
+        /* the lumped quantity's error is N's (P is known to about 0.1 hPa, 0.03 N) */
+        pteProfile(el, q, ps, e.edges, q === "N" || q === "Nte" ? e.rmse : pteScore(pt, q).rmse, false);
       }
     });
     if (real) {
+      setTip("pte-N-sub", "The radar's refractivity per layer (the estimation's own calibration). There is no truth above the street; it is set against KNMI 344's ground refractivity carried up with −55 N per km. r over all passes: 1, the radar rises and falls exactly with KNMI; 0, no relation. The seasons are in both, so r is partly the yearly cycle." +
+        (realPrior() === "ground" ? " With the air prior from the ground, KNMI 344's anomaly is inside the estimate, so it agrees partly by construction; pick Radar only to judge the radar." : ""));
       setTip("pte-P-sub", "Carried up from KNMI 344's ground pressure with the hydrostatic equation (temperature falling 6.5 K per km). The radar adds nothing to it, and nothing measures it above the street.");
       setTip("pte-T-sub", "KNMI 344's ground temperature falling 6.5 K per km. Nothing measures it above the street; in the simulation this assumption is off by 0.4-1.7 K, more with height and on mornings with an inversion.");
-      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other two cards (the three-term formula, solved for e). There is no truth above the street, so it is set against KNMI 344's own e carried up (its ground refractivity carried up with −55 N per km, converted the same way): per layer the correlation r over the passes (1: the radar's e rises and falls exactly with KNMI's; 0: no relation). The seasons are in both, so r is partly the yearly cycle." +
+      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other cards (the three-term formula, solved for e). There is no truth above the street, so it is set against KNMI 344's own e carried up (its ground refractivity carried up with −55 N per km, converted the same way): per layer the correlation r over the passes. The seasons are in both, so r is partly the yearly cycle." +
         (realPrior() === "ground" ? " With the air prior from the ground, KNMI 344's own anomaly is inside the radar's estimate, so it agrees with KNMI partly by construction; pick Radar only to judge the radar." : ""));
     } else {
+      setTip("pte-N-sub", "The radar's refractivity per layer, the quantity the estimation itself produces. Left: its rms error over all passes against the simulation's true layer mean, next to the station alone (the ground refractivity carried up with −55 N per km) and how much the true air changes. Right: the correlation r with the truth over all passes, radar and station alone (1: follows it exactly). Where the radar's bar is shorter on the left and longer on the right than the station's, the radar adds something.");
       setTip("pte-P-sub", "Carried up from the ground pressure with the hydrostatic equation (temperature falling 6.5 K per km): the station's alone, the radar adds nothing to it. Bars: its error per layer against the simulation's true pressure, next to how much the true pressure changes from pass to pass.");
       setTip("pte-T-sub", "The ground temperature falling 6.5 K per km: the station's alone. Its error grows with height where the real air does not follow that rate, for example in morning inversions (warmer air above colder air at the ground).");
-      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other two cards (the three-term formula, solved for e)." +
+      setTip("pte-e-sub", "From the radar's refractivity, with P and T as in the other cards (the three-term formula, solved for e)." +
         " Grey: the station alone, its ground refractivity carried up with −55 N per km. Where the blue bar is shorter than the grey one, the radar adds something." +
         (pt.sigma_source === "formal" ? " The per-pass uncertainty here is the formal one, a lower bound (the jackknife needs more buildings per layer)." : ""));
     }
+    if (pteLump) setTip("pte-T-sub", "T and e together, as the radar sees them: its refractivity N minus the pressure part at a fixed reference temperature, N − 77.6 P / T₀ with T₀ = 288.15 K. The pressure comes from the ground and is known to about 0.1 hPa, so what is left holds every effect of T and e (the dry term's dependence on T and the whole wet term) and nothing of the 6.5 K/km assumption. Its error is therefore practically the error of N: comparing on T and e lumped is comparing on N with the pressure taken out. The separate T and e cards show how that one number splits under the 6.5 K/km assumption.");
+    setTip("pte-N-sub", document.getElementById("pte-N-sub").getAttribute("data-tip") +
+      (pteMother ? " In a pass's profile, purple is the mother: the first pass, against which every other pass (a daughter) is measured." : ""));
   }
 
   /* ---- 5. what this means: plain-language reading of the numbers above */
@@ -879,20 +1109,13 @@
      the settings below, on white: as SVG, or as PNG at three times the screen size */
   function figCaption(card) {
     var s = state, L = LAYERS_NAME[s.layers] || s.layers;
+    var pass = card.closest("#view-pte") && pteCur ? "; " + (pteCur.label === "random" ? "a" : "the " + pteCur.label) + " pass, " + fmtDate(pteCur.date) : "";
     if (isReal()) {
-      var rp = "";
-      if (card.closest("#view-pte") && pteShow !== "errors" && realDoc) {
-        var re = (realDoc.results[realPrior()] || {})[s.layers];
-        if (re && re.pte) re.pte.passes.forEach(function (x) { if (x.label === pteShow) rp = "; " + x.label + " pass, " + fmtDate(x.date); });
-      }
+      var rp = pass;
       return "Real TerraSAR-X data" + (realDoc ? ", " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + " (" + realDoc.passes + " passes)" : "") +
         "; truth: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + L + rp + ". Virtual Radiosonde.";
     }
     var on = TOGGLES.filter(function (k) { return s[k] === "1"; }).map(function (k) { return DIST[k].label.toLowerCase(); });
-    var pass = "";
-    if (card.closest("#view-pte") && pteShow !== "errors" && last && last.entry.pte) {
-      last.entry.pte.passes.forEach(function (x) { if (x.label === pteShow) pass = "; " + x.label + " pass, " + fmtDate(x.date); });
-    }
     return "Simulation: " + (ATM_NAME[s.atm] || s.atm).replace(/^the /, "") + "; " + (on.length ? listWords(on) : "no disturbances") + "; " + s.noise + " mm noise; " +
       thousands(s.points) + " points; " + L + pass + ". Synthetic data, Virtual Radiosonde simulator.";
   }
@@ -901,7 +1124,7 @@
     card.querySelectorAll(".sim-legend li").forEach(function (li) {
       if (li.getAttribute("aria-pressed") === "false") return;
       var i = li.querySelector("i"), cls = i ? i.className : "", cs = i ? getComputedStyle(i) : null;
-      var kind = !i ? "none" : /\bsw\b/.test(cls) ? "box" : /\btick\b/.test(cls) ? "tick" : "line";
+      var kind = !i ? "none" : /\bsw\b/.test(cls) ? "box" : /\btick\b/.test(cls) ? "tick" : /\bpt\b/.test(cls) ? (/\bdia\b/.test(cls) ? "dia" : "pt") : "line";
       out.push({ kind: kind, color: kind === "box" ? cs.backgroundColor : kind === "line" ? cs.borderTopColor : C.truth,
         dash: kind === "line" && /dash|dot/.test(cs.borderTopStyle), text: li.textContent.replace(/\s+/g, " ").trim() });
     });
@@ -936,6 +1159,8 @@
       if (it.kind === "box") body += rect(x, cy - 5, 14, 10, it.color, ' rx="2"');
       else if (it.kind === "tick") body += line(x + 7, cy - 7, x + 7, cy + 7, it.color, 2.2);
       else if (it.kind === "line") body += line(x, cy, x + 20, cy, it.color, 2.2, it.dash ? ' stroke-dasharray="5 3"' : "");
+      else if (it.kind === "pt") body += '<circle cx="' + (x + 7) + '" cy="' + cy + '" r="4.2" fill="#fff" stroke="' + C.truth + '" stroke-width="1.6"/>';
+      else if (it.kind === "dia") body += '<path d="M' + (x + 7) + " " + (cy - 5.5) + 'l5.5 5.5l-5.5 5.5l-5.5 -5.5z" fill="#fff" stroke="' + C.truth + '" stroke-width="1.6"/>';
       body += text(x + (it.kind === "none" ? 0 : 26), y, it.text, { size: 11.5, fill: C.ink2 });
       x += wd;
     });
@@ -1018,6 +1243,18 @@
     scSel.addEventListener("change", function () { scLayer = +scSel.value; if (last && !simMsg) renderScatter(document.getElementById("sim-sc"), last.entry, last.run.epochs, scLayer, W_SIM); });
     document.getElementById("view-pte").addEventListener("change", function (ev) {
       if (ev.target.name === "pte-show") pteShow = ev.target.value;
+      if (ev.target.name === "pte-lump") pteLump = ev.target.value === "1";
+      if (ev.target.name === "pte-mother") pteMother = ev.target.checked;
+      renderView();
+    });
+    /* a new random pass on every click */
+    document.getElementById("pte-random").addEventListener("click", function () {
+      var n = isReal() ? (realDoc ? realDoc.epochs.length : 0) : (last ? last.run.epochs.length : 0);
+      if (!n) return;
+      var j = Math.floor(Math.random() * n);
+      if (n > 1 && pteShow === "random" && j === pteIdx) j = (j + 1) % n;
+      pteIdx = j; pteShow = "random";
+      document.querySelectorAll('input[name="pte-show"]').forEach(function (r) { r.checked = false; });
       renderView();
     });
     realSel.addEventListener("change", function () { realScLayer = +realSel.value; if (isReal()) renderReal(); });

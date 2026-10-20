@@ -697,11 +697,11 @@ main > .sim { max-width: 1060px; }
 .pte-seg span { min-height: 32px; padding: 3px 12px; white-space: nowrap; }
 .pte-note { margin: 0; font-size: .8rem; color: var(--muted); flex: 1 1 260px; }
 @media (min-width: 1000px) {
-  .sim-dash-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .sim-dash-3 .pte-bar { grid-column: 1 / -1; }
+  .sim-dash-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .sim-dash-4 .pte-bar { grid-column: 1 / -1; }
 }
 @media (min-width: 1000px) and (min-height: 600px) {
-  .sim-dash-3 { grid-template-rows: auto minmax(0, 1fr); }
+  .sim-dash-4 { grid-template-rows: auto minmax(0, 1fr); }
 }
 /* simulator: save a chart as a clean figure (PNG or SVG) */
 .sim-save { margin-left: auto; display: inline-flex; gap: 4px; }
@@ -709,3 +709,15 @@ main > .sim { max-width: 1060px; }
 .sim-save button { font: inherit; font-size: .7rem; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 2px 7px; min-height: 24px; cursor: pointer; }
 .sim-save button:hover { color: var(--accent); border-color: var(--accent); }
 .sim-save button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pte-rand { font: inherit; font-size: .82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 3px 12px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+.pte-rand i { display: grid; place-items: center; } .pte-rand i svg { width: 14px; height: 14px; }
+.pte-rand:hover { color: var(--accent); border-color: var(--accent); }
+.pte-rand[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pte-rand:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (min-width: 1000px) and (max-width: 1350px) { .sim-dash-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; } }
+.sim-legend i.pt { display: inline-block; width: 9px; height: 9px; border: 1.6px solid var(--ink); border-radius: 50%; background: #fff; margin-right: 6px; vertical-align: -1px; }
+.sim-legend i.pt.dia { border-radius: 1px; transform: rotate(45deg) scale(.85); }
+@media (min-width: 1350px) { .sim-dash-4.pte-lumped { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+#view-pte .app-card[hidden] { display: none !important; }
+.pte-check { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--ink-2); cursor: pointer; min-height: 34px; padding: 0 4px; }
+.pte-check input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }

@@ -121,7 +121,20 @@ Each estimation also holds `pte`, the simulator's "P, T, e" tab: P (hydrostatic 
 (`estimation/pte.py`), with N shifted to the ground (`shift`) or not (`level`, the one the page shows); per layer the rms error, bias
 and true spread against the run's own P, T, e, the station alone for e, the median uncertainty of e per pass
 (jackknife, or the formal one where the jackknife cannot run: `sigma_source`), and the coldest, median and
-warmest pass as profiles.
+warmest pass as profiles. For any pass (the tab's "Random pass"), `data/simulator/atm/<atm>_p<points>.json`
+holds the true N, P, T and e on 5 m levels, the ground values and, per layer setup, P, T and the station's N
+and e (the simulated air depends on the atmosphere and the number of points only), and each run's
+`pte.e_pass` the radar's e per pass; both are written after `site_simulator.py` by
+`python 04_python/estimation/site_simulator_passes.py --out ../vrs-tudelft.github.io/data/simulator`.
+The N card shows the radar's refractivity against the truth: rms error and r per layer, next to the station alone. The pass profiles also show the measurements behind the air
+(`meas`: the Cabauw mast's seven levels of T and e, the De Bilt soundings' reported levels; on the real 2025
+passes the same two, 40-50 km away), the mother (the first pass) in the N card with "Show mother", and, with "T and e lumped", one card with
+N − 77.6 P/T₀ (T₀ = 288.15 K) instead of T and e apart: the radar's N minus its pressure part at a fixed
+temperature, which keeps every effect of T and e and none of the 6.5 K/km assumption (computed on the page
+from the stored N and P; its error is practically N's, since P is known to about 0.1 hPa). The radar points per layer are shown under each
+layer's name and in the profiles: for the simulations from `manifest.layer_points` (per point count and layer
+setup; the points used do not depend on the air, the disturbances or the noise, checked against the runs), for
+the real data from `layer_points` in `real.json`.
 
 The simulator's "Real" atmosphere reads `data/simulator/real.json`: the same step-by-step breakdown on the
 real 2020-2026 passes, per layer setup and air prior (radar only, or from the ground), with KNMI 344 at
