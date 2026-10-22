@@ -16,7 +16,8 @@
     truth: "#17191c", radar: "#d62728", station: "#9a9a9a", grid: "#ece9e1", axis: "#cdc9be", muted: "#6e747b", ink2: "#3c4249",
     air: "#15688f", pos: "#2f7d3a", neg: "#a8433b"
   };
-  var KEYS = ["atm", "sinking", "shrinking", "thermal", "crossrange", "noise", "points", "layers"];
+  var KEYS = ["atm", "sinking", "shrinking", "thermal", "crossrange", "noise", "points", "layers", "motion"];
+  var RADIOS = ["atm", "noise", "points", "layers", "motion"];
   var TOGGLES = ["sinking", "shrinking", "thermal", "crossrange"];
   /* the fixed order of the cumulative trend, and one colour per disturbance shared by both bar charts */
   var STEPS = ["noise", "sinking", "shrinking", "thermal", "crossrange"];
@@ -28,11 +29,13 @@
     crossrange: { label: "Cross-range", long: "the cross-range error", color: "#2f8c86" }
   };
   var ATM_NAME = { simulated: "KNMI-built air", radiosonde: "the balloon soundings of 2025", cabauw: "the Cabauw tower air of 2025" };
-  var LAYERS_NAME = { "20": "20 m layers", "40": "40 m layers", "2": "two layers", "1": "one layer" };
+  var LAYERS_NAME = { "20": "20 m layers", "40": "40 m layers", "2": "two layers", "1": "one layer",
+    n500: "layers of at least 500 points", n1000: "layers of at least 1000 points" };
+  var MOTION_NAME = { building: "motion per building", scatterer: "motion per scatterer" };
   /* Jaap's steps: the same estimation chain with parts switched off */
   var STAGES = [
     { key: "layers", label: "layer inversion only (no deformation fit)", short: "layers only", color: "#b9cbe3", w: 1.3 },
-    { key: "shrink", label: "+ shrinking term", short: "+ shrinking", color: "#6f95c8", w: 1.3 },
+    { key: "shrink", label: "+ motion fit (sinking and shrinking per building, or each point's own trend)", short: "+ motion", color: "#6f95c8", w: 1.3 },
     { key: "std", label: "+ thermal term = standard", short: "standard", color: "#1f5fa8", w: 1.9 }
   ];
   var PRED = "#d1662b";
@@ -111,7 +114,7 @@
   function ft(html) { return ' data-ftip="' + esc(html) + '"'; }
 
   /* ------------------------------------------------------------ state and the manifest */
-  function runKey(s) { return s.atm + "_s" + s.sinking + s.shrinking + s.thermal + s.crossrange + "_n" + s.noise + "_p" + s.points; }
+  function runKey(s) { return s.atm + "_s" + s.sinking + s.shrinking + s.thermal + s.crossrange + "_n" + s.noise + "_p" + s.points + "_m" + String(s.motion || "building").charAt(0); }
   function summ(s) { var v = manifest.summary && manifest.summary[runKey(s) + "|" + s.layers]; return v && !v.error && v.rmse ? v : null; }
   function variant(s, over) { var t = {}; KEYS.forEach(function (k) { t[k] = String(s[k]); }); for (var k in over) t[k] = String(over[k]); return t; }
   function airOnly(s) { return variant(s, { sinking: 0, shrinking: 0, thermal: 0, crossrange: 0, noise: 0 }); }
@@ -122,7 +125,7 @@
 
   function fromForm() {
     var s = {};
-    ["atm", "noise", "points", "layers"].forEach(function (k) {
+    RADIOS.forEach(function (k) {
       var r = form.querySelector('input[name="' + k + '"]:checked');
       s[k] = r ? r.value : String(manifest.defaults[k]);
     });
@@ -130,7 +133,7 @@
     return s;
   }
   function toForm(s) {
-    ["atm", "noise", "points", "layers"].forEach(function (k) {
+    RADIOS.forEach(function (k) {
       form.querySelectorAll('input[name="' + k + '"]').forEach(function (r) { r.checked = r.value === String(s[k]); });
     });
     TOGGLES.forEach(function (k) { form.elements[k].checked = String(s[k]) === "1"; });
@@ -244,6 +247,7 @@
     } else if (view === "dist") {
       renderAttr(document.getElementById("sim-attr"), s);
       renderCum(document.getElementById("sim-cum"), s);
+      renderAbsorbed(s);
     } else if (view === "decide") {
       renderDecide(document.getElementById("sim-decide"), e, s, sm);
     }
@@ -374,7 +378,7 @@
       series.forEach(function (x) { h += '<br><i class="sw" style="background:' + x.color + '"></i>' + esc(x.name) + " " + signed(x.v[j], 2) + " N"; });
       return { html: h, x: xs(tx[j]) };
     };
-    setTip(el.id + "-sub", "The same estimation run three times with parts switched off: only each point's own offset removed (layer inversion only), then the building motion fitted (+ shrinking), then also the thermal term (standard). Each line is the estimated N anomaly minus " +
+    setTip(el.id + "-sub", "The same estimation run three times with parts switched off: only each point's own offset removed (layer inversion only), then the building motion fitted (+ motion: " + (state.motion === "scatterer" ? "each point's own linear and quadratic term in time" : "sinking and shrinking per building") + "), then also the thermal term (standard). Each line is the estimated N anomaly minus " +
       (W === W_REAL ? "the KNMI 344 station's (its 06 UTC refractivity carried up with −55 N/km, so the same anomaly in every layer)" : "the true one") + ", averaged over the layers. Click a legend entry to hide it; the axis follows what is shown." +
       (ok(st.corr_error_predicted) ? " The standard error follows the predicted drift with r = " + num(st.corr_error_predicted, 2) + "." : ""));
   }
@@ -457,7 +461,7 @@
     }
     el.innerHTML = svg(w, H, body, "Column error: " + rows.map(function (r) { return r.label + " " + (r.sm ? num(r.sm.column_rmse, 2) : "n/a") + " N"; }).join("; ") + "; station alone " + num(stV, 2) + " N.");
     setTip("sim-attr-sub", "Each disturbance switched on by itself on top of the air (with no noise unless it is the noise), " + ATM_NAME[s.atm].replace(/^the /, "") + ", " +
-      thousands(s.points) + " points, " + LAYERS_NAME[s.layers] + ". The pale start of each bar is what the air alone gives; faded bars are switched off in your selection. Column error: the error of the thickness-weighted mean of all layers, rms over the passes.");
+      thousands(s.points) + " points, " + MOTION_NAME[s.motion] + ", " + LAYERS_NAME[s.layers] + ". The pale start of each bar is what the air alone gives; faded bars are switched off in your selection. Column error: the error of the thickness-weighted mean of all layers, rms over the passes.");
   }
 
   /* ---- (c) standard estimate against the truth: N anomalies, every layer and pass, or one layer */
@@ -589,13 +593,111 @@
   var pteShow = "errors", pteCal = "level", pteIdx = 0, pteCur = null, atmP = {}, atmReady = {};
   function pteScore(pt, q) { return q === "e" ? pt.e[pteCal] : pt[q]; }
   var pteLump = false, pteMother = false;
+  /* the two-point temperature profile (ground + a station 27.5 m higher, shape from the Cabauw mast):
+     data/simulator/two_point/<atm>_p<points>.json and real.json, written by the team's
+     04_python/estimation/site_two_point.py. Without those files the switch stays hidden. e from the
+     radar's N is computed here for every profile (the three-term formula solved for e).
+     The shape: a logarithmic departure from the 6.5 K/km line through both points (that line itself
+     when the upper station is on it). The switch: lin, log, or compare (both). */
+  var pteT = "lin", tpP = {}, tpDoc = {};
+  var SHAPE = { log: { color: "#d9822b", name: "two-point log" } };
+  function shapesOf(mode) { return mode === "lin" ? [] : ["log"]; }
+  function tpKey() { return isReal() ? "real" : state.atm + "_p" + state.points; }
+  function tpData() { var d = tpDoc[tpKey()]; return d || null; }
+  function tpMode() { return tpData() ? pteT : "lin"; }
+  function loadTp(after) {
+    var key = tpKey();
+    if (key in tpDoc) return true;
+    if (!tpP[key]) {
+      tpP[key] = getJson(BASE + "two_point/" + key + ".json").then(function (d) { tpDoc[key] = d; }, function () { tpDoc[key] = null; });
+      tpP[key].then(after);
+    }
+    return false;
+  }
+  function eFrom(N, P, T) {
+    return N.map(function (n, k) {
+      var t = T[k], p = P[k];
+      return ok(n) && ok(t) && ok(p) ? (n - 77.6 * p / t) / ((72.0 - 77.6) / t + 3.75e5 / (t * t)) : NaN;
+    });
+  }
+  /* the two-point values of pass j for the selected layers: T, P, e (from the radar's N), station e */
+  function tpLayers(e, real, shape) {
+    var d = tpData();
+    if (!d) return null;
+    var S = d.shapes[shape];
+    return real ? S.results[state.motion + "|" + realPrior() + "|" + state.layers] : S.layers[state.layers];
+  }
+  function tpUpper(j) {
+    var d = tpData();
+    return d && ok(d.T_upper[j]) ? { T: d.T_upper[j], e: d.e_upper[j], z: d.z_upper } : null;
+  }
+  function tpPass(e, j, real, shape) {
+    var d = tpData(), L = tpLayers(e, real, shape);
+    if (!L) return null;
+    var N = real ? e.pte.pass.N[j] : col(e.series, "est", j);
+    return { T: L.T[j], P: L.P[j], e: eFrom(N, L.P[j], L.T[j]), station_e: L.e_station[j], fineT: d.shapes[shape].T_fine[j] };
+  }
+  /* scores of the two-point profile per layer, as site_simulator.pte: simulation against the true layer
+     means (rmse, bias, spread; e also the station alone's rmse); real data: r of the radar's e with
+     KNMI 344's e carried up, both through the two-point T */
+  function tpScores(e, real, shape) {
+    var L = tpLayers(e, real, shape), nl = e.edges.length - 1, np = L.T.length, truth = real ? null : tpData().truth[state.layers];
+    var eRad = [];
+    for (var j = 0; j < np; j++) eRad.push(eFrom(real ? e.pte.pass.N[j] : col(e.series, "est", j), L.P[j], L.T[j]));
+    function colK(A, k) { return A.map(function (r) { return r[k]; }); }
+    function sc(A, T, k) {
+      var s = 0, b = 0, n = 0;
+      for (var i = 0; i < A.length; i++) { var d = A[i][k] - T[i][k]; if (ok(d)) { s += d * d; b += d; n++; } }
+      return n ? [Math.sqrt(s / n), b / n] : [NaN, NaN];
+    }
+    function sd(A, k) { var a = colK(A, k).filter(ok), mu = mean(a); return Math.sqrt(mean(a.map(function (v) { return (v - mu) * (v - mu); }))); }
+    if (real) {
+      var r = [];
+      for (var k = 0; k < nl; k++) r.push(pcorr(colK(eRad, k), colK(L.e_station, k)));
+      return { e: { r: r } };
+    }
+    var out = {};
+    [["T", L.T], ["P", L.P], ["e", eRad]].forEach(function (x) {
+      var q = x[0], o = { rmse: [], bias: [], spread: [] };
+      for (var k = 0; k < nl; k++) {
+        var v = sc(x[1], truth[q], k);
+        o.rmse.push(v[0]); o.bias.push(v[1]); o.spread.push(sd(truth[q], k));
+        if (q === "e") (o.station_rmse = o.station_rmse || []).push(sc(L.e_station, truth.e, k)[0]);
+      }
+      out[q] = o;
+    });
+    return out;
+  }
+  /* any pass by date; on the real data the passes with the upper station marked */
+  var dateKey = "";
+  function fillDatePick(epochs, tpd) {
+    var sel = document.getElementById("pte-date"), wrap = document.getElementById("pte-date-pick");
+    wrap.style.display = "";
+    var key = epochs.length + "|" + epochs[0] + "|" + (tpd ? tpd.T_upper.filter(ok).length : 0);
+    if (key !== dateKey) {
+      dateKey = key;
+      var h = '<option value="">pick a date…</option>';
+      epochs.forEach(function (d, j) {
+        var star = tpd && isReal() && ok(tpd.T_upper[j]);
+        h += '<option value="' + d + '">' + (star ? "★ " : "") + d + "</option>";
+      });
+      sel.innerHTML = h;
+    }
+    sel.value = pteShow.indexOf("date:") === 0 ? pteShow.slice(5) : "";
+  }
   /* legend entries for the measured points and, in the N card, the mother */
   function extraLegend(ps, q) {
     var h = "", seen = {};
     (ps.meas || []).forEach(function (m) {
       if (!m[q] || seen[m.src]) return;
       seen[m.src] = 1;
-      h += '<li><i class="pt' + (/sounding/i.test(m.src) ? " dia" : "") + '"></i>' + esc(m.src) + (/mast/i.test(m.src) ? " (measured)" : " (reported level)") + "</li>";
+      h += '<li><i class="pt' + (/sounding/i.test(m.src) ? " dia" : "") + '"' + (m.color ? ' style="border-color:' + m.color + '"' : "") + "></i>" + esc(m.src) +
+        (/mast|roof|station/i.test(m.src) ? " (measured)" : " (reported level)") + "</li>";
+    });
+    (ps.lines || []).forEach(function (l) { if (l.q === q) h += l.dash ? '<li><i class="ln dash" style="border-top-color:' + l.color + '"></i>' + esc(l.label) + "</li>" : li(l.color, l.label, "line"); });
+    (ps.alts || []).forEach(function (a) {
+      if (!a.est[q]) return;
+      h += li(a.color, "estimate, " + a.name, "line") + (q === "e" ? '<li><i class="ln dash" style="border-top-color:' + a.color + '"></i>station alone, ' + esc(a.name) + "</li>" : "");
     });
     if (q === "N" && ps.mother && pteMother) {
       h += '<li><i class="ln c" style="border-top-color:' + MOTHER + '"></i>mother ' + fmtDate(ps.mother.date) + "</li>" +
@@ -623,6 +725,7 @@
   /* the pass to show: its index in the run's passes */
   function passIndex(pt, epochs) {
     if (pteShow === "random") return Math.min(pteIdx, epochs.length - 1);
+    if (pteShow.indexOf("date:") === 0) return epochs.indexOf(pteShow.slice(5));
     var j = -1;
     pt.passes.forEach(function (x) { if (x.label === pteShow) j = epochs.indexOf(x.date); });
     return j;
@@ -663,7 +766,33 @@
     });
     return ps;
   }
+  /* the pass with the selected temperature profile: one shape puts the two-point values in place of the
+     6.5 K/km ones, "compare" keeps those and adds the two-point log as ps.alts */
   function passOf(e, j, real, atm) {
+    var ps = passBase(e, j, real, atm), mode = tpMode();
+    if (!tpData()) return ps;
+    /* the upper station, in every mode */
+    var up = tpUpper(j);
+    if (up) ps.meas.push({ src: real ? "Sanders roof (RAMN), 29 m" : "Upper station (true T, e)", z: [up.z], T: [up.T], e: [up.e], color: "#b5591a" });
+    var sh = shapesOf(mode);
+    if (mode === "log") {                       /* it replaces the 6.5 K/km values */
+      var t2 = tpPass(e, j, real, sh[0]);
+      ps.est.T = t2.T; ps.est.P = t2.P; ps.est.e = { level: t2.e }; ps.station.e = t2.station_e;
+      if (real) delete ps.model.T;              /* the 6.5 K/km line is not the model any more */
+      ps.lines = [{ q: "T", z: tpData().z_fine, v: t2.fineT, color: SHAPE[sh[0]].color, label: "T(z), " + SHAPE[sh[0]].name }];
+    } else if (mode === "compare") {            /* 6.5 K/km in blue, two-point log in orange */
+      ps.alts = []; ps.lines = [];
+      sh.forEach(function (k) {
+        var t = tpPass(e, j, real, k);
+        ps.alts.push({ name: SHAPE[k].name, color: SHAPE[k].color, est: { T: t.T, P: t.P, e: t.e }, station: { e: t.station_e } });
+        ps.lines.push({ q: "T", z: tpData().z_fine, v: t.fineT, color: SHAPE[k].color, label: "T(z), " + SHAPE[k].name });
+      });
+      /* real: the grey line is already KNMI 344 at 6.5 K/km; simulation: draw that line too */
+      if (!real) ps.lines.push({ q: "T", v: ps.z.map(function (z) { return ps.ground.T - 0.0065 * (z - 3.2); }), color: PTE_C.est, label: "T(z), 6.5 K/km", dash: true });
+    }
+    return ps;
+  }
+  function passBase(e, j, real, atm) {
     var label = pteShow === "random" ? "random" : pteShow;
     if (real) {
       var pp = e.pte.pass, pr = realDoc.profiles, g = pr.ground;
@@ -686,7 +815,7 @@
      the number of points and the layer setup, not on the air or the disturbances) */
   var curCounts = null;
   function layerN(e, real) {
-    if (real || e.layer_points) return e.layer_points ? e.layer_points.map(function (x) { return x.n; }) : null;
+    if (real || e.layer_points) return e.layer_points ? e.layer_points.map(function (x) { return typeof x === "number" ? x : x.n; }) : null;
     var c = manifest.layer_points && manifest.layer_points[state.points + "|" + state.layers];
     return c && c.n.length === e.edges.length - 1 ? c.n : null;
   }
@@ -714,6 +843,8 @@
       var tip = "<b>" + lab + "</b>" + (pl ? " (" + pl.replace("pts", "radar points") + ")" : "");
       groups.forEach(function (g) { tip += '<br><i class="sw" style="background:' + g.color + '"></i>' + esc(g.label) + " " + num(g.vals[k], d) + (opt.unit === "" ? "" : " " + PTE[q].unit); });
       if (groups.bias) tip += "<br>" + (groups.biasLabel || "mean error (bias)") + " " + signed(groups.bias[k], d) + " " + PTE[q].unit;
+      (groups.moreBias || []).forEach(function (b) { tip += "<br>" + b.label + " " + signed(b.vals[k], d) + " " + PTE[q].unit; });
+      (groups.extraTips || []).forEach(function (x) { tip += "<br>" + x.label + " " + x.fmt(x.vals[k]); });
       body += '<rect x="' + x0 + '" y="' + (m.t + r * rowH).toFixed(1) + '" width="' + (x1 - x0) + '" height="' + rowH.toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
       groups.forEach(function (g, i) {
         var v = g.vals[k], y = y0 + i * bh;
@@ -761,6 +892,12 @@
     if (tr) tr.forEach(function (v, i) { if (ps.z[i] <= top && ok(v)) xsv.push(v); });
     est.forEach(function (v, k) { if (ok(v)) { xsv.push(v - (eb[k] || 0)); xsv.push(v + (eb[k] || 0)); } });
     if (st) st.forEach(function (v) { if (ok(v)) xsv.push(v); });
+    var lines = (ps.lines || []).filter(function (l) { return l.q === q; });
+    lines.forEach(function (l) { var lz = l.z || ps.z; l.v.forEach(function (v, i) { if (ok(v) && lz[i] <= top) xsv.push(v - ref); }); });
+    var alts = (ps.alts || []).filter(function (a) { return a.est[q]; }).map(function (a) {
+      return { name: a.name, color: a.color, v: a.est[q].map(function (v) { return v - ref; }), st: q === "e" ? a.station.e : null };
+    });
+    alts.forEach(function (a) { [a.v, a.st].forEach(function (x) { if (x) x.forEach(function (v) { if (ok(v)) xsv.push(v); }); }); });
     var meas = (ps.meas || []).filter(function (mm) { return mm[q]; });
     meas.forEach(function (mm) { mm[q].forEach(function (v, i) { if (ok(v) && mm.z[i] <= top) xsv.push(v - ref); }); });
     var mo = q === "N" && ps.mother && pteMother ? ps.mother : null;
@@ -794,7 +931,13 @@
       } else body += steps(mo.line, MOTHER, 1.2, true);
       body += steps(mo.est, MOTHER, 2, false).replace("/>", ' stroke-dasharray="2 2" opacity=".9"/>');
     }
+    lines.forEach(function (l) {                /* fine T(z) curves of the temperature profiles */
+      var lp = [];
+      (l.z || ps.z).forEach(function (z, i) { if (z <= top && ok(l.v[i])) lp.push([xs(l.v[i] - ref), ys(z)]); });
+      body += '<path d="' + path(lp) + '" fill="none" stroke="' + l.color + '" stroke-width="1.3"' + (l.dash ? ' stroke-dasharray="3 3"' : "") + ' opacity=".9"/>';
+    });
     if (st) body += steps(st, PTE_C.station, 1.4, true);
+    alts.forEach(function (a) { if (a.st) body += steps(a.st, a.color, 1.4, true); body += steps(a.v, a.color, 2.2); });
     body += steps(est, PTE_C.est, 2.2);
     meas.forEach(function (mm) {                /* the measurements behind the air: open markers */
       var dia = /sounding/i.test(mm.src);
@@ -804,7 +947,7 @@
         var tip = ft("<b>" + esc(mm.src) + "</b>, " + num(mm.z[i], 0) + " m<br>" + (q === "Nte" ? "N − 77.6 P/T₀" : q) + " " + num(v, PTE[q].d) + " " + PTE[q].unit +
           (q === "N" || q === "Nte" ? (/mast/i.test(mm.src) ? "<br>from the measured T and e" : "<br>from the reported P, T and e") : "<br>measured"));
         body += dia ? '<path d="M' + cx.toFixed(1) + " " + (cy - 5.5).toFixed(1) + "l5.5 5.5l-5.5 5.5l-5.5 -5.5z\" fill=\"#fff\" stroke=\"" + C.truth + '" stroke-width="1.6"' + tip + "/>"
-          : '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.2" fill="#fff" stroke="' + C.truth + '" stroke-width="1.6"' + tip + "/>";
+          : '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.2" fill="#fff" stroke="' + (mm.color || C.truth) + '" stroke-width="1.8"' + tip + "/>";
       });
     });
     for (var k = 0; k < nl; k++) {
@@ -818,7 +961,11 @@
       if (pl) body += '<text x="' + (m.l + 4) + '" y="' + (ys(edges[k + 1]) + 11).toFixed(1) + '" font-size="9" fill="' + C.muted + '" stroke="#fcfbf8" stroke-width="3" paint-order="stroke" pointer-events="none">' + esc(pl) + "</text>";
       var tip = "<b>" + lab + "</b>" + (pl ? " (" + pl.replace("pts", "radar points") + ")" : "") + "<br>" + (real && (q === "P" || q === "T") ? "from KNMI 344 alone " : "estimate ") + num(est[k] + ref, PTE[q].d) + " " + PTE[q].unit +
         (ok(eb[k]) ? " (± " + num(eb[k], PTE[q].d) + (real ? ", its uncertainty on this pass" : ", the rms error over all passes") + ")" : "") +
-        (st ? "<br>" + stName + " " + num(st[k], PTE[q].d) + " " + PTE[q].unit : "");
+        (st ? "<br>" + stName + " " + num(st[k], PTE[q].d) + " " + PTE[q].unit : "") +
+        alts.map(function (a) {
+          return '<br><i class="sw" style="background:' + a.color + '"></i>' + esc(a.name) + ": " + num(a.v[k] + ref, PTE[q].d) + " " + PTE[q].unit +
+            (a.st ? " (" + stName + " " + num(a.st[k], PTE[q].d) + ")" : "");
+        }).join("");
       body += '<rect x="' + m.l + '" y="' + ys(edges[k + 1]).toFixed(1) + '" width="' + (w - m.l - m.r) + '" height="' + (ys(edges[k]) - ys(edges[k + 1])).toFixed(1) + '" fill="transparent"' + ft(tip) + "/>";
     }
     body += '<circle cx="' + xs(ps.ground[q] - ref).toFixed(1) + '" cy="' + ys(3.2).toFixed(1) + '" r="4" fill="' + PTE_C.truth + '"' + ft("<b>" + (real ? "KNMI 344" : "The station") + " at the ground</b><br>" + num(ps.ground[q], PTE[q].d) + " " + PTE[q].unit) + "/>";
@@ -840,6 +987,16 @@
     if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); note.textContent = ""; return; }
     var epochs = real ? realDoc.epochs : last.run.epochs, ps = null;
     document.getElementById("pte-random").setAttribute("aria-pressed", pteShow === "random");
+    /* the two-point profile: fetched once per air, then drawn again; the switch shows when it exists */
+    loadTp(function () { if (view === "pte") renderView(); });
+    var tpd = tpData(), mode = tpMode();
+    document.getElementById("pte-tprof").style.display = tpd ? "" : "none";
+    fillDatePick(epochs, tpd);
+    if (pteShow.indexOf("date:") === 0 && epochs.indexOf(pteShow.slice(5)) < 0) {   /* that date is not in this air */
+      pteShow = "errors";
+      document.querySelectorAll('input[name="pte-show"]').forEach(function (r) { r.checked = r.value === "errors"; });
+      document.getElementById("pte-date").value = "";
+    }
     if (pteShow !== "errors") {
       var j = passIndex(pt, epochs);
       if (real) ps = passOf(e, j, true);
@@ -855,9 +1012,13 @@
       }
       pteCur = ps;
     }
+    var tProfTxt = mode === "lin" ? "6.5 K per km" : mode === "log" ? "a logarithmic departure from 6.5 K per km through the ground and the 29 m station"
+      : "6.5 K per km in blue, the two-point log (ground + 29 m station) in orange";
+    var nUp = tpd ? tpd.T_upper.filter(ok).length : 0;
     note.textContent = (ps ? (ps.label === "random" ? "Random pass: " : "") + fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
-      (real ? "P and T come from KNMI 344 alone (hydrostatic, 6.5 K per km); nothing measures them above the street. N and e come from the radar, set against KNMI 344 carried up."
-        : "P and T come from the station alone (hydrostatic, 6.5 K per km); N and e come from the radar.");
+      (real ? "P and T come from KNMI 344 alone (hydrostatic, " + tProfTxt + "); nothing measures them above the street. N and e come from the radar, set against KNMI 344 carried up."
+        : "P and T come from the station alone (hydrostatic, " + tProfTxt + "); N and e come from the radar.") +
+      (real && mode !== "lin" ? " The Sanders roof has data on " + nUp + " of the " + epochs.length + " passes (marked ★ in the pass list); on the others the two-point profile is the 6.5 K/km line." : "");
     var nl = e.edges.length - 1;
     /* T and e lumped: the T card shows the wet refractivity, the e card is hidden */
     document.getElementById("pte-e").closest("section").hidden = pteLump;
@@ -929,25 +1090,41 @@
         }
         if (real) {
           leg.innerHTML = li(PTE_C.est, "radar, r over all passes");
-          pteR(el, "e", e.edges, [{ label: "radar", vals: pt.e[pteCal].r, color: PTE_C.est }], "r with KNMI 344's e carried up");
+          var rg = [];
+          var shR = shapesOf(mode);
+          if (mode !== "log") rg.push({ label: shR.length ? "radar, 6.5 K/km" : "radar", vals: pt.e[pteCal].r, color: PTE_C.est });
+          shR.forEach(function (k) { rg.push({ label: "radar, " + SHAPE[k].name, vals: tpScores(e, true, k).e.r, color: SHAPE[k].color }); });
+          leg.innerHTML = rg.map(function (g) { return li(g.color, g.label + ", r over all passes"); }).join("");
+          pteR(el, "e", e.edges, rg, "r with KNMI 344's e carried up");
           return;
         }
-        var s2 = pteScore(pt, q);
-        groups = [{ label: "true spread over the passes", vals: s2.spread, color: PTE_C.spread }, { label: "estimate, rms error", vals: s2.rmse, color: PTE_C.est }];
-        if (q === "e") groups.push({ label: "station alone, rms error", vals: s2.station_rmse, color: PTE_C.station });
-        groups.bias = s2.bias;
+        /* log: its bars in place of the 6.5 K/km ones; compare: both (station alone: 6.5 K/km only) */
+        var s2 = pteScore(pt, q), shB = shapesOf(mode), cmp = mode === "compare";
+        var sc3 = shB.map(function (k) { return { k: k, s: tpScores(e, false, k)[q] }; });
+        groups = [{ label: "true spread over the passes", vals: s2.spread, color: PTE_C.spread }];
+        if (!shB.length || cmp) groups.push({ label: cmp ? "6.5 K/km, rms error" : "estimate, rms error", vals: s2.rmse, color: PTE_C.est });
+        sc3.forEach(function (x) { groups.push({ label: (cmp ? SHAPE[x.k].name : "estimate (" + SHAPE[x.k].name + "), ") + (cmp ? ", rms error" : "rms error"), vals: x.s.rmse, color: SHAPE[x.k].color }); });
+        if (q === "e") {
+          if (!shB.length || cmp) groups.push({ label: cmp ? "station alone (6.5 K/km), rms error" : "station alone, rms error", vals: s2.station_rmse, color: PTE_C.station });
+          else groups.push({ label: "station alone (" + SHAPE[shB[0]].name + "), rms error", vals: sc3[0].s.station_rmse, color: PTE_C.station });
+        }
+        groups.bias = mode === "log" ? sc3[0].s.bias : s2.bias;
+        if (cmp) {
+          groups.biasLabel = "bias, 6.5 K/km";
+          groups.moreBias = sc3.map(function (x) { return { label: "bias, " + SHAPE[x.k].name, vals: x.s.bias }; });
+        }
         leg.innerHTML = groups.map(function (g) { return li(g.color, g.label); }).join("");
         pteBars(el, q, e.edges, groups);
       } else if (real) {
         leg.innerHTML = (q === "e" ? li(PTE_C.est, "radar ± its uncertainty on this pass", "line") + li(null, "KNMI 344 carried up", "dash")
           : q === "N" || q === "Nte" ? li(PTE_C.est, "radar", "line") + li(null, "KNMI 344 carried up", "dash")
-            : li(PTE_C.station, "carried up from KNMI 344", "line") + li(PTE_C.est, "layer mean", "line")) + extraLegend(ps, q);
+            : (ps.model && ps.model[q] ? li(PTE_C.station, "carried up from KNMI 344", "line") : "") + li(PTE_C.est, "layer mean", "line")) + extraLegend(ps, q);
         pteProfile(el, q, ps, e.edges, q === "e" ? ps.sigma_e[pteCal] : null, true);
       } else {
         leg.innerHTML = li(PTE_C.truth, "truth", "line") + li(PTE_C.est, "estimate ± rms error", "line") +
           (q === "e" || q === "N" || q === "Nte" ? li(null, "station alone", "dash") : "") + extraLegend(ps, q);
         /* the lumped quantity's error is N's (P is known to about 0.1 hPa, 0.03 N) */
-        pteProfile(el, q, ps, e.edges, q === "N" || q === "Nte" ? e.rmse : pteScore(pt, q).rmse, false);
+        pteProfile(el, q, ps, e.edges, q === "N" || q === "Nte" ? e.rmse : mode === "log" ? tpScores(e, false, "log")[q].rmse : pteScore(pt, q).rmse, false);
       }
     });
     if (real) {
@@ -968,6 +1145,136 @@
     if (pteLump) setTip("pte-T-sub", "T and e together, as the radar sees them: its refractivity N minus the pressure part at a fixed reference temperature, N − 77.6 P / T₀ with T₀ = 288.15 K. The pressure comes from the ground and is known to about 0.1 hPa, so what is left holds every effect of T and e (the dry term's dependence on T and the whole wet term) and nothing of the 6.5 K/km assumption. Its error is therefore practically the error of N: comparing on T and e lumped is comparing on N with the pressure taken out. The separate T and e cards show how that one number splits under the 6.5 K/km assumption.");
     setTip("pte-N-sub", document.getElementById("pte-N-sub").getAttribute("data-tip") +
       (pteMother ? " In a pass's profile, purple is the mother: the first pass, against which every other pass (a daughter) is measured." : ""));
+  }
+
+  /* ---- the air the motion fit takes: data/simulator/absorbed/<run>.json, written by the team's
+     04_python/estimation/site_absorbed.py. Per fitted term the N it took from the true air (the same fit
+     repeated on the air alone at the shrinking time it chose; exact, the fit being linear then). Shown
+     when the file exists; the real data have no true air, so never there. */
+  var absP = {}, absDoc = {}, absPrior = "ground";
+  var ABS_TERMS = {
+    building: [{ k: "shrinking", name: "shrinking", color: DIST.shrinking.color }, { k: "thermal", name: "thermal dilation", color: DIST.thermal.color },
+      { k: "sinking", name: "sinking", color: DIST.sinking.color }],
+    scatterer: [{ k: "motion", name: "per-scatterer trend", color: "#8a6a45" }, { k: "thermal", name: "thermal dilation", color: DIST.thermal.color }]
+  };
+  var TB_COLOR = "#9a9a9a";
+  function pct(v) { return ok(v) ? Math.round(v * 100) + " %" : "n/a"; }
+  /* R^2 of y on the columns of X (with the constant), least squares by the normal equations */
+  function r2on(X, y) {
+    var n = y.length, k = X[0].length, A = [], b = [], i, j, r;
+    for (i = 0; i < k; i++) { A.push(new Array(k).fill(0)); b.push(0); }
+    for (r = 0; r < n; r++) for (i = 0; i < k; i++) { b[i] += X[r][i] * y[r]; for (j = 0; j < k; j++) A[i][j] += X[r][i] * X[r][j]; }
+    for (i = 0; i < k; i++) {                   /* Gauss-Jordan with partial pivoting */
+      var piv = i;
+      for (r = i + 1; r < k; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+      var t = A[i]; A[i] = A[piv]; A[piv] = t; t = b[i]; b[i] = b[piv]; b[piv] = t;
+      if (Math.abs(A[i][i]) < 1e-12) return NaN;
+      for (r = 0; r < k; r++) if (r !== i) { var f = A[r][i] / A[i][i]; for (j = i; j < k; j++) A[r][j] -= f * A[i][j]; b[r] -= f * b[i]; }
+    }
+    var my = mean(y), ss = 0, sr = 0;
+    for (r = 0; r < n; r++) { var fit = 0; for (i = 0; i < k; i++) fit += X[r][i] * b[i] / A[i][i]; ss += (y[r] - my) * (y[r] - my); sr += (y[r] - fit) * (y[r] - fit); }
+    return ss > 1e-12 ? 1 - sr / ss : NaN;
+  }
+  /* which signal a series of taken N is: the share a slow trend (1, t, t^2) explains, and the share the
+     building temperature explains beyond that trend (its weather-scale part). Over one year a slow trend
+     and the seasons look alike, so the trend is counted first. */
+  function whichSignal(v, tb, tx) {
+    var y = [], Xa = [], Xb = [];
+    for (var j = 0; j < v.length; j++) {
+      if (!ok(v[j]) || !ok(tb[j])) continue;
+      var t = (tx[j] - tx[0]) / 365.25;
+      y.push(v[j]); Xa.push([1, t, t * t]); Xb.push([1, t, t * t, tb[j]]);
+    }
+    if (y.length < 6) return { trend: NaN, temp: NaN };
+    var a = r2on(Xa, y), b = r2on(Xb, y);
+    return { trend: a, temp: ok(a) && ok(b) ? Math.max(0, b - a) : NaN };
+  }
+  function renderAbsorbed(s) {
+    var card = document.getElementById("sim-abs-card"), key = runKey(s), note = document.getElementById("sim-abs-note");
+    if (isReal()) { card.hidden = true; return; }
+    if (!(key in absDoc)) {
+      if (!absP[key]) {
+        var p = manifest.absorbed && manifest.absorbed[key];
+        absP[key] = (p ? getJson(BASE + p) : Promise.reject(new Error("none"))).then(function (d) { absDoc[key] = d; }, function () { absDoc[key] = null; });
+        absP[key].then(function () { if (view === "dist" && last && runKey(last.state) === key) renderAbsorbed(last.state); });
+      }
+      card.hidden = true;
+      return;
+    }
+    var d = absDoc[key], st = d && d.setups[absPrior] && d.setups[absPrior][s.layers];
+    card.hidden = !d;
+    if (!d) return;
+    var lay = document.getElementById("sim-abs-lay"), pas = document.getElementById("sim-abs-pass"), leg = document.getElementById("sim-abs-legend");
+    if (!st || st.error) {
+      lay.innerHTML = '<p class="sim-sub" style="padding:14px">Not available for this layer setup' + (st && st.error ? " (" + esc(st.error) + ")" : "") + ".</p>";
+      pas.innerHTML = ""; pas._pick = null; leg.innerHTML = ""; note.textContent = ""; return;
+    }
+    var edges = st.edges, T = st.terms, terms = ABS_TERMS[s.motion] || ABS_TERMS.building;
+    var allName = terms.length === 2 ? "both" : "all three";
+    curCounts = null;
+    var groups = [{ label: "true spread over the passes", vals: st.truth_spread, color: PTE_C.spread }]
+      .concat(terms.map(function (t) { return { label: t.name + ", rms taken", vals: T[t.k].rms, color: t.color }; }))
+      .concat([{ label: allName + ", rms taken", vals: T.total.rms, color: "#17191c" }]);
+    groups.extraTips = [];
+    terms.concat([{ k: "total", name: allName }]).forEach(function (t) {
+      groups.extraTips.push({ label: t.name + ": share of the true swings taken", vals: T[t.k].share, fmt: pct });
+    });
+    if (st.truth_r_T) groups.extraTips.push({ label: "r of the true air with the building temperature", vals: st.truth_r_T, fmt: function (v) { return num(v, 2); } });
+    var w = width(lay), nl = edges.length - 1, H = height(lay, Math.max(220, nl * (groups.length * 12 + 18) + 40));
+    var m = { l: w < 360 ? 58 : 66, r: 36, t: 22, b: 30 };
+    lay.innerHTML = svg(w, H, barRows("N", edges, groups, m.l, w - m.r, H, m, { title: "per layer: rms over the passes (N)" }),
+      "N taken from the air per layer, lowest first: " + groups.map(function (g) { return g.label + " " + g.vals.map(function (v) { return num(v, 2); }).join(", "); }).join("; ") + " N.");
+    var tb = d.building_temperature_C;
+    leg.innerHTML = groups.map(function (g) { return li(g.color, g.label.replace(", rms taken", "")); }).join("") +
+      (tb ? '<li><i class="ln dash" style="border-top-color:' + TB_COLOR + '"></i>building temperature (right axis)</li>' : "") +
+      "<li>" + (absPrior === "ground" ? "with the ground air prior, as the estimation runs" : "without the air prior: the radar alone") + "</li>";
+    /* per pass: the N taken, mean over the layers, and the building temperature that drives the thermal fit */
+    var ep = d.epochs, tx = ep.map(day), d0 = tx[0], d1 = tx[tx.length - 1], pad = (d1 - d0) * 0.012;
+    var series = terms.filter(function (t) { return t.k !== "sinking"; }).map(function (t) { return { v: T[t.k].pass_mean, color: t.color, w: 1.6, name: t.name }; });
+    var vals = [0];
+    series.forEach(function (x) { x.v.forEach(function (v) { if (ok(v)) vals.push(v); }); });
+    var w2 = width(pas), H2 = height(pas, 250), m2 = { l: 44, r: tb ? 38 : 10, t: 22, b: 22 };
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), pp = (hi - lo) * 0.06 || 0.5;
+    var xs = lin(d0 - pad, d1 + pad, m2.l, w2 - m2.r), ys = lin(lo - pp, hi + pp, H2 - m2.b, m2.t), tt = timeTicks(d0, d1, w2);
+    var body = rect(m2.l, m2.t, w2 - m2.l - m2.r, H2 - m2.t - m2.b, "#fcfbf8") + text(m2.l, m2.t - 8, "per pass: N taken, mean over the layers", { size: 10.5, fill: C.ink2, weight: 600 });
+    ticks(lo - pp, hi + pp, 4).forEach(function (v) { body += line(m2.l, ys(v), w2 - m2.r, ys(v), C.grid) + text(m2.l - 5, ys(v), tickLabel(v), { anchor: "end", base: "middle", size: 10 }); });
+    tt.ticks.forEach(function (t) { var x = xs(t.d); body += line(x, m2.t, x, H2 - m2.b, C.grid) + text(x, H2 - m2.b + 14, t.s, { anchor: "middle", size: 10 }); });
+    if (tt.title) body += text(w2 - m2.r, H2 - m2.b + 14, tt.title, { anchor: "end", size: 10, fill: C.ink2 });
+    body += line(m2.l, ys(0), w2 - m2.r, ys(0), "#17191c", 0.8);
+    var gap = s.atm === "simulated" ? 75 : 30;
+    if (tb) {                                   /* the building temperature, on its own axis at the right */
+      var tv = tb.filter(ok), tlo = Math.min.apply(null, tv), thi = Math.max.apply(null, tv), tp = (thi - tlo) * 0.06 || 0.5;
+      var yt = lin(tlo - tp, thi + tp, H2 - m2.b, m2.t);
+      ticks(tlo - tp, thi + tp, 4).forEach(function (v) { body += text(w2 - m2.r + 5, yt(v), tickLabel(v), { base: "middle", size: 10, fill: TB_COLOR }); });
+      body += text(w2 - 6, (m2.t + H2 - m2.b) / 2, "building T (°C)", { anchor: "middle", size: 10, fill: TB_COLOR, rot: 90, base: "middle" });
+      body += '<path d="' + path(tb.map(function (v, j) { return ok(v) ? [xs(tx[j]), yt(v)] : null; }), tx, gap) + '" fill="none" stroke="' + TB_COLOR + '" stroke-width="1.2" stroke-dasharray="4 3" stroke-linejoin="round"/>';
+    }
+    series.forEach(function (x) {
+      body += '<path d="' + path(x.v.map(function (v, j) { return ok(v) ? [xs(tx[j]), ys(v)] : null; }), tx, gap) + '" fill="none" stroke="' + x.color + '" stroke-width="' + x.w + '" stroke-linejoin="round"/>';
+    });
+    body += '<line class="sim-cross" x1="0" y1="' + m2.t + '" x2="0" y2="' + (H2 - m2.b) + '" stroke="#17191c" stroke-width="1" stroke-dasharray="2 2" visibility="hidden"/>';
+    pas.innerHTML = svg(w2, H2, body, "N taken from the air per pass, mean over the layers: " + series.map(function (x) { return x.name + " rms " + num(rmsMean(x.v), 2) + " N"; }).join(", ") + ".");
+    pas._pick = function (px) {
+      if (px < m2.l || px > w2 - m2.r) return null;
+      var dd = d0 - pad + (px - m2.l) / (w2 - m2.l - m2.r) * (d1 - d0 + 2 * pad), j = 0;
+      for (var i = 1; i < tx.length; i++) if (Math.abs(tx[i] - dd) < Math.abs(tx[j] - dd)) j = i;
+      var h = "<b>" + fmtDate(ep[j]) + "</b>";
+      series.forEach(function (x) { h += '<br><i class="sw" style="background:' + x.color + '"></i>' + esc(x.name) + " took " + signed(x.v[j], 2) + " N"; });
+      if (tb && ok(tb[j])) h += "<br>building temperature " + num(tb[j], 1) + " °C";
+      return { html: h, x: xs(tx[j]) };
+    };
+    /* in words: which part of the air each term takes (mean over the layers) */
+    var words = terms.filter(function (t) { return t.k !== "sinking"; }).map(function (t) {
+      var x = T[t.k], r = mean(x.rms), sh = mean(x.share), w = tb ? whichSignal(x.pass_mean, tb, tx) : { trend: NaN, temp: NaN };
+      var what = !tb ? "" : ok(w.trend) && w.trend >= 0.6 ? "; per pass it is a slow trend (" + pct(w.trend) + " of its variance in t and t²)" +
+          (w.temp >= 0.1 ? ", and the building temperature explains " + pct(w.temp) + " more" : "")
+        : ok(w.temp) && w.temp >= 0.5 ? "; per pass it follows the building temperature: beyond a slow trend (" + pct(w.trend) + ") it explains " + pct(w.temp) + " of its variance"
+          : "; per pass " + pct(w.trend) + " slow trend and " + pct(w.temp) + " building temperature beyond it";
+      return "<b>" + esc(t.name.charAt(0).toUpperCase() + t.name.slice(1)) + "</b> takes " + num(r, 2) + " N rms per layer, " + pct(sh) + " of the true swings" + what + ".";
+    });
+    note.innerHTML = words.join(" ") + (s.motion === "building" ? " Sinking takes nothing (one value per building and pass, which the layer fit removes anyway)." : "") +
+      (st.truth_r_T ? " The true air itself follows the building temperature with r " + num(mean(st.truth_r_T), 2) + ", which is why a free thermal fit can take it." : "");
+    setTip("sim-abs-sub", "How much of the true air the motion fit removes along with the building motion, measured exactly: the same fit is repeated on the simulation's air alone (per building at the shrinking time each building's fit chose; per scatterer as it is, that fit being linear), and each fitted term is passed through the layer inversion. Bars: per layer, the rms over the passes of the N each term took, next to how much the true air swings (grey); hover for the share of the true swings taken (the slope of the taken N on the true anomaly; negative: the term adds to the swings). The text below says which signal each term takes, from its mean over the layers per pass: the share a slow trend in time (1, t, t²) explains, and the share the building temperature (the 72 h memory of the air temperature) explains beyond that trend. Over a single year a slow trend and the seasons look alike, so the trend is counted first. Right: per pass, the N taken, mean over the layers, with the building temperature. Shrinking and the per-scatterer trend take air that drifts slowly; thermal dilation air that follows the building temperature and grows with height. Sinking is the same for every point of a building, which the layer fit removes anyway, so it takes nothing. With the ground air prior (how the estimation runs) the ground station's air is taken out before the fit and put back after, so the fit sees only the air the ground station does not predict; switch it off to see what the prior protects.");
   }
 
   /* ---- 5. what this means: plain-language reading of the numbers above */
@@ -1004,6 +1311,14 @@
       items.push("<b>Nothing is switched on.</b> What is left, " + num(air.column_rmse, 2) + " N, is the estimation's own error on clean data with this air.");
     }
     if (s.sinking === "1") items.push("<b>Sinking changes nothing here.</b> The simulation sinks each building as a whole, and the estimation only compares points within one building, so a movement every point of a building shares cancels exactly, on every pass and in every step.");
+    /* the other motion model, same simulation and layers */
+    var otherM = s.motion === "scatterer" ? "building" : "scatterer", mo = summ(variant(s, { motion: otherM }));
+    if (mo) {
+      var better = mo.column_rmse < sm.column_rmse;
+      items.push("<b>Motion model.</b> With the " + MOTION_NAME[otherM] + " instead of the " + MOTION_NAME[s.motion] + " the column error would be " + num(mo.column_rmse, 2) + " N instead of " + num(sm.column_rmse, 2) + " N" +
+        (better ? ": the " + MOTION_NAME[otherM] + " does better here." : ".") +
+        " Per scatterer every point gets its own linear and quadratic term in time, so it also absorbs every point's slow drift of the air; per building only the shrinking (a straight line in height that slows down) can take the air.");
+    }
     /* radar against the station, per layer and for the column */
     var w = wins(e), cs = colSkill(sm);
     var wl = w.map(function (k) { return layerLabel(e.edges, k); }), ll = [];
@@ -1088,7 +1403,7 @@
         "; in the real data they are what they are. Pick a simulated atmosphere, or see Step by step and P, T, e for the real data.");
       return;
     }
-    var prior = realPrior(), L = state.layers, byPrior = realDoc.results[prior] || {}, e = byPrior[L];
+    var prior = realPrior(), L = state.layers, byMotion = realDoc.results[state.motion] || {}, byPrior = byMotion[prior] || {}, e = byPrior[L];
     if (!e || e.error) { failed("The estimation on the real data could not run with " + (LAYERS_NAME[L] || L) + (e && e.error ? ": " + e.error : "") + ". Try other layers."); return; }
     failed("");
     realMode(true);
@@ -1113,11 +1428,11 @@
     if (isReal()) {
       var rp = pass;
       return "Real TerraSAR-X data" + (realDoc ? ", " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + " (" + realDoc.passes + " passes)" : "") +
-        "; truth: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + L + rp + ". Virtual Radiosonde.";
+        "; truth: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + MOTION_NAME[s.motion] + "; " + L + rp + ". Virtual Radiosonde.";
     }
     var on = TOGGLES.filter(function (k) { return s[k] === "1"; }).map(function (k) { return DIST[k].label.toLowerCase(); });
     return "Simulation: " + (ATM_NAME[s.atm] || s.atm).replace(/^the /, "") + "; " + (on.length ? listWords(on) : "no disturbances") + "; " + s.noise + " mm noise; " +
-      thousands(s.points) + " points; " + L + pass + ". Synthetic data, Virtual Radiosonde simulator.";
+      thousands(s.points) + " points; " + MOTION_NAME[s.motion] + "; " + L + pass + ". Synthetic data, Virtual Radiosonde simulator.";
   }
   function figLegend(card) {
     var out = [];
@@ -1214,7 +1529,7 @@
     });
     var d = manifest.defaults || {}, rb = document.getElementById("sim-reset");
     if (rb) rb.title = "Realistic: " + (at[d.atm] && at[d.atm].label || d.atm) + ", " + TOGGLES.filter(function (k) { return d[k] == 1; }).map(function (k) { return DIST[k].label.toLowerCase(); }).join(", ") +
-      ", " + d.noise + " mm noise, " + thousands(d.points) + " points, " + LAYERS_NAME[String(d.layers)] + ".";
+      ", " + d.noise + " mm noise, " + thousands(d.points) + " points, " + (MOTION_NAME[d.motion] || MOTION_NAME.building) + ", " + LAYERS_NAME[String(d.layers)] + ".";
     var asof = document.getElementById("sim-asof");
     if (asof && manifest.generated) asof.textContent = "Synthetic data only, no real radar point is used. Results generated on " + fmtDate(manifest.generated) +
       (manifest.code && manifest.code.virtual_radiosonde ? " with the team's code at " + String(manifest.code.virtual_radiosonde).slice(0, 7) : "") + ".";
@@ -1241,10 +1556,19 @@
     form.querySelectorAll('input[name="prior"]').forEach(function (r) { if (p0) r.checked = r.value === p0; });
     form.addEventListener("change", update);
     scSel.addEventListener("change", function () { scLayer = +scSel.value; if (last && !simMsg) renderScatter(document.getElementById("sim-sc"), last.entry, last.run.epochs, scLayer, W_SIM); });
+    document.getElementById("view-dist").addEventListener("change", function (ev) {
+      if (ev.target.name === "abs-prior") { absPrior = ev.target.value; if (last && !simMsg) renderAbsorbed(last.state); }
+    });
     document.getElementById("view-pte").addEventListener("change", function (ev) {
       if (ev.target.name === "pte-show") pteShow = ev.target.value;
       if (ev.target.name === "pte-lump") pteLump = ev.target.value === "1";
       if (ev.target.name === "pte-mother") pteMother = ev.target.checked;
+      if (ev.target.name === "pte-t") pteT = ev.target.value;
+      if (ev.target.id === "pte-date") {
+        if (!ev.target.value) return;
+        pteShow = "date:" + ev.target.value;
+        document.querySelectorAll('input[name="pte-show"]').forEach(function (r) { r.checked = false; });
+      }
       renderView();
     });
     /* a new random pass on every click */
@@ -1285,6 +1609,23 @@
   }).catch(function (err) {
     fail("The simulator results are not on the site yet, or could not be read (" + err.message + "). The page needs data/simulator/manifest.json and its run files; everything else on this page still applies.");
   });
+
+  /* every info tip on the page stays readable: shifted sideways to stay inside the side panel (which
+     clips what sticks out) or the window, narrowed to the panel, and opened upwards near the bottom */
+  function fitTip(t) {
+    var panel = t.closest(".app-panel"), r = t.getBoundingClientRect();
+    var box = panel ? panel.getBoundingClientRect() : { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
+    var room = box.right - box.left - 16, wMax = Math.min(panel ? 270 : 330, 0.76 * window.innerWidth, room);
+    var tip = t.getAttribute("data-tip") || "", w = Math.min(wMax, tip.length * 6.6 + 24) + 6;
+    var base = t.classList.contains("left") ? r.left : t.classList.contains("right") ? r.right - w : r.left + r.width / 2 - w / 2;
+    var want = clamp(base, box.left + 10, box.right - 10 - w);
+    t.style.setProperty("--tip-shift", (want - base).toFixed(0) + "px");
+    if (panel) t.style.setProperty("--tip-max", Math.floor(wMax) + "px");
+    var hgt = Math.ceil(tip.length * 6.6 / Math.max(80, w - 22)) * 19 + 24, bottom = Math.min(box.bottom, window.innerHeight);
+    t.classList.toggle("up", !t.classList.contains("left") && !t.classList.contains("right") && r.bottom + hgt > bottom - 4 && r.top - hgt > Math.max(box.top, 0));
+  }
+  document.getElementById("sim").addEventListener("mouseover", function (ev) { var t = ev.target.closest && ev.target.closest(".t"); if (t) fitTip(t); });
+  document.getElementById("sim").addEventListener("focusin", function (ev) { var t = ev.target.closest && ev.target.closest(".t"); if (t) fitTip(t); });
 
   /* screen readers do not read the tooltip text from CSS: give the info marks a name */
   form.querySelectorAll(".t.i").forEach(function (t) { t.setAttribute("aria-label", t.getAttribute("data-tip")); t.setAttribute("role", "note"); });

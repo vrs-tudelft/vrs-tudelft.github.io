@@ -34,7 +34,8 @@ MIN_N = 20
 SIZE_CAP = 1_500_000
 BANNED = re.compile(r"(^pnt_|^lat$|^lon$|3857|^idx|^WKT$)")
 POINT_COUNTS = (20594, 11818,      # 2014-2023 processing: all points, coherence > 0.6
-                22118, 14901)      # 2020-2026 processing
+                22118, 14901,      # 2020-2026 processing
+                25667, 17434)      # 2020-2026 full-height export
 DATA = Path(__file__).resolve().parents[1] / "data"
 NOT_CHECKED = {"MANIFEST.json", "manifest.json", "datasets.json"}
 
