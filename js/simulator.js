@@ -882,7 +882,44 @@
   /* one pass: the true profile (real data: carried up from KNMI 344, for P and T only), the estimate per
      layer with an error bar (simulation: the rms error over all passes; real data, e only: its own
      uncertainty on this pass), for N and e the station alone; P relative to the ground */
+  /* the estimate as a profile, as the truth is drawn: the layer values at the layer centres, joined
+     "lin": by straight lines; "smooth": by a monotone cubic (PCHIP, Fritsch-Carlson), smooth in height
+     with no corners and no overshoot between the centres (a real refractivity profile has no sharp
+     corners). Both are carried on with their end slopes to the bottom and the top of the column. */
+  function profilePts(v) {
+    var e = pteEdges, nl = e.length - 1, z = [], x = [];
+    for (var k = 0; k < nl; k++) if (ok(v[k])) { z.push((e[k] + e[k + 1]) / 2); x.push(v[k]); }
+    var n = z.length;
+    if (!n) return [];
+    if (n === 1) return [[x[0], e[0]], [x[0], e[nl]]];
+    var h = [], d = [], m = [], i;
+    for (i = 0; i < n - 1; i++) { h.push(z[i + 1] - z[i]); d.push((x[i + 1] - x[i]) / h[i]); }
+    if (pteInterp === "smooth") {
+      m.push(d[0]);
+      for (i = 1; i < n - 1; i++) {
+        if (d[i - 1] * d[i] <= 0) { m.push(0); continue; }
+        var w1 = 2 * h[i] + h[i - 1], w2 = h[i] + 2 * h[i - 1];
+        m.push((w1 + w2) / (w1 / d[i - 1] + w2 / d[i]));
+      }
+      m.push(d[n - 2]);
+    } else {
+      for (i = 0; i < n; i++) m.push(i === 0 ? d[0] : i === n - 1 ? d[n - 2] : NaN);
+    }
+    var pts = [[x[0] + m[0] * (e[0] - z[0]), e[0]]];
+    for (i = 0; i < n - 1; i++) {
+      if (pteInterp !== "smooth") { pts.push([x[i], z[i]]); continue; }
+      for (var s = 0; s < 24; s++) {            /* Hermite cubic on [z_i, z_i+1] */
+        var t = s / 24, t2 = t * t, t3 = t2 * t;
+        pts.push([(2 * t3 - 3 * t2 + 1) * x[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * x[i + 1] + (t3 - t2) * h[i] * m[i + 1], z[i] + t * h[i]]);
+      }
+    }
+    pts.push([x[n - 1], z[n - 1]]);
+    pts.push([x[n - 1] + m[n - 1] * (e[nl] - z[n - 1]), e[nl]]);
+    return pts;
+  }
+  var pteInterp = "smooth", pteEdges = [];
   function pteProfile(el, q, ps, edges, err, real) {
+    pteEdges = edges;
     var ref = q === "P" ? ps.ground.P : 0, nl = edges.length - 1, top = edges[nl];
     var est = (q === "e" ? ps.est.e[pteCal] : ps.est[q]).map(function (v) { return v - ref; });
     var src = real ? ps.model && ps.model[q] : ps.truth[q];
@@ -902,6 +939,9 @@
     meas.forEach(function (mm) { mm[q].forEach(function (v, i) { if (ok(v) && mm.z[i] <= top) xsv.push(v - ref); }); });
     var mo = q === "N" && ps.mother && pteMother ? ps.mother : null;
     if (mo) { mo.est.forEach(function (v) { if (ok(v)) xsv.push(v); }); mo.line.forEach(function (v, i) { if (ok(v) && (mo.line.length !== ps.z.length || ps.z[i] <= top)) xsv.push(v); }); }
+    [est, st].concat(alts.map(function (a) { return a.v; }), alts.map(function (a) { return a.st; })).forEach(function (v) {
+      if (v) profilePts(v).forEach(function (p) { if (ok(p[0])) xsv.push(p[0]); });
+    });
     var lo = Math.min.apply(null, xsv), hi = Math.max.apply(null, xsv), pad = (hi - lo) * 0.06 || 0.5;
     var w = width(el), H = height(el, 300), m = { l: 40, r: 10, t: 8, b: 30 };
     var xs = lin(lo - pad, hi + pad, m.l, w - m.r), ys = lin(0, top, H - m.b, m.t);
@@ -918,10 +958,13 @@
       ps.z.forEach(function (z, i) { if (z <= top && ok(tr[i])) pts.push([xs(tr[i]), ys(z)]); });
       body += '<path d="' + path(pts) + '" fill="none" stroke="' + (real ? PTE_C.station : PTE_C.truth) + '" stroke-width="1.6"/>';
     }
-    function steps(v, color, wd, dash) {
+    function steps(v, color, wd, dash, dots) {
       var d = "";
-      for (var k = 0; k < nl; k++) if (ok(v[k])) d += "M" + xs(v[k]).toFixed(1) + " " + ys(edges[k]).toFixed(1) + "V" + ys(edges[k + 1]).toFixed(1) + (k + 1 < nl && ok(v[k + 1]) ? "H" + xs(v[k + 1]).toFixed(1) : "");
-      return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + wd + '"' + (dash ? ' stroke-dasharray="5 3"' : "") + "/>";
+      /* a profile through the layer centres, like the truth: straight or smooth (profilePts) */
+      profilePts(v).forEach(function (p, i) { d += (i ? "L" : "M") + xs(p[0]).toFixed(1) + " " + ys(p[1]).toFixed(1); });
+      var out = '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="' + wd + '" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="5 3"' : "") + "/>";
+      if (dots) for (var k2 = 0; k2 < nl; k2++) if (ok(v[k2])) out += '<circle cx="' + xs(v[k2]).toFixed(1) + '" cy="' + ys((edges[k2] + edges[k2 + 1]) / 2).toFixed(1) + '" r="2.6" fill="' + color + '" pointer-events="none"/>';
+      return out;
     }
     if (mo) {                                   /* the mother: the first pass, the reference of every pass */
       if (mo.line.length === ps.z.length) {
@@ -938,7 +981,7 @@
     });
     if (st) body += steps(st, PTE_C.station, 1.4, true);
     alts.forEach(function (a) { if (a.st) body += steps(a.st, a.color, 1.4, true); body += steps(a.v, a.color, 2.2); });
-    body += steps(est, PTE_C.est, 2.2);
+    body += steps(est, PTE_C.est, 2.2, false, true);
     meas.forEach(function (mm) {                /* the measurements behind the air: open markers */
       var dia = /sounding/i.test(mm.src);
       mm[q].forEach(function (v, i) {
@@ -1564,6 +1607,7 @@
       if (ev.target.name === "pte-lump") pteLump = ev.target.value === "1";
       if (ev.target.name === "pte-mother") pteMother = ev.target.checked;
       if (ev.target.name === "pte-t") pteT = ev.target.value;
+      if (ev.target.name === "pte-interp") pteInterp = ev.target.value;
       if (ev.target.id === "pte-date") {
         if (!ev.target.value) return;
         pteShow = "date:" + ev.target.value;

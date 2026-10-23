@@ -174,6 +174,10 @@
             <label><input type="radio" name="pte-lump" value="1"><span>T and e lumped</span></label>
           </div>
           <label class="pte-check"><input type="checkbox" name="pte-mother"><span>Show mother</span></label>
+          <div class="seg pte-seg" role="radiogroup" aria-label="Estimated profile" title="The estimate (and the station alone) as a profile through the layer centres, carried on to the bottom and the top like the true profile. Linear: straight lines between the centres. Smooth: a monotone cubic curve through the same points, without corners and without overshoot, since a real refractivity profile has no sharp corners.">
+            <label><input type="radio" name="pte-interp" value="lin"><span>Profile: linear</span></label>
+            <label><input type="radio" name="pte-interp" value="smooth" checked><span>Smooth</span></label>
+          </div>
           <button type="button" class="pte-rand" id="pte-random" aria-pressed="false" title="Show a pass picked at random; every click picks another one"><i data-icon="reset"></i>Random pass</button>
           <div class="seg pte-seg" role="radiogroup" aria-label="Temperature profile" id="pte-tprof" style="display:none" title="T(z) for the P, T, e conversion: the ground station falling 6.5 K/km, or a two-point profile through the ground and a station 27.5 m higher (the Sanders roof in Rotterdam), its shape learned from the Cabauw mast, a logarithmic departure from the 6.5 K/km line">
             <label><input type="radio" name="pte-t" value="lin" checked><span>T: 6.5 K/km</span></label>
@@ -260,6 +264,6 @@
 </div>
 <script defer src="js/nav.js?v=20261013g"></script>
 <script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/simulator.js?v=20261022a"></script>
+<script defer src="js/simulator.js?v=20261023a"></script>
 </body>
 </html>
