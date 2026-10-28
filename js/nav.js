@@ -9,6 +9,7 @@
     { href: "overview.html", label: "Method", sub: [
       { href: "overview.html", label: "Overview" },
       { href: "simulator.html", label: "Simulator" },
+      { href: "simulator2.html", label: "Simulator 2.0" },
       { href: "estimation.html", label: "Estimation" },
       { href: "buildings.html", label: "Buildings", also: ["animations.html"], in3d: true }
     ] },
