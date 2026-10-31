@@ -5,6 +5,23 @@ The public website of the Virtual Radiosonde project: https://vrs-tudelft.github
 It is plain HTML, CSS and JavaScript. There is no build step. Change a file, push, and the
 site updates within a minute or two.
 
+## Check a change
+
+From this repository's root, with Python 3.13:
+
+```sh
+python tools/check_links.py
+python tools/check_data.py
+```
+
+Both checks also run in GitHub Actions on pushes to `main` and pull requests.
+They check links, anchors, aggregate counts and data manifests; they do not run
+or publish the analysis. Preview a page with `python tools/serve.py` and inspect
+it before pushing. The checks workflow does not gate the existing Pages deployment.
+
+For the analysis environment and how the repositories fit together, see the
+[project setup guide](https://github.com/vrs-tudelft/virtual-radiosonde/blob/main/GETTING_STARTED.md).
+
 ## What is on it
 
 | File | What it shows |
