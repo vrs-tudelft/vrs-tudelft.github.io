@@ -37,7 +37,9 @@
 .plot-key>span { display:flex; align-items:center; gap:6px; }.key-line { width:22px; border-top:2px solid; }.key-line.radar { border-color:#15688f; }.key-line.station { border-color:#8a8f96; }
 .finding-verdict { padding:9px 12px; margin:0!important; font-size:.83rem!important; line-height:1.45!important; background:#f7eedb; border-left:3px solid #b18b39; border-radius:7px; }
 .finding-verdict.positive { background:var(--accent-soft); border-color:var(--accent); }
-.finding-verdict.circular { background:#f9e9e5; border-color:#a8433b; }
+.metric-warning { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; padding:4px; margin:-3px 0 -3px 4px; vertical-align:middle; color:#a8433b; border:0; border-radius:4px; background:transparent; cursor:help; }
+.metric-warning svg { width:16px; height:16px; flex:none; }
+.metric-warning:hover,.metric-warning:focus-visible { background:#f9e9e5; }
 .site-main .site-boundary,.site-main .finding-verdict,#view-pte .pte-note { max-width:none; }
 .site-panel #report-status { margin:10px 0; }
 .site-panel .story-secondary { margin:8px 0 0; }
