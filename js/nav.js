@@ -7,7 +7,8 @@
     {href: "results.html",label:"Results"},
     {href: "overview.html",label:"Method",sub:[
       {href: "overview.html",label:"Workflow"},{href: "estimation.html",label:"Estimation"},
-      {href: "buildings.html",label:"Buildings",also:["animations.html"],in3d:true},
+      {href: "buildings.html",label:"Buildings",also:["animations.html"]},
+      {href: "3d/index.html",label:"3D city",in3d:true},
       {href: "theory.html",label:"Theory"}
     ]},
     {href: "data.html",label:"Data"}

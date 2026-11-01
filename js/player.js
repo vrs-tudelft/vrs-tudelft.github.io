@@ -210,6 +210,16 @@ window.VRS = (function () {
     function aspect(w) { return typeof opts.aspect === "function" ? opts.aspect(w) : (opts.aspect || 16 / 9); }
     function resize() {
       var w = Math.max(240, mount.clientWidth - 24), h = Math.round(w / aspect(w));
+      var dashboard=mount.closest('.site-main');
+      if (dashboard && innerWidth>=1000 && mount.getClientRects().length) {
+        var nonCanvas=[label,controls,extra].reduce(function(total,el){
+          var style=getComputedStyle(el);
+          return total+el.getBoundingClientRect().height+parseFloat(style.marginTop||0)+parseFloat(style.marginBottom||0);
+        },0);
+        var bottomPadding=parseFloat(getComputedStyle(dashboard).paddingBottom)+parseFloat(getComputedStyle(mount.parentElement).paddingBottom);
+        var available=dashboard.getBoundingClientRect().bottom-mount.getBoundingClientRect().top-nonCanvas-bottomPadding-10;
+        h=Math.min(h,Math.max(180,Math.floor(available)));
+      }
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
       canvas.style.height = h + "px";
@@ -259,7 +269,8 @@ window.VRS = (function () {
     }
     mount.addEventListener("keydown", onKey);
     var ro = null, io = null;
-    if (window.ResizeObserver) { ro = new ResizeObserver(resize); ro.observe(mount); } else window.addEventListener("resize", resize);
+    if (window.ResizeObserver) { ro = new ResizeObserver(resize); ro.observe(mount); }
+    window.addEventListener("resize", resize);
     if (window.IntersectionObserver) {
       var first = true;
       io = new IntersectionObserver(function (entries) {
@@ -277,7 +288,8 @@ window.VRS = (function () {
       set: set, play: play, pause: pause, redraw: draw, extra: extra,
       destroy: function () {
         pause();
-        if (ro) ro.disconnect(); else window.removeEventListener("resize", resize);
+        if (ro) ro.disconnect();
+        window.removeEventListener("resize", resize);
         if (io) io.disconnect();
         mount.removeEventListener("keydown", onKey);
         if (mount._vrsPlayer === api) mount._vrsPlayer = null;

@@ -32,3 +32,8 @@ jobs:
         run: python tools/check_report.py
       - name: Check workspace composition and data context
         run: python tools/check_workspace.py
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - name: Check research readouts against both public processings
+        run: node --test tools/city-research.test.mjs

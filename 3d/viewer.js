@@ -1,13 +1,15 @@
 /* The 3D view of Kop van Zuid. Buildings from the 3DBAG as one mesh, coloured through a small
    lookup texture (one row per building, one column for the whole building and ten for its 10 m
-   slabs); ground cells as one instanced mesh; a time slider over the passes. All values are
-   means over at least 20 radar points. The geometry (3DBAG models, aerial image, presets) is read
+   slabs); ground cells as one instanced mesh; a time slider over the passes. Published
+   radar statistics use groups of at least 20 points; register attributes are separate public
+   metadata. The geometry (3DBAG models, aerial image, presets) is read
    from ../data/3d/; the radar aggregates from the folder of the data input chosen with the switch
    above the view (../js/dataset.js, ../data/datasets.json), and a change of input reloads them in
    place. */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { supportedBands, heightSummary, heightContrast, heightProfile } from "./research.js?v=20261101c";
 
 const $ = (id) => document.getElementById(id);
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -32,6 +34,7 @@ const sgn = (v, nd) => (v >= 0 ? "+" : "") + v.toFixed(nd);
 
 /* layer definitions: value(record) -> number|null, ramp, limits, unit, symmetric */
 const LAYERS = {
+  band_n: { title: "published radar points per 10 m height group", ramp: "cividis", lim: [20, 1500], band: b => b.n },
   rate: { title: "long-term rate [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], get: (r) => r.rate },
   tilt: { title: "tilt: rate against height [mm per 100 m per yr]", ramp: "RdBu_r", lim: [-6, 6], get: (r) => r.tilt_per100 },
   quad: { title: "curvature [mm/yr²], positive = slowing down", ramp: "PuOr", lim: [-0.3, 0.3], get: (r) => r.quad },
@@ -69,15 +72,17 @@ const POINT_LAYERS = {
 };
 
 const S = {  /* state */
-  epoch: 0, tmode: "increment", playing: false, speed: 8, layer: "rate", cellLayer: "time", cellGrid: "ground",
-  pointLayer: "time", columns: false, edges: !isMobile, texture: true, radarLight: false, ceiling: false, rays: false, balloon: false,
-  selected: null, needsRender: true, anim: null
+  epoch: 0, tmode: "increment", playing: false, speed: 8, layer: "band_n", cellLayer: "none", cellGrid: "ground", height: 40,
+  pointLayer: "time", columns: false, edges: !isMobile, texture: false, radarLight: false, ceiling: false, rays: false, balloon: false,
+  selected: null, needsRender: true, anim: null, timeline: 'building'
 };
 
 let renderer, scene, camera, persp, ortho, controls, buildings, edgesObj, cellsMesh, ground, gridHelper, ceilingPlane, hemi, sun, table, tableTex, uniforms, flight;
 let D = {};   /* data */
 let cellGeom = { all: null, ground: null };
 let rayGroup, balloonGroup, airSlab, pointCloud;
+let selectionBox, selectedContrast = null;
+const buildingBounds = new Map();
 
 const getJson = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.json(); });
 const getBuf = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.arrayBuffer(); });
@@ -174,6 +179,7 @@ function applyTexture() {
 
 function resize() {
   const st = $("stage"), w = st.clientWidth, h = st.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   persp.aspect = w / h; persp.updateProjectionMatrix();
   const hw = D.manifest.presets.satellite.half_width;
@@ -192,7 +198,11 @@ async function loadBuildings() {
   table = new Uint8Array(nB * nCols * 4);
   tableTex = new THREE.DataTexture(table, nCols, nB, THREE.RGBAFormat);
   tableTex.magFilter = tableTex.minFilter = THREE.NearestFilter;
-  uniforms = { uTable: { value: tableTex }, uNBld: { value: nB }, uNCols: { value: nCols }, uBandM: { value: 10 }, uGround: { value: D.manifest.ground_nap }, uMode: { value: 0 } };
+  uniforms = { uTable: { value: tableTex }, uNBld: { value: nB }, uNCols: { value: nCols }, uBandM: { value: 10 }, uGround: { value: D.manifest.ground_nap }, uMode: { value: 0 },
+    uFocusBand: {value: S.height / 10}, uHeightMode: {value: 1},
+    uBldGround: {value: D.bld.order.map(id => D.bld.bag3d[id]?.ground_nap ?? D.manifest.ground_nap)},
+    uSupport: {value: D.bld.order.flatMap(id => { const h=D.bld.buildings[id]?.h_agl; return h ? [h.min,h.max] : [-1,-1]; })}
+  };
   const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
@@ -200,8 +210,25 @@ async function loadBuildings() {
       .replace("#include <common>", "#include <common>\nattribute float _building;\nvarying float vBid;\nvarying float vY;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBid = _building;\nvY = position.y;");
     sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform sampler2D uTable;\nuniform float uNBld;\nuniform float uNCols;\nuniform float uBandM;\nuniform float uGround;\nuniform int uMode;\nvarying float vBid;\nvarying float vY;")
-      .replace("#include <color_fragment>", "#include <color_fragment>\n{\n  float col = (uMode == 0) ? 0.5 : (1.5 + floor((vY - uGround) / uBandM));\n  col = clamp(col, 0.5, uNCols - 0.5);\n  vec4 c = texture2D(uTable, vec2(col / uNCols, (vBid + 0.5) / uNBld));\n  diffuseColor.rgb = (c.a > 0.5) ? c.rgb : vec3(0.80, 0.81, 0.82);\n}");
+      .replace("#include <common>", `#include <common>
+uniform sampler2D uTable;
+uniform float uNBld, uNCols, uBandM, uGround, uFocusBand;
+uniform float uBldGround[${nB}];
+uniform vec2 uSupport[${nB}];
+uniform int uMode, uHeightMode;
+varying float vBid, vY;`)
+      .replace("#include <color_fragment>", `#include <color_fragment>
+{
+  int bid = int(vBid + 0.5);
+  float height = vY - uBldGround[bid];
+  float band = floor(height / uBandM);
+  float col = (uMode == 0) ? 0.5 : (1.5 + band);
+  vec4 c = texture2D(uTable, vec2(clamp(col, 0.5, uNCols - 0.5) / uNCols, (vBid + 0.5) / uNBld));
+  if (uMode == 1 && (col >= uNCols || height < uSupport[bid].x || height > uSupport[bid].y)) c.a = 0.0;
+  vec3 grey = vec3(0.80, 0.81, 0.82);
+  diffuseColor.rgb = (c.a > 0.5) ? c.rgb : grey;
+  if (uHeightMode == 1 && c.a > 0.5 && abs(band - uFocusBand) > 0.1) diffuseColor.rgb = mix(grey, c.rgb, 0.32);
+}`);
   };
   buildings = new THREE.Mesh(geom, mat);
   buildings.name = "buildings";
@@ -225,6 +252,7 @@ function fillTable() {
   const L = LAYERS[S.layer], nCols = 11;
   const recs = D.bld.buildings, attrs = D.bld.bag3d;
   uniforms.uMode.value = L.band ? 1 : 0;
+  uniforms.uHeightMode.value = S.layer === 'band_n' ? 1 : 0;
   if (S.cellLayer === "points") {      /* nothing averaged on screen: the points carry the colour */
     table.fill(0);
     tableTex.needsUpdate = true;
@@ -238,11 +266,10 @@ function fillTable() {
       let v = null;
       if (L.attr) v = a ? L.attr(a) : null;
       else if (L.get) v = rec ? L.get(rec) : null;
-      else if (L.band && rec && c > 0) { const b = rec.bands.find((bb) => bb.lo === (c - 1) * 10); v = b ? L.band(b) : null; }
+      else if (L.band && rec && c > 0) { const b = supportedBands(rec, D.bld.min_n).find((bb) => bb.lo === (c - 1) * 10); v = b ? L.band(b) : null; }
       const col = colourOf(L, v), k = (row * nCols + c) * 4;
       if (col) { table[k] = col[0]; table[k + 1] = col[1]; table[k + 2] = col[2]; table[k + 3] = 255; }
       else { table[k] = table[k + 1] = table[k + 2] = 0; table[k + 3] = 0; }
-      if (S.selected && S.selected.kind === "building" && S.selected.id === bid && col) { table[k] = Math.min(255, col[0] + 60); table[k + 1] = Math.min(255, col[1] + 60); table[k + 2] = Math.min(255, col[2] + 60); }
     }
   });
   tableTex.needsUpdate = true;
@@ -361,35 +388,62 @@ function drawLegend(L) {
   ctx.fillStyle = css("--muted"); ctx.font = "11px system-ui"; ctx.textBaseline = "top";
   if (L.cyclic) { "JFMAMJJASOND".split("").forEach((m, k) => { ctx.textAlign = "center"; ctx.fillText(m, (k + 0.5) / 12 * w, 22); }); }
   else { ctx.textAlign = "left"; ctx.fillText(String(L.lim[0]), 0, 22); ctx.textAlign = "center"; ctx.fillText(String((L.lim[0] + L.lim[1]) / 2), w / 2, 22); ctx.textAlign = "right"; ctx.fillText(String(L.lim[1]), w, 22); }
-  $("legendText").textContent = L.title + (L.ramp === "RdBu_r" ? " · blue = away from the satellite" : "") + " · grey = fewer than 20 radar points";
+  $("legendText").textContent = L.title + (L.ramp === "RdBu_r" ? " · blue = away from the satellite" : "") + (L.attr ? " · grey = unavailable register value" : " · grey = no published group");
 }
 
 function updateEpochLabel() {
   const e = D.epochs, i = S.epoch, tg = e.knmi.tg[i];
-  $("epochLabel").textContent = `${DS.button} · pass ${i + 1} of ${e.n_epochs} · ${fmtDate(e.dates[i])} · Rotterdam daily mean ${tg === null ? "no KNMI value on hand" : tg.toFixed(1) + " °C (KNMI 344)"} · s(t) minus trend and yearly wave ${sgn(e.s_resid[i], 1)} mm/100 m`;
+  const value = S.timeline === 'building' ? selectedContrast && Number.isFinite(selectedContrast.series[i]) ? sgn(selectedContrast.series[i],2)+' mm LOS' : 'no supported slab contrast' : sgn(e.s_resid[i],1)+' mm/100 m';
+  $("epochLabel").textContent = `${fmtDate(e.dates[i])} · pass ${i + 1} of ${e.n_epochs} · ${value}`;
   $("tSlider").value = i;
 }
 
 function drawStrip() {
-  const cv = $("strip"), ctx = cv.getContext("2d"), w = cv.clientWidth, h = 110;
+  const cv = $("strip"), ctx = cv.getContext("2d"), w = cv.clientWidth, h = cv.clientHeight || 110;
+  if (!w) return;
   cv.width = w * 2; cv.height = h * 2; ctx.scale(2, 2); ctx.clearRect(0, 0, w, h);
-  const e = D.epochs, n = e.n_epochs, x0 = 40, x1 = w - 10, y0 = 8, y1 = h - 22;
-  const lim = D.scales.s_resid_mm_per_100m * 1.6;
+  if (S.timeline === 'building') {
+    const contrast = selectedContrast;
+    $("strip").setAttribute('aria-label','Upper minus lower slab displacement in the selected building, mm along the radar line of sight');
+    if (!contrast) {
+      ctx.fillStyle = css('--muted'); ctx.font='12px system-ui';
+      ctx.fillText('Select a building with at least two published height groups.',16,30);
+      return;
+    }
+    const values = contrast.series.filter(Number.isFinite), lo=Math.min(0,...values), hi=Math.max(0,...values);
+    const pad=Math.max(.1,(hi-lo)*.08), x0=42, x1=w-12, y0=14, y1=h-22;
+    const X=i=>x0+i/(contrast.series.length-1)*(x1-x0), Y=v=>y1-(v-lo+pad)/(hi-lo+2*pad)*(y1-y0);
+    ctx.strokeStyle=css('--line');ctx.beginPath();ctx.moveTo(x0,Y(0));ctx.lineTo(x1,Y(0));ctx.stroke();
+    ctx.strokeStyle=css('--accent');ctx.beginPath();let pen=false;
+    contrast.series.forEach((v,i)=>{if(!Number.isFinite(v)){pen=false;return;}if(pen)ctx.lineTo(X(i),Y(v));else ctx.moveTo(X(i),Y(v));pen=true;});ctx.stroke();
+    ctx.strokeStyle=css('--bad');ctx.beginPath();ctx.moveTo(X(S.epoch),y0);ctx.lineTo(X(S.epoch),y1);ctx.stroke();
+    ctx.fillStyle=css('--muted');ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText(hi.toFixed(1),x0-5,Y(hi)+3);ctx.fillText(lo.toFixed(1),x0-5,Y(lo)+3);
+    ctx.textAlign='left';ctx.fillText(contrast.high.lo+'–'+contrast.high.hi+' m minus '+contrast.low.lo+'–'+contrast.low.hi+' m [mm LOS], motion and air remain mixed',x0+5,11);
+    let year;D.epochs.dates.forEach((d,i)=>{if(d.slice(0,4)!==year){year=d.slice(0,4);ctx.fillText(year,X(i),h-6);}});
+    return;
+  }
+  $("strip").setAttribute('aria-label','City-wide residual radar height gradient and daily temperature, with separate axes');
+  const e = D.epochs, n = e.n_epochs, x0 = 40, x1 = w - 38, y0 = 8, y1 = h - 22;
+  const lim = Math.max(D.scales.s_resid_mm_per_100m * 1.6,...e.s_resid.filter(Number.isFinite).map(Math.abs))*1.03;
   const X = (k) => x0 + k / (n - 1) * (x1 - x0), Y = (v) => y1 - (v + lim) / (2 * lim) * (y1 - y0);
   ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
-  const tg = e.knmi.tg, tmin = -5, tmax = 25;
+  const tg = e.knmi.tg, tv = tg.filter(Number.isFinite);
+  const tmin = Math.floor((Math.min(...tv)-2)/5)*5, tmax = Math.ceil((Math.max(...tv)+2)/5)*5;
   ctx.strokeStyle = css("--muted"); ctx.setLineDash([2, 3]); ctx.beginPath();
   let st = false; tg.forEach((v, k) => { if (v === null) { st = false; return; } const yy = y1 - (v - tmin) / (tmax - tmin) * (y1 - y0); if (!st) { ctx.moveTo(X(k), yy); st = true; } else ctx.lineTo(X(k), yy); });
   ctx.stroke(); ctx.setLineDash([]);
   ctx.strokeStyle = css("--accent"); ctx.lineWidth = 1.2; ctx.beginPath();
-  e.s_resid.forEach((v, k) => { const yy = Y(Math.max(-lim, Math.min(lim, v))); k ? ctx.lineTo(X(k), yy) : ctx.moveTo(X(k), yy); });
+  e.s_resid.forEach((v, k) => { const yy = Y(v); k ? ctx.lineTo(X(k), yy) : ctx.moveTo(X(k), yy); });
   ctx.stroke(); ctx.lineWidth = 1;
   ctx.strokeStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(X(S.epoch), y0); ctx.lineTo(X(S.epoch), y1); ctx.stroke();
   ctx.fillStyle = css("--muted"); ctx.font = "10px system-ui"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
   ctx.fillText(sgn(lim, 0), x0 - 4, Y(lim)); ctx.fillText("0", x0 - 4, Y(0)); ctx.fillText(sgn(-lim, 0), x0 - 4, Y(-lim));
+  ctx.textAlign = 'left';
+  for (const value of [tmin,(tmin+tmax)/2,tmax]) ctx.fillText(value+'°C',x1+4,y1-(value-tmin)/(tmax-tmin)*(y1-y0));
   ctx.textAlign = "center"; ctx.textBaseline = "top";
   let last = null; e.dates.forEach((d, k) => { const yv = d.slice(0, 4); if (yv !== last) { last = yv; ctx.fillText(yv, X(k), y1 + 4); } });
-  ctx.textAlign = "left"; ctx.fillText("height gradient s(t) minus trend and yearly wave [mm/100 m]; dotted: air temperature", x0 + 4, y0);
+  ctx.textAlign = "left"; ctx.fillText("radar [mm/100 m] · dotted: temperature [°C]", x0 + 4, y0);
 }
 
 /* ------------------------------------------------------------ presets and lighting */
@@ -487,7 +541,7 @@ function stepBalloon(dt) {
   const k = Math.max(0, Math.min(D.epochs.n_epochs - 2, S.epoch - 1));
   const lim = D.scales.band_fast_mm;
   const L = { ramp: "RdBu_r", lim: [-lim, lim] };
-  let txt = `<b>A balloon from the data.</b> ${fmtDate(D.epochs.dates[k])} → ${fmtDate(D.epochs.dates[k + 1])}. Each slab: the 11-day change of its height band relative to the lowest band.<br>`;
+  let txt = `<b>Animated radar height bands, not a measured sounding.</b> ${fmtDate(D.epochs.dates[k])} → ${fmtDate(D.epochs.dates[k + 1])}. Each slab: change of its height band relative to the lowest band.<br>`;
   g.slabs.forEach((m, b) => {
     const band = D.bands.fine[b], v = band.fast[k], lit = band.lo <= hb;
     const rgb = colourOf(L, v);
@@ -512,9 +566,10 @@ function pick(ev) {
   if (h.object === buildings) {
     const bidIdx = buildings.geometry.attributes._building.getX(h.face.a);
     const bid = D.bld.order[Math.round(bidIdx)];
-    S.selected = { kind: "building", id: bid }; buildingCard(bid); fillTable();
+    selectBuilding(bid);
   } else if (h.object === cellsMesh && h.instanceId !== undefined) {
     S.selected = { kind: "cell", k: h.instanceId }; cellCard(h.instanceId);
+    if (selectionBox) selectionBox.visible = false;
   }
 }
 
@@ -532,26 +587,82 @@ function sparkline(cv, series, epochMark, unit) {
 }
 
 function buildingCard(bid) {
-  const r = D.bld.buildings[bid], a = D.bld.bag3d[bid], card = $("card");
-  const name = r && r.label ? r.label : `Building ${a && a.year ? "from " + a.year : ""} (register id …${bid.slice(-6)})`;
-  let html = `<h4>${name}</h4><table><tbody>`;
-  if (a) html += `<tr><td>Roof height</td><td>${a.height_agl === null ? "n/a" : a.height_agl.toFixed(0) + " m above ground"}${a.floors ? ", " + a.floors + " floors" : ""}</td></tr>`;
-  if (!r) {
-    html += `<tr><td colspan="2">No radar points on this building in the TerraSAR-X set, or fewer than 20.</td></tr></tbody></table>`;
-    card.innerHTML = html; return;
+  const r = D.bld.buildings[bid], a = D.bld.bag3d[bid], card = $("card"), register = window.VRSBuildings;
+  const summary = heightSummary(r, a, D.bld.min_n);
+  selectedContrast = heightContrast(r, D.bld.min_n);
+  const colour = n => 'rgb(' + colourOf(LAYERS.band_n, n).map(Math.round).join(',') + ')';
+  card.innerHTML = '<div class="city-selection-head"><div>' + register.identity(bid, r, a) +
+    '</div><button type="button" id="focusBuilding" aria-label="Focus the selected building in the city">Locate</button></div>' +
+    '<div class="city-selection-stats"><div><b>' + (summary.points === null ? 'n/a' : summary.points.toLocaleString('en-GB')) + '</b><span>radar points</span></div><div><b>' + summary.bands +
+    '</b><span>published slabs</span></div><div><b>' + (summary.highest === null ? 'n/a' : summary.highest.toFixed(1) + ' m') + '</b><span>highest point</span></div></div>' +
+    '<div class="height-profile">' + heightProfile(r, a, colour, D.bld.min_n) + '</div>' +
+    '<p class="city-profile-note">Grey: no published 10 m group. Counts do not imply continuous facade coverage.</p>' +
+    (selectedContrast ? '' :
+      '<p class="city-profile-note">' + (r ? 'Two published height groups are needed for a contrast.' : 'No published radar aggregate here. Missing data are not zero motion.') + '</p>');
+  $("focusBuilding").addEventListener('click', focusSelection);
+}
+
+function boundsFor(bid) {
+  if (buildingBounds.has(bid)) return buildingBounds.get(bid);
+  const row = D.bld.order.indexOf(bid), g = buildings.geometry, box = new THREE.Box3();
+  for (let i=0; i<g.attributes.position.count; i++) {
+    if (Math.round(g.attributes._building.getX(i)) === row) box.expandByPoint(new THREE.Vector3().fromBufferAttribute(g.attributes.position,i));
   }
-  html += `<tr><td>Radar points</td><td>${r.n} on the building (${r.h_agl.min.toFixed(0)} to ${r.h_agl.max.toFixed(0)} m), ${r.n_ground} on the pavement within 15 m</td></tr>
-    <tr><td>Long-term rate</td><td>${sgn(r.rate, 2)} mm/yr (at the top ${r.rate_at_top === null ? "n/a" : sgn(r.rate_at_top, 1)})</td></tr>
-    <tr><td>Spread between its points</td><td>rate ± ${r.rate_sd.toFixed(2)} mm/yr (10th to 90th: ${sgn(r.rate_p10, 1)} to ${sgn(r.rate_p90, 1)}), swing ± ${r.amp_sd.toFixed(2)} mm; ${r.scatter_mm.toFixed(1)} mm apart on a typical pass</td></tr>
-    <tr><td>Tilt</td><td>${r.tilt_per100 === null ? "n/a" : sgn(r.tilt_per100, 2) + " mm per 100 m per yr"}</td></tr>
-    <tr><td>Curvature</td><td>${sgn(r.quad, 2)} mm/yr² (positive = slowing down)</td></tr>
-    <tr><td>Seasonal swing</td><td>${r.seasonal.amp.toFixed(2)} mm, peaking around ${doyText(r.seasonal.peak_doy)} (± ${r.seasonal.peak_sd.toFixed(0)} days)</td></tr>
-    <tr><td>Sideways expansion</td><td>${r.bx === null ? "n/a" : sgn(r.bx, 3) + " ± " + r.bx_se.toFixed(3) + " mm per m of easting (+0.015 expected for free expansion)"}</td></tr>
-    <tr><td>Pavement next to it</td><td>${r.ground_rate === null ? "fewer than 20 points" : sgn(r.ground_rate, 2) + " mm/yr"}</td></tr>
-    <tr><td>Slabs with data</td><td>${r.bands.map((b) => b.lo + "–" + b.hi + " m: " + sgn(b.rate, 1)).join("; ")}</td></tr>
-    </tbody></table><canvas id="spark"></canvas>`;
-  card.innerHTML = html;
-  sparkline($("spark"), r.series, S.epoch, "mm");
+  buildingBounds.set(bid, box);
+  return box;
+}
+
+function focusSelection() {
+  if (S.selected?.kind !== 'building') return;
+  const box = boundsFor(S.selected.id);
+  if (box.isEmpty()) return;
+  const centre = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+  const distance = Math.max(130, size.length()*1.25);
+  camera = persp; controls.object = camera;
+  camera.position.copy(centre).add(new THREE.Vector3(distance*.8,distance*.45,distance));
+  controls.target.copy(centre); controls.update(); resize();
+  document.querySelectorAll('#presets button').forEach(b => b.classList.remove('on'));
+  S.needsRender = true;
+}
+
+function selectBuilding(bid, save=true) {
+  if (!D.bld.order.includes(bid)) return;
+  S.selected = {kind:'building',id:bid};
+  $("buildingSelect").value = bid;
+  buildingCard(bid); fillTable();
+  if (selectionBox) { scene.remove(selectionBox); selectionBox.geometry.dispose(); selectionBox.material.dispose(); }
+  selectionBox = new THREE.Box3Helper(boundsFor(bid),0xd3792e);
+  selectionBox.visible = !boundsFor(bid).isEmpty(); scene.add(selectionBox);
+  if (save) {
+    const url = new URL(location.href); url.searchParams.set('building',bid);
+    history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+  }
+  updateEpochLabel(); drawStrip();
+  S.needsRender = true;
+}
+
+function populateBuildings() {
+  const register = window.VRSBuildings;
+  const label = id => register.name(id,D.bld.buildings[id],D.bld.bag3d[id]);
+  $("buildingSelect").innerHTML = [...D.bld.order].sort((a,b) => label(a).localeCompare(label(b))).map(id =>
+    '<option value="' + id + '">' + register.esc(label(id)) + ' · ' + id + '</option>').join('');
+}
+
+function updateHeightSlice() {
+  const max = Math.max(0,Math.floor(DS.hTop/10)*10);
+  S.height = Math.max(0,Math.min(max,Math.floor(S.height/10)*10));
+  $("heightSlice").max = max; $("heightSlice").value = S.height;
+  const label = S.height + '–' + (S.height+10) + ' m';
+  $("heightLabel").textContent = label;
+  $("heightSlice").setAttribute('aria-valuetext',label+' above ground');
+  const groups = Object.values(D.bld.buildings).flatMap(r => supportedBands(r,D.bld.min_n).filter(b => b.lo === S.height));
+  const points = groups.reduce((n,b) => n+b.n,0);
+  $("sliceStatus").textContent = groups.length + ' buildings · ' + points.toLocaleString('en-GB') + ' published points';
+  $("heightSummary").innerHTML = '<b>' + label + ' above ground</b><span>' + groups.length + ' of ' + D.bld.order.length + ' building models have a published group here</span>';
+  $("heightSummary").hidden = S.layer !== 'band_n';
+  document.querySelector('.city-key').hidden = S.layer !== 'band_n';
+  uniforms.uFocusBand.value = S.height/10;
+  S.needsRender = true;
 }
 
 function cellCard(k) {
@@ -572,7 +683,7 @@ function setEpoch(t) {
   S.epoch = Math.max(0, Math.min(D.epochs.n_epochs - 1, t));
   if (S.cellLayer === "time" || S.cellLayer === "points" || (CELL_LAYERS[S.cellLayer] && CELL_LAYERS[S.cellLayer].perEpoch)) colourCells();
   updateEpochLabel(); drawStrip();
-  if (S.selected) { if (S.selected.kind === "building") { const cv = $("spark"); if (cv) sparkline(cv, D.bld.buildings[S.selected.id].series, S.epoch, "mm"); } else cellCard(S.selected.k); }
+  if (S.selected?.kind === 'cell') cellCard(S.selected.k);
   S.needsRender = true;
 }
 
@@ -591,7 +702,20 @@ function loop(t) {
 
 /* ------------------------------------------------------------ wiring */
 function wire() {
-  $("layer").addEventListener("change", (e) => { S.layer = e.target.value; fillTable(); });
+  $("layer").value = S.layer; $("cellLayer").value = S.cellLayer;
+  $("edges").checked = S.edges; $("texture").checked = S.texture;
+  $("layer").addEventListener("change", (e) => { S.layer = e.target.value; fillTable(); updateHeightSlice(); });
+  $("buildingSelect").addEventListener('change', e => selectBuilding(e.target.value));
+  $("heightSlice").addEventListener('input', e => {
+    S.height = Number(e.target.value); updateHeightSlice();
+    const url = new URL(location.href); url.searchParams.set('height',S.height);
+    history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+  });
+  document.querySelectorAll('[data-timeline]').forEach(button=>button.addEventListener('click',()=>{
+    S.timeline=button.dataset.timeline;
+    document.querySelectorAll('[data-timeline]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    updateEpochLabel();drawStrip();
+  }));
   $("cellLayer").addEventListener("change", (e) => { S.cellLayer = e.target.value; colourCells(); });
   $("cellGround").addEventListener("change", (e) => { S.cellGrid = e.target.checked ? "ground" : "all"; S.selected = null; buildCells(); });
   $("columns").addEventListener("change", (e) => { S.columns = e.target.checked; buildCells(); });
@@ -652,7 +776,15 @@ async function main() {
     setEpoch(0);
     $("loading").remove();
     $("hud").textContent = "Overview from the south-east · drag to orbit, scroll to zoom, click a building";
-    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, get D() { return D; }, setPreset, setEpoch };
+    populateBuildings();
+    const query = new URLSearchParams(location.search);
+    const height = Number(query.get('height'));
+    if (query.has('height') && Number.isFinite(height)) S.height = height;
+    updateHeightSlice();
+    const requestedBuilding=query.get('building');
+    const initialBuilding=D.bld.order.includes(requestedBuilding) ? requestedBuilding : D.bld.order.find(id => D.bld.buildings[id]);
+    selectBuilding(initialBuilding,!!requestedBuilding && requestedBuilding!==initialBuilding);
+    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, get D() { return D; }, uniforms, selectBuilding, setPreset, setEpoch };
     window.VRSData.onChange(switchData);
     requestAnimationFrame(loop);
   } catch (err) {
@@ -707,6 +839,7 @@ function setLimits() {
   const rl = DS.rateLim;
   LAYERS.rate.lim = LAYERS.ground_rate.lim = LAYERS.band_rate.lim = rl ? [-rl, rl] : [-5, 5];
   CELL_LAYERS.rate_mean.lim = rl ? [-rl, rl] : [-7, 7];
+  LAYERS.band_n.lim = [20,Math.max(100,Math.ceil(Math.max(20,...Object.values(D.bld.buildings).flatMap(r => supportedBands(r,D.bld.min_n).map(b => b.n)))/100)*100)];
 }
 
 /* Text on the page that depends on the set: <span data-fill="key">. */
@@ -716,11 +849,14 @@ function applyDataset() {
   document.querySelectorAll("[data-fill]").forEach((el) => { const k = el.dataset.fill; if (v[k] !== undefined) el.textContent = String(v[k]); });
   $("tSlider").max = e.n_epochs - 1;
   ceilingPlane.position.y = D.manifest.ground_nap + DS.hTop + 0.2;
+  uniforms.uBldGround.value = D.bld.order.map(id => D.bld.bag3d[id]?.ground_nap ?? D.manifest.ground_nap);
+  uniforms.uSupport.value = D.bld.order.flatMap(id => { const h=D.bld.buildings[id]?.h_agl; return h ? [h.min,h.max] : [-1,-1]; });
+  updateHeightSlice();
 }
 
 /* A new data input: reload the aggregates and recolour, keeping the camera and the nearest date. */
 async function switchData(ds) {
-  const token = ++SWITCH, oldDate = D.epochs ? D.epochs.dates[S.epoch] : null;
+  const token = ++SWITCH, oldDate = D.epochs ? D.epochs.dates[S.epoch] : null, oldBuilding = S.selected?.kind === 'building' ? S.selected.id : null;
   $("hud").textContent = "Loading " + ds.name + "…";
   let next;
   try {
@@ -737,7 +873,7 @@ async function switchData(ds) {
   Object.assign(D, next);
   if (S.cellLayer === "points" && !D.points) { S.cellLayer = "time"; $("cellLayer").value = "time"; }
   syncPointsUi(); buildPoints();
-  S.selected = null;
+  S.selected = null; selectedContrast = null;
   $("card").innerHTML = '<p class="small">Click a building or a cell for its numbers and its mean series.</p>';
   if (balloonGroup) { scene.remove(balloonGroup); }
   buildBalloon();
@@ -751,6 +887,8 @@ async function switchData(ds) {
     D.epochs.dates.forEach((d, j) => { const dd = Math.abs(Date.parse(d) - t0); if (dd < best) { best = dd; k = j; } });
   }
   setEpoch(k);
+  populateBuildings();
+  selectBuilding(oldBuilding || D.bld.order.find(id => D.bld.buildings[id]),false);
   $("hud").textContent = "Data input: " + ds.name;
   S.needsRender = true;
 }

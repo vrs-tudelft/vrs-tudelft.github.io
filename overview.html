@@ -1,79 +1,75 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Overview · Virtual Radiosonde</title>
-<meta name="description" content="The whole Virtual Radiosonde project in one interactive flowchart: the air near the ground, the end-to-end simulation and the estimation, and how they hand over to each other.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261101b">
-</head>
+<meta content="The whole Virtual Radiosonde project in one interactive flowchart: the air near the ground, the end-to-end simulation and the estimation, and how they hand over to each other." name="description"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="favicon.ico" rel="icon" sizes="any"/>
+<link href="apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css?v=20261101b" rel="stylesheet"/>
+<link href="css/workspace.css?v=20261101c" rel="stylesheet"/></head>
 <body class="app-page">
 <header class="top"><div class="top-inner">
-  <a class="brand" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
-      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
-      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
-    </svg>
+<a class="brand" href="index.html">
+<svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
+<rect height="13" rx="1" stroke="currentColor" stroke-width="1.6" width="7" x="3" y="8"></rect>
+<rect height="6" opacity=".45" rx="1" stroke="currentColor" stroke-width="1.6" width="7.5" x="13.5" y="15"></rect>
+<path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-dasharray="2.6 2.6" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="10" cy="11" fill="#a8433b" r="1.9"></circle>
+</svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+<noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
 <div class="app ov">
 <aside class="app-panel ov-panel">
-  <div class="ov-intro">
-    <h1>The whole project</h1>
-    <p>Three parts hand over to each other: the <b>air near the ground</b> rebuilt from balloons, a <b>simulation</b> with a known answer, and the <b>estimation</b> that turns radar data into air.</p>
-  </div>
-
-  <section class="ov-sec" aria-labelledby="ov-h-parts">
-    <h2 class="ov-h" id="ov-h-parts">Parts</h2>
-    <label class="ov-lane"><span class="ov-tile lane-air" data-icon="balloon"></span><span class="ov-lane-name">Air near the ground</span><span class="switch"><input type="checkbox" role="switch" data-lane="air"><span class="track" aria-hidden="true"></span></span></label>
-    <label class="ov-lane"><span class="ov-tile lane-sim" data-icon="flask"></span><span class="ov-lane-name">Simulation</span><span class="switch"><input type="checkbox" role="switch" data-lane="sim"><span class="track" aria-hidden="true"></span></span></label>
-    <label class="ov-lane"><span class="ov-tile lane-est" data-icon="radar"></span><span class="ov-lane-name">Estimation</span><span class="switch"><input type="checkbox" role="switch" data-lane="est"><span class="track" aria-hidden="true"></span></span></label>
-    <div class="ov-btns"><button type="button" class="ov-btn" id="ov-none">Big picture</button><button type="button" class="ov-btn" id="ov-all">Everything</button></div>
-  </section>
-
-  <section class="ov-sec" aria-labelledby="ov-h-paths">
-    <h2 class="ov-h" id="ov-h-paths">Follow a path <span>step by step</span></h2>
-    <div class="ov-paths" id="ov-paths"></div>
-    <div class="ov-story" id="ov-story" hidden aria-live="polite"></div>
-  </section>
-
-  <p class="ov-foot">Click a lane to expand it. Follow a path to inspect one part at a time.</p>
-</aside>
-
-<section class="app-main ov-stage" id="ov-stage">
-  <noscript><p class="placeholder">The flowchart needs JavaScript. In words: the air near the ground (balloons, stations, ICON-D2) feeds the simulation; the simulation makes fake radar data with a known answer; the estimation turns radar data, fake or real, into the air per height layer. See <a href="estimation.html">Estimation</a> and <a href="data.html">Data</a>.</p></noscript>
-  <svg id="ov-svg" class="ov-svg" role="img" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <marker id="ov-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow"/></marker>
-    </defs>
-    <g id="ov-world"></g>
-  </svg>
-  <ul class="ov-legend" aria-label="Shapes">
-    <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M5 1H29L25 15H1Z" class="lg-io"/></svg>data</li>
-    <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="3" class="lg-p"/></svg>step</li>
-    <li><svg viewBox="0 0 30 16" aria-hidden="true"><path d="M15 1L29 8L15 15L1 8Z" class="lg-d"/></svg>choice</li>
-    <li><svg viewBox="0 0 30 16" aria-hidden="true"><rect x="1" y="1" width="28" height="14" rx="7" class="lg-r"/></svg>result</li>
-    <li><svg viewBox="0 0 16 16" aria-hidden="true" style="width:12px"><circle cx="8" cy="8" r="4" class="lg-l"/></svg>has a page</li>
-  </ul>
-  <div class="ov-zoom" role="group" aria-label="Zoom">
-    <button type="button" id="ov-zin" aria-label="Zoom in">+</button>
-    <button type="button" id="ov-zout" aria-label="Zoom out">&minus;</button>
-    <button type="button" id="ov-fit" aria-label="Fit to the window">Fit</button>
-  </div>
-  <div class="ov-card" id="ov-card" hidden role="dialog" aria-live="polite"></div>
-</section>
+<div class="ov-intro">
+<h1>The whole project</h1>
+<p>From the air and a known-answer simulation to the radar-based estimate.</p>
 </div>
-<script defer src="js/nav.js?v=20261101b"></script>
-<script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/overview-data.js?v=20261101b"></script>
-<script defer src="js/overview.js?v=20261101b"></script>
+<section aria-labelledby="ov-h-parts" class="ov-sec">
+<h2 class="ov-h" id="ov-h-parts">Parts</h2>
+<label class="ov-lane"><span class="ov-tile lane-air" data-icon="balloon"></span><span class="ov-lane-name">Air near the ground</span><span class="switch"><input data-lane="air" role="switch" type="checkbox"/><span aria-hidden="true" class="track"></span></span></label>
+<label class="ov-lane"><span class="ov-tile lane-sim" data-icon="flask"></span><span class="ov-lane-name">Simulation</span><span class="switch"><input data-lane="sim" role="switch" type="checkbox"/><span aria-hidden="true" class="track"></span></span></label>
+<label class="ov-lane"><span class="ov-tile lane-est" data-icon="radar"></span><span class="ov-lane-name">Estimation</span><span class="switch"><input data-lane="est" role="switch" type="checkbox"/><span aria-hidden="true" class="track"></span></span></label>
+<div class="ov-btns"><button class="ov-btn" id="ov-none" type="button">Big picture</button><button class="ov-btn" id="ov-all" type="button">Everything</button></div>
+</section>
+<section aria-labelledby="ov-h-paths" class="ov-sec">
+<h2 class="ov-h" id="ov-h-paths">Follow a path <span>step by step</span></h2>
+<div class="ov-paths" id="ov-paths"></div>
+
+</section>
+<p class="ov-foot">Click a lane to expand it. Follow a path to inspect one part at a time.</p>
+</aside>
+<section class="app-main ov-stage" id="ov-stage">
+<noscript><p class="placeholder">The flowchart needs JavaScript. In words: the air near the ground (balloons, stations, ICON-D2) feeds the simulation; the simulation makes fake radar data with a known answer; the estimation turns radar data, fake or real, into the air per height layer. See <a href="estimation.html">Estimation</a> and <a href="data.html">Data</a>.</p></noscript>
+<svg class="ov-svg" id="ov-svg" role="img" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="ov-arrow" markerheight="7" markerwidth="7" orient="auto-start-reverse" refx="9" refy="5" viewbox="0 0 10 10"><path class="arrow" d="M0,0 L10,5 L0,10 z"></path></marker>
+</defs>
+<g id="ov-world"></g>
+</svg>
+<ul aria-label="Shapes" class="ov-legend">
+<li><svg aria-hidden="true" viewbox="0 0 30 16"><path class="lg-io" d="M5 1H29L25 15H1Z"></path></svg>data</li>
+<li><svg aria-hidden="true" viewbox="0 0 30 16"><rect class="lg-p" height="14" rx="3" width="28" x="1" y="1"></rect></svg>step</li>
+<li><svg aria-hidden="true" viewbox="0 0 30 16"><path class="lg-d" d="M15 1L29 8L15 15L1 8Z"></path></svg>choice</li>
+<li><svg aria-hidden="true" viewbox="0 0 30 16"><rect class="lg-r" height="14" rx="7" width="28" x="1" y="1"></rect></svg>result</li>
+<li><svg aria-hidden="true" style="width:12px" viewbox="0 0 16 16"><circle class="lg-l" cx="8" cy="8" r="4"></circle></svg>has a page</li>
+</ul>
+<div aria-label="Zoom" class="ov-zoom" role="group">
+<button aria-label="Zoom in" id="ov-zin" type="button">+</button>
+<button aria-label="Zoom out" id="ov-zout" type="button">−</button>
+<button aria-label="Fit to the window" id="ov-fit" type="button">Fit</button>
+</div>
+<div aria-live="polite" class="ov-card" hidden="" id="ov-card" role="dialog"></div>
+<div aria-live="polite" class="ov-story" hidden="" id="ov-story"></div></section>
+</div>
+<script defer="" src="js/nav.js?v=20261101c"></script>
+<script defer="" src="js/icons.js?v=20261013a"></script>
+<script defer="" src="js/overview-data.js?v=20261101b"></script>
+<script defer="" src="js/overview.js?v=20261101b"></script>
 </body>
 </html>

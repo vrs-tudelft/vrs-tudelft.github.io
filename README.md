@@ -15,11 +15,14 @@ arrow keys. Mobile settings collapse above the selected view.
 - Estimation: a layer schematic beside the retrieval steps, report tests and limits.
 - Buildings: one motion model or observation player at a time; controls stay in the rail.
 - Results: shared report variants, per-pass and station plots, layer metrics and interpretation.
-- Data: report radar, weather, reference and reuse policy, with frozen and expanded archives distinguished.
-- Workflow and 3D: retain their interactive views, using the same navigation and controls-first layout.
+- Data: radar, weather, reference and reuse policy, plus a searchable building-name/BAG directory.
+- Workflow: the project flowchart with its path descriptions beside the diagram.
+- 3D: linked height support, building profiles and a time series within the same dashboard.
 
 Avoid article-width limits inside dashboards. Fit the main desktop views to the
-viewport instead of hiding overflow or shrinking text. Put definitions, units and
+viewport. Sidebars must fit without a second vertical scroll area; compact their
+spacing and secondary controls while keeping labels readable. Do not hide overflow
+to make a fit check pass. Put definitions, units and
 supporting provenance in concise `data-tip` help. Keep the scientific limitation
 visible: the real-data station comparison is not measured vertical truth.
 
@@ -59,6 +62,29 @@ from the report's full-height export. The 2020-2026 ground reference and archive
 are unchanged. `animations.html` preserves older links by redirecting to the
 matching Building player.
 
+## 3D research and building identity
+
+The default city view asks where a vertical radar profile has observation support.
+Its 10 m slider counts only published building/slab groups with at least 20 points.
+An active slab uses the same count colour scale as the selected building's height
+chart; other supported heights are muted. Building geometry outside retained radar
+heights is grey. A coloured slab is a published group, not continuous facade coverage,
+an independent air layer, or proof of retrieval accuracy.
+
+The selected-building timeline is the highest supported slab mean minus the lowest
+supported slab mean, in mm along the radar line of sight. It still mixes motion and
+air. The city-gradient timeline is the exploratory residual radar height gradient,
+with daily temperature on a separate labelled scale. Neither is retrieved urban
+refractivity. The exploratory city selection remains distinct from the report run.
+
+Building labels and 16-digit BAG pand identifiers come from the existing public
+`buildings.json` exports. Unverified labels stay unnamed. The Data directory lists
+all 46 models, with an optional radar-support filter, official BAG links and a 3D
+deep link of the form `3d/index.html?data=2020-2026-ground&building=<BAG-ID>&height=40`.
+The BAG URL uses `searchQuery` and `objectId`, following the
+[government registry's linking guidance](https://www.registerexterneveiligheid.nl/veelgestelde-vragen-faqs/kgl).
+Friendly names are export labels, not an assertion that BAG stores that name.
+
 ## Public-data boundary
 
 Radar products must be means over at least **20 points**, published with their
@@ -78,12 +104,16 @@ python tools/check_links.py
 python tools/check_data.py
 python tools/check_report.py
 python tools/check_workspace.py
+node --test tools/city-research.test.mjs
 python tools/serve.py
 ```
 
-CI runs the four Python checks. Inspect layouts in Google Chrome at desktop,
+CI runs the four Python checks and research-readout tests using Node 24.
+Inspect layouts in Google Chrome at desktop,
 laptop and mobile sizes, exercise the controls and check keyboard/touch help.
-Every main non-simulator desktop tab should fit without vertical scrolling.
+Every main non-simulator desktop tab and its sidebar should fit without vertical
+scrolling. Exercise all six observation players after their data have loaded;
+their canvases size to the space remaining around their controls.
 Previewing and changing layout do not regenerate scientific results.
 
 Changes to the public layout belong on a `codex/` branch and should pass checks
