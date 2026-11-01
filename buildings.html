@@ -135,7 +135,7 @@
 <h2 id="residuals" data-short="Residuals">What is left: the residuals</h2>
 <div class="eq"><i>ê<sub>ij</sub></i> = <i>y<sub>ij</sub></i> − <i>ŷ<sub>ij</sub></i>,&emsp; RMS<sub><i>e</i></sub> = √( Σ <i>ê</i><sub><i>ij</i></sub><sup>2</sup> / <i>N</i> )<span class="w">report eqs. 57 to 60</span></div>
 <p>With the four parameters estimated, the model's movement of every point is subtracted from what the radar measured. What is left, the residual, is read as the air plus noise. It can also hold anything the model leaves out: local deformation of one facade, a building that does not behave like a single block, or measurement errors. The root mean square of the residuals measures how much is left. Plotted against time, height and temperature, the residuals show where the model falls short; a pattern there means a process the four parameters do not describe.</p>
-<p>The residuals are then averaged per height layer and per pass and turned into refractivity. On the real data the lowest layer follows the weather station (<i>r</i> = 0.45), while both layers still drift over the years: building movement that the model has not fully removed. The full chain and its results are on the <a href="estimation.html">Estimation</a> page.</p>
+<p>The residuals are averaged per height layer and per pass and turned into refractivity. The report compares motion fitted per building or per scatterer; ground-station agreement does not independently validate the vertical profile. Inspect the shared report export on <a href="results.html">Results</a> and the current <a href="estimation.html">Estimation</a> method.</p>
 
 <footer data-shared></footer>
 </main></div>

@@ -5,6 +5,23 @@ The public website of the Virtual Radiosonde project: https://vrs-tudelft.github
 It is plain HTML, CSS and JavaScript. There is no build step. Change a file, push, and the
 site updates within a minute or two.
 
+## Check a change
+
+From this repository's root, with Python 3.13:
+
+```sh
+python tools/check_links.py
+python tools/check_data.py
+```
+
+Both checks also run in GitHub Actions on pushes to `main` and pull requests.
+They check links, anchors, aggregate counts and data manifests; they do not run
+or publish the analysis. Preview a page with `python tools/serve.py` and inspect
+it before pushing. The checks workflow does not gate the existing Pages deployment.
+
+For the analysis environment and how the repositories fit together, see the
+[project setup guide](https://github.com/vrs-tudelft/virtual-radiosonde/blob/main/GETTING_STARTED.md).
+
 ## What is on it
 
 | File | What it shows |
@@ -12,8 +29,8 @@ site updates within a minute or two.
 | `index.html` | Home: the idea in plain language, the result in one picture, where each stage stands, what holds so far, the paper and the team, about and licences |
 | `data.html` | The two TerraSAR-X processings, where the zero sits (the shared-ground reference), building heights (3DBAG/AHN5), soundings, stations and towers, the air near the ground (the low-level reconstruction), links to Explore, and the rule on what may be published |
 | `overview.html` | The whole project as one interactive flowchart (air near the ground, simulation, estimation), each part foldable, every box with an icon, a card and a link to its section, six paths that walk through their boxes step by step and open the parts they need; full-window like the simulator. The chart is data in `js/overview-data.js` (with its sources in the header comment), drawn by `js/overview.js` |
-| `simulator.html` | The estimation simulator (v2), a full-window page (controls left, results right; `body.app-page` in `style.css`): pick the atmosphere (KNMI-built, the 2025 balloon soundings or the Cabauw tower), switch sinking, shrinking, thermal dilation and the cross-range error on or off, and choose the noise, the number of points and the height layers. It shows the estimate against the truth and the station per layer over time, where the error comes from, a scatter of the departures with its fitted line, and the cumulative trend when the disturbances are added one by one, with a short reading in plain words. The settings are kept in the address, so a link shares them. Every chart card has PNG and SVG buttons that save it as a clean figure (title, legend, settings caption) for reports. Reads `data/simulator/` (precomputed with the team's code, synthetic only; `js/simulator.js`) |
-| `estimation.html` | The core: the estimation flowchart of 12 October in plain language, the air prior, the end-to-end simulation, the first pass, the test on the simulation (figures 41-43, 45), the real data 2020-2026 (figures 47-49), the choices made, limits, and the earlier pilot (figure 38) |
+| `simulator.html` | The estimation simulator (v2), a full-window page (controls left, results right; `body.app-page` in `style.css`): pick the atmosphere (KNMI-built, the 2025 balloon soundings or the Cabauw tower), switch sinking, shrinking, thermal dilation and the cross-range error on or off, and choose the noise, the number of points and the height layers. It shows the estimate against the truth and the station per layer over time, where the error comes from, a scatter of the departures with its fitted line, and the cumulative trend when the disturbances are added one by one, with a short reading in plain words. The settings are kept in the address, so a link shares them. Every chart card has PNG and SVG buttons that save it as a clean figure (title, legend, settings caption) for reports. Reads `data/simulator/` (precomputed synthetic runs and the aggregate real report run; `js/simulator.js`) |
+| `estimation.html` | The report method, frozen simulation samples, shared live report summary, comparison assumptions and reproduction instructions |
 | `animations.html` | Explore (linked from Data, no menu tab of its own): six animations from the aggregate files, with a data-input switch (see below) |
 | `3d/index.html` | The experimental 3D view, with the same switch and the gull easter egg |
 | `figures/` | The PNG files, `NN-short-name.png`; the number continues the count in the team repository's `05_results/00_tsx_figures/` (01 to 31 as of 16 September 2026) |
@@ -99,6 +116,8 @@ to find the shared ground points). Re-run it after any change to `site_export.py
 Then here: `python tools/check_data.py`, `python tools/check_links.py` and, after editing a drawing in `svg/`,
 `python tools/inline_svg.py`.
 
+### Historical figure assets
+
 Figure 38 (the earlier pilot) comes from the team repository's `03_notebooks/04_estimation_reference_pilot/`.
 
 The estimation figures 40-50 come from the team repository's notebook
@@ -172,3 +191,25 @@ Text, drawings and figures: CC BY 4.0, Virtual Radiosonde team, TU Delft, 2026. 
 TerraSAR-X point set provided for the course by R.F. Hanssen (not redistributable);
 KNMI (CC BY 4.0); NOAA IGRA2 (public domain); BAG via PDOK (CC0); 3DBAG (CC BY 4.0);
 PDOK aerial image (CC BY 4.0); Esri tiles in the static figures; three.js (MIT).
+
+## Shared report results
+
+Home, Estimation, Results and the simulator's real mode use `data/simulator/real.json`.
+`js/report.js` loads that single source; `js/results.js` plots its layer means and
+compares the sixteen report variants. Temperature memory is hourly with a 72 h
+exponential time constant. The default is motion per building, two layers and no
+air prior. Station agreement is not independent vertical accuracy.
+
+The real export was reproduced from clean committed analysis source; all numeric
+values match the report-approved export. The private `vrs-data` release
+`report-2026-10-31` preserves the exact inputs, outputs, source and validation scope.
+The exploratory simulation grid retains its historical metadata; twelve report
+cases were independently rerun, rather than claiming the whole grid was rerun.
+
+The October 12-13 real-data presentation and its generated summary images are
+superseded on Home and Estimation. Its `data/real/estimation.json` remains recoverable
+at website commit `5520ef677bee63945d814172cfc528ec28a99239`; it is no longer a live
+result source. Figure-generation instructions above describe historical assets.
+
+Checks: `python tools/check_links.py`, `python tools/check_data.py` and
+`python tools/check_report.py`. Publish aggregate exports only; never raw radar rows.

@@ -745,3 +745,9 @@ main > .sim { max-width: 1060px; }
 #sim .app-panel .t::after { max-width: var(--tip-max, min(270px, 76vw)); }
 .sim-abs-note { margin: 8px 2px 0; font-size: .84rem; color: var(--ink-2); line-height: 1.5; }
 .sim-abs-note:empty { display: none; }
+
+/* The compact report viewer shares the site's normal reading layout. */
+#report-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:20px; }
+#report-controls .sim-field { margin:0; min-width:0; }
+#report-controls select { width:100%; min-height:44px; padding:8px 10px; border:1px solid var(--line,#cdc9be); border-radius:6px; background:var(--paper,#fcfbf8); color:inherit; font:inherit; }
+@media(max-width:600px) { #report-controls { grid-template-columns:1fr; } }
