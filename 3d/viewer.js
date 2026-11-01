@@ -105,7 +105,7 @@ export function selectBuilding(id,save=true){
   const r=D.bld.buildings[id],a=D.bld.bag3d[id],s=heightSummary(r,a,D.bld.min_n);contrast=heightContrast(r,D.bld.min_n);
   $('card').innerHTML='<div class="city-selection-head"><div>'+window.VRSBuildings.identity(id,r,a)+'</div><button type="button" id="focusBuilding" aria-label="Locate this building in the city">Locate</button></div>'+
     '<div class="city-selection-stats"><div><b>'+(s.points===null?'n/a':s.points.toLocaleString('en-GB'))+'</b><span>radar points</span></div><div><b>'+s.bands+'</b><span>published slabs</span></div><div><b>'+(s.highest===null?'n/a':s.highest.toFixed(1)+' m')+'</b><span>highest point</span></div></div>'+
-    '<div class="height-profile">'+heightProfile(r,a,rgb,D.bld.min_n)+'</div><p class="city-profile-note">Grey: no published 10 m group. A coloured slab does not mean continuous facade coverage.</p>';
+    '<div class="height-profile">'+heightProfile(r,a,rgb,D.bld.min_n)+'</div>';
   $('focusBuilding').addEventListener('click',focus);outline(id);drawTimeline();
   if(save){const u=new URL(location.href);u.searchParams.set('building',id);u.hash='coverage';history.replaceState(history.state,'',u);}
 }
