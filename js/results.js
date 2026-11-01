@@ -91,7 +91,7 @@
   }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
   var coverage;
   function loadCoverage(){
-    if(!coverage)coverage=import('../3d/viewer.js?v=20261101-story').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
+    if(!coverage)coverage=import('../3d/viewer.js?v=20261101-coverage-tip').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
     return coverage;
   }
   document.addEventListener('site:viewchange',function(e){if(e.detail.view==='coverage')loadCoverage().catch(function(){});});
