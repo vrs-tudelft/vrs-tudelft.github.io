@@ -23,8 +23,8 @@ for motion in d['controls']['motion']:
                 assert len(e['steps'][key]) == n
                 assert all(len(row) == d['passes'] and all(math.isfinite(x) for x in row) for row in e['steps'][key])
             variants += 1
-for page in ('index.html', 'estimation.html', 'results.html'):
+for page in ('results.html',):
     text = (ROOT / page).read_text()
     assert 'js/report.js' in text and 'data/real/estimation.json' not in text
 assert not (ROOT / 'data/real/estimation.json').exists(), 'Retire the superseded result export'
-print(f'{variants} clean-source report variants; shared by Home, Estimation and Results')
+print(f'{variants} clean-source report variants; one observed-evidence destination')

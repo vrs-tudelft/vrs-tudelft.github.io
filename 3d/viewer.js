@@ -1,899 +1,198 @@
-/* The 3D view of Kop van Zuid. Buildings from the 3DBAG as one mesh, coloured through a small
-   lookup texture (one row per building, one column for the whole building and ten for its 10 m
-   slabs); ground cells as one instanced mesh; a time slider over the passes. Published
-   radar statistics use groups of at least 20 points; register attributes are separate public
-   metadata. The geometry (3DBAG models, aerial image, presets) is read
-   from ../data/3d/; the radar aggregates from the folder of the data input chosen with the switch
-   above the view (../js/dataset.js, ../data/datasets.json), and a change of input reloads them in
-   place. */
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { supportedBands, heightSummary, heightContrast, heightProfile } from "./research.js?v=20261101c";
+/* One spatial question: where do published radar groups provide height support?
+   Geometry and all statistics remain the original public aggregate products. */
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {supportedBands,heightSummary,heightContrast,heightProfile} from './research.js?v=20261101c';
 
-const $ = (id) => document.getElementById(id);
-const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const GEO = "../data/3d/";
-let DATA = "../data/";        /* the active data input's folder; set from VRSData */
-let DS = null, SWITCH = 0;
-const isMobile = matchMedia("(max-width: 767px)").matches || (navigator.maxTouchPoints > 1 && innerWidth < 1024);
-const MAPS = window.VRS_COLORMAPS;
-
-function ramp(name) {
-  const st = MAPS[name];
-  return (t) => {
-    t = Math.max(0, Math.min(1, t));
-    const k = Math.min(Math.floor(t * (st.length - 1)), st.length - 2), f = t * (st.length - 1) - k;
-    const a = st[k], b = st[k + 1];
-    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
-  };
+const $=id=>document.getElementById(id),root=document.documentElement.dataset.root||'';
+const geo=root+'data/3d/', stage=$('stage'), css=name=>getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+export const state={height:40,epoch:0,selected:null,playing:false,speed:8,needsRender:true};
+let D,ds,renderer,scene,camera,persp,ortho,controls,buildings,ground,uniforms,texture,selectionBox,contrast;
+const boundsCache=new Map();
+let maxCount=100;
+async function json(url){const r=await fetch(url);if(!r.ok)throw Error(url+': '+r.status);return r.json();}
+function colour(n){
+  const stops=window.VRS_COLORMAPS.cividis,t=THREE.MathUtils.clamp((n-20)/(maxCount-20),0,1)*(stops.length-1),k=Math.min(Math.floor(t),stops.length-2),f=t-k;
+  return stops[k].map((v,i)=>Math.round(v+(stops[k+1][i]-v)*f));
 }
-const fmtDate = (iso) => { const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]; return parseInt(iso.slice(8, 10), 10) + " " + m[parseInt(iso.slice(5, 7), 10) - 1] + " " + iso.slice(0, 4); };
-const doyText = (d) => { const dt = new Date(2001, 0, Math.round(d)); const m = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]; return dt.getDate() + " " + m[dt.getMonth()]; };
-const sgn = (v, nd) => (v >= 0 ? "+" : "") + v.toFixed(nd);
-
-/* layer definitions: value(record) -> number|null, ramp, limits, unit, symmetric */
-const LAYERS = {
-  band_n: { title: "published radar points per 10 m height group", ramp: "cividis", lim: [20, 1500], band: b => b.n },
-  rate: { title: "long-term rate [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], get: (r) => r.rate },
-  tilt: { title: "tilt: rate against height [mm per 100 m per yr]", ramp: "RdBu_r", lim: [-6, 6], get: (r) => r.tilt_per100 },
-  quad: { title: "curvature [mm/yr²], positive = slowing down", ramp: "PuOr", lim: [-0.3, 0.3], get: (r) => r.quad },
-  amp: { title: "seasonal swing [mm]", ramp: "magma", lim: [0, 3], get: (r) => r.seasonal.amp },
-  peak: { title: "day of year of the seasonal maximum", ramp: "twilight_shifted", lim: [0, 365.25], get: (r) => r.seasonal.peak_doy, cyclic: true },
-  bx: { title: "east-west slope of the seasonal term [mm per m]; +0.015 expected", ramp: "RdBu_r", lim: [-0.03, 0.03], get: (r) => r.bx },
-  ground_rate: { title: "rate of the pavement within 15 m [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], get: (r) => r.ground_rate },
-  n: { title: "number of radar points (log10)", ramp: "cividis", lim: [1.3, 3.5], get: (r) => Math.log10(r.n) },
-  rate_sd: { title: "spread of the rate between the building's own points [mm/yr]", ramp: "magma", lim: [0, 1.5], get: (r) => r.rate_sd },
-  scatter: { title: "spread of the points about the building mean, one pass [mm]", ramp: "magma", lim: [0, 2.5], get: (r) => r.scatter_mm },
-  band_rate: { title: "rate per 10 m slab [mm/yr]", ramp: "RdBu_r", lim: [-5, 5], band: (b) => b.rate },
-  band_amp: { title: "seasonal swing per 10 m slab [mm]", ramp: "magma", lim: [0, 3], band: (b) => b.amp },
-  band_peak: { title: "peak day per 10 m slab", ramp: "twilight_shifted", lim: [0, 365.25], band: (b) => b.peak_doy, cyclic: true },
-  height: { title: "roof height above ground, 3DBAG [m]", ramp: "viridis", lim: [0, 160], attr: (a) => a.height_agl },
-  year: { title: "construction year (register)", ramp: "viridis", lim: [1890, 2020], attr: (a) => a.year }
-};
-const CELL_LAYERS = {
-  rate_mean: { title: "mean rate of the cell's points [mm/yr]", ramp: "RdBu_r", lim: [-7, 7] },
-  amp: { title: "seasonal swing of the cell [mm]", ramp: "magma", lim: [0, 2] },
-  peak_doy: { title: "peak day of the cell's swing", ramp: "twilight_shifted", lim: [0, 365.25], cyclic: true },
-  h_agl_mean: { title: "mean height of the cell's points [m]", ramp: "viridis", lim: [0, 60] },
-  n: { title: "radar points in the cell", ramp: "cividis", lim: [20, 500] },
-  rate_sd: { title: "spread of the rate inside the cell [mm/yr]", ramp: "magma", lim: [0, 2] },
-  scatter_mm: { title: "spread of the points about the cell mean, one pass [mm]", ramp: "magma", lim: [0, 2.5] },
-  spread_now: { title: "spread inside the cell on the pass on the slider [mm]", ramp: "magma", lim: [0, 4.5], perEpoch: true }
-};
-
-const POINT_LAYERS = {
-  time: { title: "what each point did on the pass on the slider [mm]", ramp: "RdBu_r", lim: [-4, 4] },
-  rate: { title: "long-term rate of each point [mm/yr]", ramp: "RdBu_r", lim: [-5, 5] },
-  amp: { title: "seasonal swing of each point [mm]", ramp: "magma", lim: [0, 3] },
-  peak_doy: { title: "day of year each point peaks", ramp: "twilight_shifted", lim: [0, 365.25], cyclic: true },
-  h: { title: "height of each point above ground [m]", ramp: "viridis", lim: [0, 90] },
-  coh: { title: "coherence of each point", ramp: "cividis", lim: [0.5, 1] }
-};
-
-const S = {  /* state */
-  epoch: 0, tmode: "increment", playing: false, speed: 8, layer: "band_n", cellLayer: "none", cellGrid: "ground", height: 40,
-  pointLayer: "time", columns: false, edges: !isMobile, texture: false, radarLight: false, ceiling: false, rays: false, balloon: false,
-  selected: null, needsRender: true, anim: null, timeline: 'building'
-};
-
-let renderer, scene, camera, persp, ortho, controls, buildings, edgesObj, cellsMesh, ground, gridHelper, ceilingPlane, hemi, sun, table, tableTex, uniforms, flight;
-let D = {};   /* data */
-let cellGeom = { all: null, ground: null };
-let rayGroup, balloonGroup, airSlab, pointCloud;
-let selectionBox, selectedContrast = null;
-const buildingBounds = new Map();
-
-const getJson = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.json(); });
-const getBuf = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + ": " + r.status); return r.arrayBuffer(); });
-
-async function loadData(base, archived) {
-  const [bld, cells, epochs, bands, bin, sdBin] = await Promise.all([
-    getJson(base + "buildings.json"),
-    getJson(base + "cells.json"),
-    getJson(base + "epochs.json"),
-    getJson(base + "bands.json"),
-    getBuf(base + "cells.bin"),
-    getBuf(base + "cells-sd.bin")
-  ]);
-  const i16 = new Int16Array(bin), sd16 = new Int16Array(sdBin);
-  const grids = {};
-  for (const g of ["all", "ground"]) {
-    const G = cells.grids[g], start = G.offset_bytes / 2, n = cells.series.epochs;
-    grids[g] = { cells: G.cells, get: (c, t) => i16[start + c * n + t] / 100, sd: (c, t) => sd16[start + c * n + t] / 100 };
-  }
-  /* colour scales belong to the data set, not to the geometry */
-  const scales = { cells: cells.scales, s_resid_mm_per_100m: epochs.scales.s_resid_mm_per_100m, band_fast_mm: bands.scales.band_fast_mm };
-  const points = archived ? await loadLocalPoints(base) : null;   /* the local build exists only for the archived set */
-  return { bld, cells, epochs, bands, grids, scales, points, tYears: epochs.days_since_ref.map((d) => d / 365.25) };
+const rgb=n=>'rgb('+colour(n).join(',')+')';
+function resize(){
+  if(!renderer||!stage.clientWidth||!stage.clientHeight)return;
+  const w=stage.clientWidth,h=stage.clientHeight;
+  renderer.setSize(w,h,false);persp.aspect=w/h;persp.updateProjectionMatrix();
+  const hw=D.geometry.presets.satellite.half_width;
+  ortho.left=-hw;ortho.right=hw;ortho.top=hw*h/w;ortho.bottom=-hw*h/w;ortho.updateProjectionMatrix();
+  state.needsRender=true;drawTimeline();
 }
-
-async function loadAll() {
-  const manifest = await getJson(GEO + "manifest.json");
-  D = Object.assign({ manifest }, await loadData(DATA, DS.archived));
+function initScene(){
+  renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputColorSpace=THREE.SRGBColorSpace;
+  scene=new THREE.Scene();scene.background=new THREE.Color(css('--canvas')||'#fff');
+  persp=new THREE.PerspectiveCamera(42,1,1,6000);ortho=new THREE.OrthographicCamera(-480,480,300,-300,1,6000);camera=persp;
+  controls=new OrbitControls(camera,$('gl'));controls.enableDamping=true;controls.dampingFactor=.1;
+  controls.maxPolarAngle=Math.PI*.49;controls.minDistance=30;controls.maxDistance=2500;
+  controls.addEventListener('change',()=>state.needsRender=true);
+  scene.add(new THREE.HemisphereLight(0xe8eef4,0xb9b2a6,.9));
+  const sun=new THREE.DirectionalLight(0xffffff,1.2);sun.position.set(300,600,250);scene.add(sun);
+  const p=D.geometry.ground_plane;
+  ground=new THREE.Mesh(new THREE.PlaneGeometry(p.width,p.depth),new THREE.MeshLambertMaterial({color:0xe6e6e2}));
+  ground.rotation.x=-Math.PI/2;ground.position.set(...p.centre);scene.add(ground);
+  const grid=new THREE.GridHelper(p.width,Math.round(p.width/25),0xbdc5c8,0xdde1e1);
+  grid.position.set(p.centre[0],p.centre[1]+.05,p.centre[2]);scene.add(grid);
+  new ResizeObserver(resize).observe(stage);resize();
 }
-
-/* data/points.* is a local build for the team: git ignores it and it is not on the published
-   site, so this quietly does nothing when the files are absent. */
-async function loadLocalPoints(base) {
-  try {
-    const meta = await fetch(base + "points.json").then((r) => (r.ok ? r.json() : null));
-    if (!meta) return null;
-    const buf = await fetch(base + "points.bin").then((r) => (r.ok ? r.arrayBuffer() : null));
-    if (!buf) return null;
-    const i16 = new Int16Array(buf), n = meta.epochs;
-    return { meta, n, get: (k, t) => i16[k * n + t] / 100 };
-  } catch (e) {
-    return null;
-  }
-}
-
-function initScene() {
-  const canvas = $("gl");
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(css("--canvas") || "#ffffff");
-  persp = new THREE.PerspectiveCamera(45, 1, 1, 6000);
-  ortho = new THREE.OrthographicCamera(-480, 480, 300, -300, 1, 6000);
-  camera = persp;
-  controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true; controls.dampingFactor = 0.1;
-  controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 30; controls.maxDistance = 2500;
-  controls.addEventListener("change", () => { S.needsRender = true; });
-  hemi = new THREE.HemisphereLight(0xe8eef4, 0xb9b2a6, 0.9);
-  sun = new THREE.DirectionalLight(0xffffff, 1.2);
-  sun.position.set(300, 600, 250);
-  scene.add(hemi, sun);
-  const gp = D.manifest.ground_plane;
-  const gGeom = new THREE.PlaneGeometry(gp.width, gp.depth);
-  const gMat = new THREE.MeshLambertMaterial({ color: 0xe6e6e2 });
-  ground = new THREE.Mesh(gGeom, gMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(gp.centre[0], gp.centre[1], gp.centre[2]);
-  scene.add(ground);
-  if (D.manifest.texture) {
-    new THREE.TextureLoader().load(GEO + (isMobile ? "ground-512.jpg" : "ground-2048.jpg"), (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      ground.userData.tex = tex; applyTexture(); S.needsRender = true;
-    });
-  }
-  gridHelper = new THREE.GridHelper(gp.width, Math.round(gp.width / 25), 0x9aa5b1, 0xcfd4d8);
-  gridHelper.position.set(gp.centre[0], gp.centre[1] + 0.05, gp.centre[2]);
-  gridHelper.visible = false;
-  scene.add(gridHelper);
-  ceilingPlane = new THREE.Mesh(new THREE.PlaneGeometry(700, 600), new THREE.MeshBasicMaterial({ color: 0x1f6fa3, transparent: true, opacity: 0.14, side: THREE.DoubleSide, depthWrite: false }));
-  ceilingPlane.rotation.x = -Math.PI / 2; ceilingPlane.position.set(0, D.manifest.ground_nap + DS.hTop + 0.2, 0); ceilingPlane.visible = false;
-  scene.add(ceilingPlane);
-  resize();
-  new ResizeObserver(resize).observe($("stage"));
-}
-
-function applyTexture() {
-  ground.material.map = S.texture ? (ground.userData.tex || null) : null;
-  ground.material.color.set(S.texture && ground.userData.tex ? 0xffffff : 0xe6e6e2);
-  ground.material.needsUpdate = true;
-  gridHelper.visible = !S.texture;
-}
-
-function resize() {
-  const st = $("stage"), w = st.clientWidth, h = st.clientHeight;
-  if (!w || !h) return;
-  renderer.setSize(w, h, false);
-  persp.aspect = w / h; persp.updateProjectionMatrix();
-  const hw = D.manifest.presets.satellite.half_width;
-  ortho.left = -hw; ortho.right = hw; ortho.top = hw * h / w; ortho.bottom = -hw * h / w; ortho.updateProjectionMatrix();
-  S.needsRender = true;
-}
-
-/* ------------------------------------------------------------ buildings */
-async function loadBuildings() {
-  const file = GEO + (isMobile ? "buildings-lod12.glb" : "buildings-lod22.glb");
-  const gltf = await new GLTFLoader().loadAsync(file);
-  let geom = null;
-  gltf.scene.traverse((o) => { if (o.isMesh && !geom) geom = o.geometry; });
-  if (!geom.attributes._building) throw new Error("no _building attribute");
-  const nB = D.bld.order.length, nCols = 11;
-  table = new Uint8Array(nB * nCols * 4);
-  tableTex = new THREE.DataTexture(table, nCols, nB, THREE.RGBAFormat);
-  tableTex.magFilter = tableTex.minFilter = THREE.NearestFilter;
-  uniforms = { uTable: { value: tableTex }, uNBld: { value: nB }, uNCols: { value: nCols }, uBandM: { value: 10 }, uGround: { value: D.manifest.ground_nap }, uMode: { value: 0 },
-    uFocusBand: {value: S.height / 10}, uHeightMode: {value: 1},
-    uBldGround: {value: D.bld.order.map(id => D.bld.bag3d[id]?.ground_nap ?? D.manifest.ground_nap)},
-    uSupport: {value: D.bld.order.flatMap(id => { const h=D.bld.buildings[id]?.h_agl; return h ? [h.min,h.max] : [-1,-1]; })}
-  };
-  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
-  mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uniforms);
-    sh.vertexShader = sh.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute float _building;\nvarying float vBid;\nvarying float vY;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBid = _building;\nvY = position.y;");
-    sh.fragmentShader = sh.fragmentShader
-      .replace("#include <common>", `#include <common>
-uniform sampler2D uTable;
-uniform float uNBld, uNCols, uBandM, uGround, uFocusBand;
-uniform float uBldGround[${nB}];
-uniform vec2 uSupport[${nB}];
-uniform int uMode, uHeightMode;
-varying float vBid, vY;`)
-      .replace("#include <color_fragment>", `#include <color_fragment>
-{
-  int bid = int(vBid + 0.5);
-  float height = vY - uBldGround[bid];
-  float band = floor(height / uBandM);
-  float col = (uMode == 0) ? 0.5 : (1.5 + band);
-  vec4 c = texture2D(uTable, vec2(clamp(col, 0.5, uNCols - 0.5) / uNCols, (vBid + 0.5) / uNBld));
-  if (uMode == 1 && (col >= uNCols || height < uSupport[bid].x || height > uSupport[bid].y)) c.a = 0.0;
-  vec3 grey = vec3(0.80, 0.81, 0.82);
-  diffuseColor.rgb = (c.a > 0.5) ? c.rgb : grey;
-  if (uHeightMode == 1 && c.a > 0.5 && abs(band - uFocusBand) > 0.1) diffuseColor.rgb = mix(grey, c.rgb, 0.32);
-}`);
-  };
-  buildings = new THREE.Mesh(geom, mat);
-  buildings.name = "buildings";
-  scene.add(buildings);
-  if (!isMobile) {
-    edgesObj = new THREE.LineSegments(new THREE.EdgesGeometry(geom, 25), new THREE.LineBasicMaterial({ color: 0x5b6672, transparent: true, opacity: 0.35 }));
-    edgesObj.visible = S.edges;
-    scene.add(edgesObj);
-  }
-  fillTable();
-}
-
-function colourOf(L, v) {
-  if (v === null || v === undefined || isNaN(v)) return null;
-  const r = ramp(L.ramp);
-  const t = L.cyclic ? ((v % 365.25) + 365.25) % 365.25 / 365.25 : (v - L.lim[0]) / (L.lim[1] - L.lim[0]);
-  return r(t);
-}
-
-function fillTable() {
-  const L = LAYERS[S.layer], nCols = 11;
-  const recs = D.bld.buildings, attrs = D.bld.bag3d;
-  uniforms.uMode.value = L.band ? 1 : 0;
-  uniforms.uHeightMode.value = S.layer === 'band_n' ? 1 : 0;
-  if (S.cellLayer === "points") {      /* nothing averaged on screen: the points carry the colour */
-    table.fill(0);
-    tableTex.needsUpdate = true;
-    drawLegend(POINT_LAYERS[S.pointLayer]);
-    S.needsRender = true;
-    return;
-  }
-  D.bld.order.forEach((bid, row) => {
-    const rec = recs[bid], a = attrs[bid];
-    for (let c = 0; c < nCols; c++) {
-      let v = null;
-      if (L.attr) v = a ? L.attr(a) : null;
-      else if (L.get) v = rec ? L.get(rec) : null;
-      else if (L.band && rec && c > 0) { const b = supportedBands(rec, D.bld.min_n).find((bb) => bb.lo === (c - 1) * 10); v = b ? L.band(b) : null; }
-      const col = colourOf(L, v), k = (row * nCols + c) * 4;
-      if (col) { table[k] = col[0]; table[k + 1] = col[1]; table[k + 2] = col[2]; table[k + 3] = 255; }
-      else { table[k] = table[k + 1] = table[k + 2] = 0; table[k + 3] = 0; }
-    }
-  });
-  tableTex.needsUpdate = true;
-  drawLegend(L);
-  S.needsRender = true;
-}
-
-/* ------------------------------------------------------------ cells */
-function buildCells() {
-  if (cellsMesh) { scene.remove(cellsMesh); cellsMesh.geometry.dispose(); }
-  const G = D.grids[S.cellGrid], cm = D.cells.grids[S.cellGrid].cell_m, ox = D.cells.origin_local[0], oy = D.cells.origin_local[1];
-  const geom = new THREE.BoxGeometry(cm - 1, 1, cm - 1);
-  geom.translate(0, 0.5, 0);
-  cellsMesh = new THREE.InstancedMesh(geom, new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }), G.cells.length);
-  const m = new THREE.Matrix4();
-  G.cells.forEach((c, k) => {
-    const x = ox + cm * (c.i + 0.5), z = -(oy + cm * (c.j + 0.5));
-    const h = S.columns ? Math.max(1, c.h_agl_mean) : 0.4;
-    m.makeScale(1, h, 1); m.setPosition(x, D.manifest.ground_nap + 0.15, z);
-    cellsMesh.setMatrixAt(k, m);
-  });
-  cellsMesh.instanceMatrix.needsUpdate = true;
-  cellsMesh.name = "cells";
-  scene.add(cellsMesh);
-  colourCells();
-}
-
-function buildPoints() {
-  if (!D.points || pointCloud) return;
-  const P = D.points.meta, n = P.n_points, ground = D.manifest.ground_nap;
-  const pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
-  for (let k = 0; k < n; k++) {
-    pos[k * 3] = P.e[k];
-    pos[k * 3 + 1] = ground + P.h_agl[k];
-    pos[k * 3 + 2] = -P.n_coord[k];
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
-  pointCloud = new THREE.Points(g, new THREE.PointsMaterial({ size: 6, sizeAttenuation: true, vertexColors: true }));
-  pointCloud.visible = false;
-  scene.add(pointCloud);
-}
-
-function colourPoints() {
-  if (!pointCloud || !D.points) return;
-  const P = D.points.meta, n = P.n_points, col = pointCloud.geometry.getAttribute("color");
-  const mode = S.pointLayer;
-  const L = mode === "time"
-    ? { ramp: "RdBu_r", lim: [-D.scales.cells[S.tmode + "_mm"], D.scales.cells[S.tmode + "_mm"]] }
-    : POINT_LAYERS[mode];
-  for (let k = 0; k < n; k++) {
-    let v;
-    if (mode === "rate") v = P.rate[k];
-    else if (mode === "amp") v = P.amp[k];
-    else if (mode === "peak_doy") v = P.peak_doy[k];
-    else if (mode === "h") v = P.h_agl[k];
-    else if (mode === "coh") v = P.coh[k];
-    else if (S.tmode === "increment") v = S.epoch === 0 ? 0 : D.points.get(k, S.epoch) - D.points.get(k, S.epoch - 1);
-    else v = D.points.get(k, S.epoch);
-    const rgb = colourOf(L, v) || [170, 170, 170];
-    col.array[k * 3] = rgb[0] / 255; col.array[k * 3 + 1] = rgb[1] / 255; col.array[k * 3 + 2] = rgb[2] / 255;
-  }
-  col.needsUpdate = true;
-  drawLegend(mode === "time" ? { title: "what each point did on this pass [mm]", ramp: "RdBu_r", lim: L.lim } : L);
-  S.needsRender = true;
-}
-
-function cellValue(G, c, k, t) {
-  if (S.tmode === "increment") return t === 0 ? 0 : G.get(k, t) - G.get(k, t - 1);
-  if (S.tmode === "cumulative") return G.get(k, t);
-  const tr = c.trend, ty = D.tYears[t];
-  return G.get(k, t) - (tr[0] + tr[1] * ty + tr[2] * ty * ty);
-}
-
-function colourCells() {
-  if (!cellsMesh) return;
-  if (pointCloud) pointCloud.visible = S.cellLayer === "points";
-  if (S.cellLayer === "points") {
-    cellsMesh.visible = false;
-    if (S.lastCellLayer !== "points") fillTable();               /* buildings step back to grey */
-    S.lastCellLayer = "points";
-    colourPoints();
-    return;
-  }
-  if (pointCloud && S.lastCellLayer === "points") fillTable();   /* give the buildings their colours back */
-  cellsMesh.visible = S.cellLayer !== "none";
-  if (!cellsMesh.visible) { S.needsRender = true; return; }
-  const G = D.grids[S.cellGrid], col = new THREE.Color();
-  let L;
-  if (S.cellLayer === "time") {
-    const lim = D.scales.cells[S.tmode + "_mm"];
-    L = { ramp: "RdBu_r", lim: [-lim, lim] };
-    G.cells.forEach((c, k) => { const v = cellValue(G, c, k, S.epoch); const rgb = colourOf(L, v); col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col); });
-  } else {
-    L = CELL_LAYERS[S.cellLayer];
-    const perEpoch = L.perEpoch;
-    G.cells.forEach((c, k) => {
-      const v = perEpoch ? G.sd(k, S.epoch) : c[S.cellLayer];
-      const rgb = colourOf(L, v) || [200, 200, 200];
-      col.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255); cellsMesh.setColorAt(k, col);
-    });
-  }
-  cellsMesh.instanceColor.needsUpdate = true;
-  S.lastCellLayer = S.cellLayer;
-  S.needsRender = true;
-}
-
-/* ------------------------------------------------------------ legend, hud, epoch */
-function drawLegend(L) {
-  const cv = $("legend"), ctx = cv.getContext("2d"), w = cv.clientWidth || 260, h = 44;
-  cv.width = w * 2; cv.height = h * 2; ctx.scale(2, 2);
-  ctx.clearRect(0, 0, w, h);
-  const r = ramp(L.ramp);
-  for (let x = 0; x < w; x++) { const c = r(x / (w - 1)); ctx.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; ctx.fillRect(x, 4, 1.5, 14); }
-  ctx.fillStyle = css("--muted"); ctx.font = "11px system-ui"; ctx.textBaseline = "top";
-  if (L.cyclic) { "JFMAMJJASOND".split("").forEach((m, k) => { ctx.textAlign = "center"; ctx.fillText(m, (k + 0.5) / 12 * w, 22); }); }
-  else { ctx.textAlign = "left"; ctx.fillText(String(L.lim[0]), 0, 22); ctx.textAlign = "center"; ctx.fillText(String((L.lim[0] + L.lim[1]) / 2), w / 2, 22); ctx.textAlign = "right"; ctx.fillText(String(L.lim[1]), w, 22); }
-  $("legendText").textContent = L.title + (L.ramp === "RdBu_r" ? " · blue = away from the satellite" : "") + (L.attr ? " · grey = unavailable register value" : " · grey = no published group");
-}
-
-function updateEpochLabel() {
-  const e = D.epochs, i = S.epoch, tg = e.knmi.tg[i];
-  const value = S.timeline === 'building' ? selectedContrast && Number.isFinite(selectedContrast.series[i]) ? sgn(selectedContrast.series[i],2)+' mm LOS' : 'no supported slab contrast' : sgn(e.s_resid[i],1)+' mm/100 m';
-  $("epochLabel").textContent = `${fmtDate(e.dates[i])} · pass ${i + 1} of ${e.n_epochs} · ${value}`;
-  $("tSlider").value = i;
-}
-
-function drawStrip() {
-  const cv = $("strip"), ctx = cv.getContext("2d"), w = cv.clientWidth, h = cv.clientHeight || 110;
-  if (!w) return;
-  cv.width = w * 2; cv.height = h * 2; ctx.scale(2, 2); ctx.clearRect(0, 0, w, h);
-  if (S.timeline === 'building') {
-    const contrast = selectedContrast;
-    $("strip").setAttribute('aria-label','Upper minus lower slab displacement in the selected building, mm along the radar line of sight');
-    if (!contrast) {
-      ctx.fillStyle = css('--muted'); ctx.font='12px system-ui';
-      ctx.fillText('Select a building with at least two published height groups.',16,30);
-      return;
-    }
-    const values = contrast.series.filter(Number.isFinite), lo=Math.min(0,...values), hi=Math.max(0,...values);
-    const pad=Math.max(.1,(hi-lo)*.08), x0=42, x1=w-12, y0=14, y1=h-22;
-    const X=i=>x0+i/(contrast.series.length-1)*(x1-x0), Y=v=>y1-(v-lo+pad)/(hi-lo+2*pad)*(y1-y0);
-    ctx.strokeStyle=css('--line');ctx.beginPath();ctx.moveTo(x0,Y(0));ctx.lineTo(x1,Y(0));ctx.stroke();
-    ctx.strokeStyle=css('--accent');ctx.beginPath();let pen=false;
-    contrast.series.forEach((v,i)=>{if(!Number.isFinite(v)){pen=false;return;}if(pen)ctx.lineTo(X(i),Y(v));else ctx.moveTo(X(i),Y(v));pen=true;});ctx.stroke();
-    ctx.strokeStyle=css('--bad');ctx.beginPath();ctx.moveTo(X(S.epoch),y0);ctx.lineTo(X(S.epoch),y1);ctx.stroke();
-    ctx.fillStyle=css('--muted');ctx.font='10px system-ui';ctx.textAlign='right';
-    ctx.fillText(hi.toFixed(1),x0-5,Y(hi)+3);ctx.fillText(lo.toFixed(1),x0-5,Y(lo)+3);
-    ctx.textAlign='left';ctx.fillText(contrast.high.lo+'–'+contrast.high.hi+' m minus '+contrast.low.lo+'–'+contrast.low.hi+' m [mm LOS], motion and air remain mixed',x0+5,11);
-    let year;D.epochs.dates.forEach((d,i)=>{if(d.slice(0,4)!==year){year=d.slice(0,4);ctx.fillText(year,X(i),h-6);}});
-    return;
-  }
-  $("strip").setAttribute('aria-label','City-wide residual radar height gradient and daily temperature, with separate axes');
-  const e = D.epochs, n = e.n_epochs, x0 = 40, x1 = w - 38, y0 = 8, y1 = h - 22;
-  const lim = Math.max(D.scales.s_resid_mm_per_100m * 1.6,...e.s_resid.filter(Number.isFinite).map(Math.abs))*1.03;
-  const X = (k) => x0 + k / (n - 1) * (x1 - x0), Y = (v) => y1 - (v + lim) / (2 * lim) * (y1 - y0);
-  ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(x0, Y(0)); ctx.lineTo(x1, Y(0)); ctx.stroke();
-  const tg = e.knmi.tg, tv = tg.filter(Number.isFinite);
-  const tmin = Math.floor((Math.min(...tv)-2)/5)*5, tmax = Math.ceil((Math.max(...tv)+2)/5)*5;
-  ctx.strokeStyle = css("--muted"); ctx.setLineDash([2, 3]); ctx.beginPath();
-  let st = false; tg.forEach((v, k) => { if (v === null) { st = false; return; } const yy = y1 - (v - tmin) / (tmax - tmin) * (y1 - y0); if (!st) { ctx.moveTo(X(k), yy); st = true; } else ctx.lineTo(X(k), yy); });
-  ctx.stroke(); ctx.setLineDash([]);
-  ctx.strokeStyle = css("--accent"); ctx.lineWidth = 1.2; ctx.beginPath();
-  e.s_resid.forEach((v, k) => { const yy = Y(v); k ? ctx.lineTo(X(k), yy) : ctx.moveTo(X(k), yy); });
-  ctx.stroke(); ctx.lineWidth = 1;
-  ctx.strokeStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(X(S.epoch), y0); ctx.lineTo(X(S.epoch), y1); ctx.stroke();
-  ctx.fillStyle = css("--muted"); ctx.font = "10px system-ui"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  ctx.fillText(sgn(lim, 0), x0 - 4, Y(lim)); ctx.fillText("0", x0 - 4, Y(0)); ctx.fillText(sgn(-lim, 0), x0 - 4, Y(-lim));
-  ctx.textAlign = 'left';
-  for (const value of [tmin,(tmin+tmax)/2,tmax]) ctx.fillText(value+'°C',x1+4,y1-(value-tmin)/(tmax-tmin)*(y1-y0));
-  ctx.textAlign = "center"; ctx.textBaseline = "top";
-  let last = null; e.dates.forEach((d, k) => { const yv = d.slice(0, 4); if (yv !== last) { last = yv; ctx.fillText(yv, X(k), y1 + 4); } });
-  ctx.textAlign = "left"; ctx.fillText("radar [mm/100 m] · dotted: temperature [°C]", x0 + 4, y0);
-}
-
-/* ------------------------------------------------------------ presets and lighting */
-function setPreset(name) {
-  const p = D.manifest.presets[name];
-  if (!p) return;
-  const wasOrtho = camera === ortho;
-  camera = p.orthographic ? ortho : persp;
-  if ((camera === ortho) !== wasOrtho) { controls.object = camera; }
-  camera.up.set(...(p.up || [0, 1, 0]));
-  camera.position.set(...p.position);
-  controls.target.set(...p.target);
-  controls.update();
-  $("radarLight").checked = !!p.radar_lighting; S.radarLight = !!p.radar_lighting; applyLighting();
-  $("hud").textContent = p.caption || (name === "top" ? "Top-down, north up" : name === "overview" ? "Overview from the south-east" : "");
-  document.querySelectorAll("#presets button").forEach((b) => b.classList.toggle("on", b.dataset.p === name));
-  S.needsRender = true;
-}
-
-function applyLighting() {
-  const u = D.manifest.los_unit_local;
-  if (S.radarLight) { hemi.intensity = 0.25; sun.intensity = 1.6; sun.position.set(u[0] * 1000, u[1] * 1000, u[2] * 1000); }
-  else { hemi.intensity = 0.9; sun.intensity = 1.2; sun.position.set(300, 600, 250); }
-  S.needsRender = true;
-}
-
-/* ------------------------------------------------------------ rays and balloon */
-function buildRays() {
-  const p = D.manifest.presets.rays, u = new THREE.Vector3(...D.manifest.los_unit_local);
-  rayGroup = new THREE.Group();
-  const mkLine = (a, b, colour) => new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineDashedMaterial({ color: colour, dashSize: 6, gapSize: 4 }));
-  const low = new THREE.Vector3(...p.low), high = new THREE.Vector3(...p.high);
-  const farLow = low.clone().addScaledVector(u, 900), farHigh = high.clone().addScaledVector(u, 900);
-  const l1 = mkLine(farLow, low, 0xc53030), l2 = mkLine(farHigh, high, 0xc53030);
-  l1.computeLineDistances(); l2.computeLineDistances();
-  rayGroup.add(l1, l2);
-  /* the extra path of the low ray inside the layer: from the height of the high point down to the low point */
-  const dy = high.y - low.y, len = dy / u.y;
-  const start = low.clone().addScaledVector(u, len);
-  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, len, 8), new THREE.MeshBasicMaterial({ color: 0x1f6fa3 }));
-  cyl.position.copy(low.clone().add(start).multiplyScalar(0.5));
-  cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), u.clone());
-  rayGroup.add(cyl);
-  const sph = (c) => new THREE.Mesh(new THREE.SphereGeometry(3, 12, 12), new THREE.MeshBasicMaterial({ color: c }));
-  const s1 = sph(0xc53030), s2 = sph(0xc53030);
-  rayGroup.add(s1, s2);
-  const pts = (c) => new THREE.Mesh(new THREE.SphereGeometry(2, 10, 10), new THREE.MeshBasicMaterial({ color: c }));
-  const pA = pts(0x1b2430), pB = pts(0x1b2430); pA.position.copy(high); pB.position.copy(low); rayGroup.add(pA, pB);
-  airSlab = new THREE.Mesh(new THREE.BoxGeometry(700, dy, 600), new THREE.MeshBasicMaterial({ color: 0x1f6fa3, transparent: true, opacity: 0.1, depthWrite: false }));
-  airSlab.position.set(0, (low.y + high.y) / 2, 0);
-  rayGroup.add(airSlab);
-  rayGroup.userData = { s1, s2, farLow, farHigh, low, high, len };
-  rayGroup.visible = false;
-  scene.add(rayGroup);
-}
-
-function stepRays(dt) {
-  const g = rayGroup.userData, T = 4000;
-  g.t = ((g.t || 0) + dt) % T;
-  const f = g.t / T;
-  g.s1.position.lerpVectors(g.farHigh, g.high, Math.min(1, f * 1.1));
-  g.s2.position.lerpVectors(g.farLow, g.low, Math.min(1, f * 1.1 * (900 / (900 + g.len))));
-  const nu = D.epochs.s_resid[S.epoch] * Math.cos(23 * Math.PI / 180) * 10;
-  const extra = D.manifest.presets.rays.extra_path_m;
-  $("overlay").innerHTML = `<b>Two heights, one layer of air.</b> The lower ray travels ${extra.toFixed(0)} m further through the layer (${(g.high.y - g.low.y).toFixed(0)} m of height at 23° from vertical). One N-unit more refractivity in that layer delays it by ${(1e-6 * extra * 1000).toFixed(2)} mm. On this pass the height gradient, trend and yearly wave removed, is ${sgn(D.epochs.s_resid[S.epoch], 1)} mm per 100 m, about ${sgn(nu, 0)} N-units if it were all air.`;
-  const lim = D.scales.s_resid_mm_per_100m, v = D.epochs.s_resid[S.epoch];
-  const rgb = colourOf({ ramp: "RdBu_r", lim: [-lim, lim] }, v);
-  airSlab.material.color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
-  airSlab.material.opacity = 0.06 + 0.25 * Math.min(1, Math.abs(v) / lim);
-}
-
-function buildBalloon() {
-  balloonGroup = new THREE.Group();
-  const edges = D.bands.fine.map((b) => [b.lo, b.hi]);
-  const slabs = edges.map(([lo, hi]) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(700, Math.max(1, hi - lo) - 0.5, 600), new THREE.MeshBasicMaterial({ color: 0x1f6fa3, transparent: true, opacity: 0.0, depthWrite: false }));
-    m.position.set(0, D.manifest.ground_nap + (lo + hi) / 2, 0);
-    balloonGroup.add(m);
-    return m;
-  });
-  const p = D.manifest.presets.rays;
-  const sphere = new THREE.Mesh(new THREE.SphereGeometry(4, 14, 14), new THREE.MeshBasicMaterial({ color: 0xb4711a }));
-  sphere.position.set(p.low[0] + 20, D.manifest.ground_nap, p.low[2] + 20);
-  balloonGroup.add(sphere);
-  balloonGroup.userData = { slabs, sphere, edges, x: p.low[0] + 20, z: p.low[2] + 20 };
-  balloonGroup.visible = false;
-  scene.add(balloonGroup);
-}
-
-function stepBalloon(dt) {
-  const g = balloonGroup.userData, T = 4500;
-  g.t = Math.min(T, (g.t || 0) + dt);
-  const f = g.t / T, hb = f * 86;
-  g.sphere.position.set(g.x, D.manifest.ground_nap + hb, g.z);
-  const k = Math.max(0, Math.min(D.epochs.n_epochs - 2, S.epoch - 1));
-  const lim = D.scales.band_fast_mm;
-  const L = { ramp: "RdBu_r", lim: [-lim, lim] };
-  let txt = `<b>Animated radar height bands, not a measured sounding.</b> ${fmtDate(D.epochs.dates[k])} → ${fmtDate(D.epochs.dates[k + 1])}. Each slab: change of its height band relative to the lowest band.<br>`;
-  g.slabs.forEach((m, b) => {
-    const band = D.bands.fine[b], v = band.fast[k], lit = band.lo <= hb;
-    const rgb = colourOf(L, v);
-    m.material.color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
-    m.material.opacity = lit ? 0.08 + 0.3 * Math.min(1, Math.abs(v) / lim) : 0;
-    if (lit) txt += `${band.lo}–${band.hi} m: ${sgn(v, 2)} mm (n = ${band.n})<br>`;
-  });
-  txt += `Layer gradient this step: ${sgn(D.epochs.s_fast[k], 2)} mm per 100 m.`;
-  $("overlay").innerHTML = txt;
-}
-
-/* ------------------------------------------------------------ picking and cards */
-function pick(ev) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  const ndc = new THREE.Vector2(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
-  camera.updateMatrixWorld(true);   /* render-on-demand: the world matrix may be stale between frames */
-  const rc = new THREE.Raycaster(); rc.setFromCamera(ndc, camera);
-  const targets = [buildings, cellsMesh].filter((o) => o && o.visible);
-  const hits = rc.intersectObjects(targets, false);
-  if (!hits.length) return;
-  const h = hits[0];
-  if (h.object === buildings) {
-    const bidIdx = buildings.geometry.attributes._building.getX(h.face.a);
-    const bid = D.bld.order[Math.round(bidIdx)];
-    selectBuilding(bid);
-  } else if (h.object === cellsMesh && h.instanceId !== undefined) {
-    S.selected = { kind: "cell", k: h.instanceId }; cellCard(h.instanceId);
-    if (selectionBox) selectionBox.visible = false;
-  }
-}
-
-function sparkline(cv, series, epochMark, unit) {
-  const ctx = cv.getContext("2d"), w = cv.clientWidth || 260, h = 70;
-  cv.width = w * 2; cv.height = h * 2; ctx.scale(2, 2); ctx.clearRect(0, 0, w, h);
-  const vals = series.filter((v) => v !== null), lo = Math.min(...vals), hi = Math.max(...vals), n = series.length;
-  const X = (k) => 30 + k / (n - 1) * (w - 34), Y = (v) => 6 + (hi - v) / ((hi - lo) || 1) * (h - 22);
-  ctx.strokeStyle = css("--line"); ctx.beginPath(); ctx.moveTo(30, Y(0)); ctx.lineTo(w - 4, Y(0)); ctx.stroke();
-  ctx.strokeStyle = css("--accent"); ctx.beginPath(); series.forEach((v, k) => { if (v === null) return; k ? ctx.lineTo(X(k), Y(v)) : ctx.moveTo(X(k), Y(v)); }); ctx.stroke();
-  ctx.strokeStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(X(epochMark), 4); ctx.lineTo(X(epochMark), h - 14); ctx.stroke();
-  ctx.fillStyle = css("--muted"); ctx.font = "9px system-ui"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  ctx.fillText(hi.toFixed(0), 27, Y(hi)); ctx.fillText(lo.toFixed(0), 27, Y(lo));
-  ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("mean displacement of the group [" + unit + "], " + D.epochs.dates[0].slice(0, 4) + " to " + D.epochs.dates[n - 1].slice(0, 4), 30, h - 11);
-}
-
-function buildingCard(bid) {
-  const r = D.bld.buildings[bid], a = D.bld.bag3d[bid], card = $("card"), register = window.VRSBuildings;
-  const summary = heightSummary(r, a, D.bld.min_n);
-  selectedContrast = heightContrast(r, D.bld.min_n);
-  const colour = n => 'rgb(' + colourOf(LAYERS.band_n, n).map(Math.round).join(',') + ')';
-  card.innerHTML = '<div class="city-selection-head"><div>' + register.identity(bid, r, a) +
-    '</div><button type="button" id="focusBuilding" aria-label="Focus the selected building in the city">Locate</button></div>' +
-    '<div class="city-selection-stats"><div><b>' + (summary.points === null ? 'n/a' : summary.points.toLocaleString('en-GB')) + '</b><span>radar points</span></div><div><b>' + summary.bands +
-    '</b><span>published slabs</span></div><div><b>' + (summary.highest === null ? 'n/a' : summary.highest.toFixed(1) + ' m') + '</b><span>highest point</span></div></div>' +
-    '<div class="height-profile">' + heightProfile(r, a, colour, D.bld.min_n) + '</div>' +
-    '<p class="city-profile-note">Grey: no published 10 m group. Counts do not imply continuous facade coverage.</p>' +
-    (selectedContrast ? '' :
-      '<p class="city-profile-note">' + (r ? 'Two published height groups are needed for a contrast.' : 'No published radar aggregate here. Missing data are not zero motion.') + '</p>');
-  $("focusBuilding").addEventListener('click', focusSelection);
-}
-
-function boundsFor(bid) {
-  if (buildingBounds.has(bid)) return buildingBounds.get(bid);
-  const row = D.bld.order.indexOf(bid), g = buildings.geometry, box = new THREE.Box3();
-  for (let i=0; i<g.attributes.position.count; i++) {
-    if (Math.round(g.attributes._building.getX(i)) === row) box.expandByPoint(new THREE.Vector3().fromBufferAttribute(g.attributes.position,i));
-  }
-  buildingBounds.set(bid, box);
-  return box;
-}
-
-function focusSelection() {
-  if (S.selected?.kind !== 'building') return;
-  const box = boundsFor(S.selected.id);
-  if (box.isEmpty()) return;
-  const centre = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
-  const distance = Math.max(130, size.length()*1.25);
-  camera = persp; controls.object = camera;
-  camera.position.copy(centre).add(new THREE.Vector3(distance*.8,distance*.45,distance));
-  controls.target.copy(centre); controls.update(); resize();
-  document.querySelectorAll('#presets button').forEach(b => b.classList.remove('on'));
-  S.needsRender = true;
-}
-
-function selectBuilding(bid, save=true) {
-  if (!D.bld.order.includes(bid)) return;
-  S.selected = {kind:'building',id:bid};
-  $("buildingSelect").value = bid;
-  buildingCard(bid); fillTable();
-  if (selectionBox) { scene.remove(selectionBox); selectionBox.geometry.dispose(); selectionBox.material.dispose(); }
-  selectionBox = new THREE.Box3Helper(boundsFor(bid),0xd3792e);
-  selectionBox.visible = !boundsFor(bid).isEmpty(); scene.add(selectionBox);
-  if (save) {
-    const url = new URL(location.href); url.searchParams.set('building',bid);
-    history.replaceState(history.state,'',url.pathname+url.search+url.hash);
-  }
-  updateEpochLabel(); drawStrip();
-  S.needsRender = true;
-}
-
-function populateBuildings() {
-  const register = window.VRSBuildings;
-  const label = id => register.name(id,D.bld.buildings[id],D.bld.bag3d[id]);
-  $("buildingSelect").innerHTML = [...D.bld.order].sort((a,b) => label(a).localeCompare(label(b))).map(id =>
-    '<option value="' + id + '">' + register.esc(label(id)) + ' · ' + id + '</option>').join('');
-}
-
-function updateHeightSlice() {
-  const max = Math.max(0,Math.floor(DS.hTop/10)*10);
-  S.height = Math.max(0,Math.min(max,Math.floor(S.height/10)*10));
-  $("heightSlice").max = max; $("heightSlice").value = S.height;
-  const label = S.height + '–' + (S.height+10) + ' m';
-  $("heightLabel").textContent = label;
-  $("heightSlice").setAttribute('aria-valuetext',label+' above ground');
-  const groups = Object.values(D.bld.buildings).flatMap(r => supportedBands(r,D.bld.min_n).filter(b => b.lo === S.height));
-  const points = groups.reduce((n,b) => n+b.n,0);
-  $("sliceStatus").textContent = groups.length + ' buildings · ' + points.toLocaleString('en-GB') + ' published points';
-  $("heightSummary").innerHTML = '<b>' + label + ' above ground</b><span>' + groups.length + ' of ' + D.bld.order.length + ' building models have a published group here</span>';
-  $("heightSummary").hidden = S.layer !== 'band_n';
-  document.querySelector('.city-key').hidden = S.layer !== 'band_n';
-  uniforms.uFocusBand.value = S.height/10;
-  S.needsRender = true;
-}
-
-function cellCard(k) {
-  const G = D.grids[S.cellGrid], c = G.cells[k], card = $("card");
-  const series = Array.from({ length: D.epochs.n_epochs }, (_, t) => G.get(k, t));
-  card.innerHTML = `<h4>Cell ${c.i}, ${c.j} (${S.cellGrid === "ground" ? "ground points" : "all points"})</h4><table><tbody>
-    <tr><td>Radar points</td><td>${c.n}, mean height ${c.h_agl_mean.toFixed(1)} m, highest ${c.h_agl_max.toFixed(0)} m</td></tr>
-    <tr><td>Long-term rate</td><td>${sgn(c.rate_mean, 2)} mm/yr, curvature ${sgn(c.quad_mean, 2)} mm/yr²</td></tr>
-    <tr><td>Spread between its points</td><td>rate ± ${c.rate_sd.toFixed(2)} mm/yr (10th to 90th: ${sgn(c.rate_p10, 1)} to ${sgn(c.rate_p90, 1)}), heights ± ${c.h_agl_sd.toFixed(1)} m; ${G.sd(k, S.epoch).toFixed(1)} mm apart on this pass, ${c.scatter_mm.toFixed(1)} mm on a typical one</td></tr>
-    <tr><td>Seasonal swing</td><td>${c.amp.toFixed(2)} mm, peaking around ${doyText(c.peak_doy)}</td></tr>
-    <tr><td>This pass</td><td>${sgn(cellValue(G, c, k, S.epoch), 2)} mm (${S.tmode === "increment" ? "since the previous pass" : S.tmode === "cumulative" ? "since " + fmtDate(D.epochs.dates[0]) : "minus the cell's trend"})</td></tr>
-    </tbody></table><canvas id="spark"></canvas>`;
-  sparkline($("spark"), series, S.epoch, "mm");
-}
-
-/* ------------------------------------------------------------ time */
-function setEpoch(t) {
-  S.epoch = Math.max(0, Math.min(D.epochs.n_epochs - 1, t));
-  if (S.cellLayer === "time" || S.cellLayer === "points" || (CELL_LAYERS[S.cellLayer] && CELL_LAYERS[S.cellLayer].perEpoch)) colourCells();
-  updateEpochLabel(); drawStrip();
-  if (S.selected?.kind === 'cell') cellCard(S.selected.k);
-  S.needsRender = true;
-}
-
-let lastT = 0, acc = 0;
-function loop(t) {
-  requestAnimationFrame(loop);
-  const dt = lastT ? t - lastT : 0; lastT = t;
-  if (S.playing) { acc += dt; const step = 1000 / S.speed; if (acc >= step) { const n = Math.floor(acc / step); acc -= n * step; setEpoch((S.epoch + n) % D.epochs.n_epochs); } }
-  if (S.rays) { stepRays(dt); S.needsRender = true; }
-  if (S.balloon) { stepBalloon(dt); S.needsRender = true; }
-  if (flight && flight.active) { flight.update(dt / 1000); S.needsRender = true; }
-  else controls.update();
-  if (S.needsRender) { renderer.render(scene, camera); S.needsRender = false; }
-  if (location.search.includes("debug")) $("hud").textContent = `draw calls ${renderer.info.render.calls}, triangles ${renderer.info.render.triangles}`;
-}
-
-/* ------------------------------------------------------------ wiring */
-function wire() {
-  $("layer").value = S.layer; $("cellLayer").value = S.cellLayer;
-  $("edges").checked = S.edges; $("texture").checked = S.texture;
-  $("layer").addEventListener("change", (e) => { S.layer = e.target.value; fillTable(); updateHeightSlice(); });
-  $("buildingSelect").addEventListener('change', e => selectBuilding(e.target.value));
-  $("heightSlice").addEventListener('input', e => {
-    S.height = Number(e.target.value); updateHeightSlice();
-    const url = new URL(location.href); url.searchParams.set('height',S.height);
-    history.replaceState(history.state,'',url.pathname+url.search+url.hash);
-  });
-  document.querySelectorAll('[data-timeline]').forEach(button=>button.addEventListener('click',()=>{
-    S.timeline=button.dataset.timeline;
-    document.querySelectorAll('[data-timeline]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-    updateEpochLabel();drawStrip();
+async function loadModels(){
+  const mobile=innerWidth<768,file=mobile?'buildings-lod12.glb':'buildings-lod22.glb';
+  const gltf=await new GLTFLoader().loadAsync(geo+file);let geometry;
+  gltf.scene.traverse(o=>{if(o.isMesh&&!geometry)geometry=o.geometry;});
+  if(!geometry?.attributes._building)throw Error('Building identity is missing from the geometry');
+  const rows=D.bld.order.length,cols=10,table=new Uint8Array(rows*cols*4);
+  D.bld.order.forEach((id,row)=>supportedBands(D.bld.buildings[id],D.bld.min_n).forEach(b=>{
+    const column=b.lo/10;if(!Number.isInteger(column)||column<0||column>=cols)return;
+    const k=(row*cols+column)*4;table.set([...colour(b.n),255],k);
   }));
-  $("cellLayer").addEventListener("change", (e) => { S.cellLayer = e.target.value; colourCells(); });
-  $("cellGround").addEventListener("change", (e) => { S.cellGrid = e.target.checked ? "ground" : "all"; S.selected = null; buildCells(); });
-  $("columns").addEventListener("change", (e) => { S.columns = e.target.checked; buildCells(); });
-  $("edges").addEventListener("change", (e) => { S.edges = e.target.checked; if (edgesObj) edgesObj.visible = S.edges; S.needsRender = true; });
-  $("texture").addEventListener("change", (e) => { S.texture = e.target.checked; applyTexture(); S.needsRender = true; });
-  $("radarLight").addEventListener("change", (e) => { S.radarLight = e.target.checked; applyLighting(); });
-  $("ceiling").addEventListener("change", (e) => { S.ceiling = e.target.checked; ceilingPlane.visible = S.ceiling; S.needsRender = true; });
-  const presets = [["overview", "Overview"], ["top", "Top-down"], ["satellite", "From the satellite"], ["street", "Street level"]];
-  presets.forEach(([k, lab]) => { if (!D.manifest.presets[k]) return; const b = document.createElement("button"); b.type = "button"; b.textContent = lab; b.dataset.p = k; b.addEventListener("click", () => setPreset(k)); $("presets").appendChild(b); });
-  $("raysBtn").addEventListener("click", () => { S.rays = !S.rays; rayGroup.visible = S.rays; $("raysBtn").classList.toggle("on", S.rays); if (S.rays) { S.balloon = false; balloonGroup.visible = false; $("balloonBtn").classList.remove("on"); } $("overlay").classList.toggle("on", S.rays || S.balloon); S.needsRender = true; });
-  $("balloonBtn").addEventListener("click", () => { S.balloon = true; balloonGroup.userData.t = 0; balloonGroup.visible = true; $("balloonBtn").classList.add("on"); S.rays = false; rayGroup.visible = false; $("raysBtn").classList.remove("on"); $("overlay").classList.add("on"); S.needsRender = true; });
-  $("tSlider").addEventListener("input", (e) => { S.playing = false; $("tPlay").textContent = "▶"; setEpoch(parseInt(e.target.value, 10)); });
-  $("tPlay").addEventListener("click", () => { S.playing = !S.playing; $("tPlay").textContent = S.playing ? "❚❚" : "▶"; acc = 0; });
-  $("tSpeed").addEventListener("change", (e) => { S.speed = parseInt(e.target.value, 10); });
-  document.querySelectorAll('input[name="tmode"]').forEach((r) => r.addEventListener("change", (e) => { S.tmode = e.target.value; colourCells(); setEpoch(S.epoch); }));
-  $("strip").addEventListener("pointerdown", (e) => { const r = e.target.getBoundingClientRect(); const f = (e.clientX - r.left - 40) / (r.width - 50); S.playing = false; $("tPlay").textContent = "▶"; setEpoch(Math.round(f * (D.epochs.n_epochs - 1))); });
-  let down = null;
-  renderer.domElement.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; });
-  renderer.domElement.addEventListener("pointerup", (e) => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 6) pick(e); down = null; });
-  renderer.domElement.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { e.preventDefault(); setEpoch(S.epoch + (e.shiftKey ? 10 : 1)); } if (e.key === "ArrowLeft") { e.preventDefault(); setEpoch(S.epoch - (e.shiftKey ? 10 : 1)); } if (e.key === " ") { e.preventDefault(); $("tPlay").click(); } });
-  $("flyBtn").addEventListener("click", takeOff);
-  window.addEventListener("resize", drawStrip);
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { scene.background = new THREE.Color(css("--canvas")); fillTable(); drawStrip(); S.needsRender = true; });
+  const lookup=new THREE.DataTexture(table,cols,rows,THREE.RGBAFormat);
+  lookup.magFilter=lookup.minFilter=THREE.NearestFilter;lookup.needsUpdate=true;
+  uniforms={uTable:{value:lookup},uFocus:{value:state.height/10},
+    uGround:{value:D.bld.order.map(id=>D.bld.bag3d[id]?.ground_nap??D.geometry.ground_nap)},
+    uSupport:{value:D.bld.order.flatMap(id=>{const h=D.bld.buildings[id]?.h_agl;return h?[h.min,h.max]:[-1,-1];})}};
+  const material=new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true});
+  material.onBeforeCompile=shader=>{
+    Object.assign(shader.uniforms,uniforms);
+    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float _building;\nvarying float vBid,vY;').replace('#include <begin_vertex>','#include <begin_vertex>\nvBid=_building;vY=position.y;');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
+uniform sampler2D uTable;uniform float uFocus;uniform float uGround[${rows}];uniform vec2 uSupport[${rows}];varying float vBid,vY;`)
+      .replace('#include <color_fragment>',`#include <color_fragment>
+{int id=int(vBid+0.5);float height=vY-uGround[id];float band=floor(height/10.0);
+vec4 c=texture2D(uTable,vec2((clamp(band,0.0,9.0)+0.5)/10.0,(vBid+0.5)/${rows}.0));
+if(band<0.0||band>9.0||height<uSupport[id].x||height>uSupport[id].y)c.a=0.0;
+vec3 grey=vec3(0.80,0.81,0.82);diffuseColor.rgb=c.a>0.5?c.rgb:grey;
+if(c.a>0.5&&abs(band-uFocus)>0.1)diffuseColor.rgb=mix(grey,c.rgb,0.32);}`);
+  };
+  buildings=new THREE.Mesh(geometry,material);scene.add(buildings);
+  if(!mobile){const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geometry,25),new THREE.LineBasicMaterial({color:0x5b6672,transparent:true,opacity:.25}));scene.add(edges);}
 }
-
-/* the easter egg: loaded only when someone finds the bird */
-async function takeOff() {
-  if (flight && flight.active) return;
-  S.playing = false; $("tPlay").textContent = "▶";
-  S.rays = S.balloon = false;
-  if (rayGroup) rayGroup.visible = false;
-  if (balloonGroup) balloonGroup.visible = false;
-  $("overlay").classList.remove("on");
-  $("raysBtn").classList.remove("on"); $("balloonBtn").classList.remove("on");
-  if (camera !== persp) { camera = persp; controls.object = camera; resize(); }
-  if (!flight) {
-    const mod = await import("./flight.js");
-    flight = mod.createFlight({
-      scene, stage: $("stage"), camera: persp, controls, manifest: D.manifest, dataUrl: DATA,   /* outlines.json and buildings.json: the same BAG geometry in every set */
-      onExit: () => { setPreset("overview"); }
-    });
-  }
-  await flight.start();
-  $("hud").textContent = "";
+function setPreset(key){
+  if(!renderer)return;
+  const p=D.geometry.presets[key];if(!p)return;
+  camera=p.orthographic||key==='top'?ortho:persp;controls.object=camera;
+  controls.maxPolarAngle=key==='top'?Math.PI:Math.PI*.49;
+  camera.up.set(...(p.up||[0,1,0]));camera.position.set(...p.position);controls.target.set(...p.target);controls.update();resize();
+  document.querySelectorAll('#presets button').forEach(b=>b.classList.toggle('on',b.dataset.p===key));
 }
-
-async function main() {
-  try {
-    await loadAll();
-    setLimits();
-    initScene();
-    await loadBuildings();
-    buildCells(); buildRays(); buildBalloon(); buildPoints();
-    syncPointsUi();
-    wire();
-    applyDataset();
-    setPreset("overview");
-    setEpoch(0);
-    $("loading").remove();
-    $("hud").textContent = "Overview from the south-east · drag to orbit, scroll to zoom, click a building";
-    populateBuildings();
-    const query = new URLSearchParams(location.search);
-    const height = Number(query.get('height'));
-    if (query.has('height') && Number.isFinite(height)) S.height = height;
-    updateHeightSlice();
-    const requestedBuilding=query.get('building');
-    const initialBuilding=D.bld.order.includes(requestedBuilding) ? requestedBuilding : D.bld.order.find(id => D.bld.buildings[id]);
-    selectBuilding(initialBuilding,!!requestedBuilding && requestedBuilding!==initialBuilding);
-    if (location.search.includes("debug")) window.__vrs = { THREE, pick, scene, get camera() { return camera; }, buildings, get cells() { return cellsMesh; }, ground, renderer, S, get D() { return D; }, uniforms, selectBuilding, setPreset, setEpoch };
-    window.VRSData.onChange(switchData);
-    requestAnimationFrame(loop);
-  } catch (err) {
-    console.error(err);
-    $("loading").textContent = "The 3D view could not start: " + err.message;
-    $("noWebgl").hidden = false;
-  }
+function boundsFor(id){
+  if(!buildings)return null;if(boundsCache.has(id))return boundsCache.get(id);
+  const row=D.bld.order.indexOf(id),g=buildings.geometry,box=new THREE.Box3(),v=new THREE.Vector3();
+  for(let i=0;i<g.attributes.position.count;i++)if(Math.round(g.attributes._building.getX(i))===row)box.expandByPoint(v.fromBufferAttribute(g.attributes.position,i));
+  boundsCache.set(id,box);return box;
 }
-
-/* The option "every radar point" exists only where the local per-point build sits next to the
-   active set's files (the archived set, on a team machine); never on the published site. */
-function syncPointsUi() {
-  const sel = $("cellLayer"), has = !!D.points, old = sel.querySelector('option[value="points"]');
-  if (!has) {
-    if (old) old.remove();
-    if ($("pointsWrap")) $("pointsWrap").remove();
-    return;
-  }
-  if (old) return;
-  {
-    {
-      const o = document.createElement("option");
-      o.value = "points";
-      o.textContent = "every radar point (local file, not published)";
-      sel.insertBefore(o, sel.lastElementChild);
-      const wrap = document.createElement("div");
-      wrap.id = "pointsWrap";
-      wrap.innerHTML = '<h3>Every point (local)</h3>' +
-        '<select id="pointLayer" aria-label="Point layer">' +
-        '<option value="time">what each point did on the slider pass</option>' +
-        '<option value="rate">long-term rate per point [mm/yr]</option>' +
-        '<option value="amp">seasonal swing per point [mm]</option>' +
-        '<option value="peak_doy">peak day per point</option>' +
-        '<option value="h">height above ground [m]</option>' +
-        '<option value="coh">coherence</option></select>' +
-        '<p class="small">' + D.points.meta.n_points + ' points, no averaging at all. Choose "every radar point" ' +
-        'under Ground cells to see them; the buildings go grey so only the points carry colour. ' +
-        'This file is local to this machine and is not part of the published site.</p>';
-      $("panel").appendChild(wrap);
-      $("pointLayer").addEventListener("change", (e) => {
-        S.pointLayer = e.target.value;
-        if (S.cellLayer !== "points") { $("cellLayer").value = "points"; S.cellLayer = "points"; }
-        colourCells();
-      });
-    }
-  }
+function outline(id){
+  if(!scene)return;
+  if(selectionBox){scene.remove(selectionBox);selectionBox.geometry.dispose();selectionBox.material.dispose();}
+  const box=boundsFor(id);if(!box||box.isEmpty())return;
+  selectionBox=new THREE.Box3Helper(box,0xd3792e);scene.add(selectionBox);state.needsRender=true;
 }
-
-/* Rates measured against the ground are smaller than in the processor's frame, so a set may ask for a
-   narrower colour range for the rate layers (datasets.json rate_lim_mm_yr); the legend always shows it. */
-function setLimits() {
-  const rl = DS.rateLim;
-  LAYERS.rate.lim = LAYERS.ground_rate.lim = LAYERS.band_rate.lim = rl ? [-rl, rl] : [-5, 5];
-  CELL_LAYERS.rate_mean.lim = rl ? [-rl, rl] : [-7, 7];
-  LAYERS.band_n.lim = [20,Math.max(100,Math.ceil(Math.max(20,...Object.values(D.bld.buildings).flatMap(r => supportedBands(r,D.bld.min_n).map(b => b.n)))/100)*100)];
+function focus(){
+  const box=boundsFor(state.selected);if(!box||box.isEmpty())return;
+  const centre=box.getCenter(new THREE.Vector3()),distance=Math.max(130,box.getSize(new THREE.Vector3()).length()*1.25);
+  camera=persp;controls.object=camera;camera.up.set(0,1,0);camera.position.copy(centre).add(new THREE.Vector3(distance*.8,distance*.45,distance));controls.target.copy(centre);controls.update();resize();
+  document.querySelectorAll('#presets button').forEach(b=>b.classList.remove('on'));
 }
-
-/* Text on the page that depends on the set: <span data-fill="key">. */
-function applyDataset() {
-  setLimits();
-  const e = D.epochs, v = { passes: e.n_epochs, first: fmtDate(e.dates[0]), last: fmtDate(e.dates[e.n_epochs - 1]), firstYear: e.dates[0].slice(0, 4), lastYear: e.dates[e.n_epochs - 1].slice(0, 4), hTop: DS.hTop };
-  document.querySelectorAll("[data-fill]").forEach((el) => { const k = el.dataset.fill; if (v[k] !== undefined) el.textContent = String(v[k]); });
-  $("tSlider").max = e.n_epochs - 1;
-  ceilingPlane.position.y = D.manifest.ground_nap + DS.hTop + 0.2;
-  uniforms.uBldGround.value = D.bld.order.map(id => D.bld.bag3d[id]?.ground_nap ?? D.manifest.ground_nap);
-  uniforms.uSupport.value = D.bld.order.flatMap(id => { const h=D.bld.buildings[id]?.h_agl; return h ? [h.min,h.max] : [-1,-1]; });
-  updateHeightSlice();
+export function selectBuilding(id,save=true){
+  if(!D.bld.order.includes(id))return;
+  state.selected=id;$('buildingSelect').value=id;
+  const r=D.bld.buildings[id],a=D.bld.bag3d[id],s=heightSummary(r,a,D.bld.min_n);contrast=heightContrast(r,D.bld.min_n);
+  $('card').innerHTML='<div class="city-selection-head"><div>'+window.VRSBuildings.identity(id,r,a)+'</div><button type="button" id="focusBuilding" aria-label="Locate this building in the city">Locate</button></div>'+
+    '<div class="city-selection-stats"><div><b>'+(s.points===null?'n/a':s.points.toLocaleString('en-GB'))+'</b><span>radar points</span></div><div><b>'+s.bands+'</b><span>published slabs</span></div><div><b>'+(s.highest===null?'n/a':s.highest.toFixed(1)+' m')+'</b><span>highest point</span></div></div>'+
+    '<div class="height-profile">'+heightProfile(r,a,rgb,D.bld.min_n)+'</div><p class="city-profile-note">Grey: no published 10 m group. A coloured slab does not mean continuous facade coverage.</p>';
+  $('focusBuilding').addEventListener('click',focus);outline(id);drawTimeline();
+  if(save){const u=new URL(location.href);u.searchParams.set('building',id);u.hash='coverage';history.replaceState(history.state,'',u);}
 }
-
-/* A new data input: reload the aggregates and recolour, keeping the camera and the nearest date. */
-async function switchData(ds) {
-  const token = ++SWITCH, oldDate = D.epochs ? D.epochs.dates[S.epoch] : null, oldBuilding = S.selected?.kind === 'building' ? S.selected.id : null;
-  $("hud").textContent = "Loading " + ds.name + "…";
-  let next;
-  try {
-    next = await loadData(ds.path, ds.archived);
-  } catch (err) {
-    console.error(err);
-    if (token === SWITCH) $("hud").textContent = "Could not load " + ds.name + ": " + err.message;
-    return;
-  }
-  if (token !== SWITCH) return;
-  DS = ds; DATA = ds.path;
-  S.playing = false; $("tPlay").textContent = "▶";
-  if (pointCloud) { scene.remove(pointCloud); pointCloud.geometry.dispose(); pointCloud = null; }
-  Object.assign(D, next);
-  if (S.cellLayer === "points" && !D.points) { S.cellLayer = "time"; $("cellLayer").value = "time"; }
-  syncPointsUi(); buildPoints();
-  S.selected = null; selectedContrast = null;
-  $("card").innerHTML = '<p class="small">Click a building or a cell for its numbers and its mean series.</p>';
-  if (balloonGroup) { scene.remove(balloonGroup); }
-  buildBalloon();
-  if (S.balloon) { balloonGroup.visible = true; balloonGroup.userData.t = 0; }
-  applyDataset();
-  fillTable(); buildCells();
-  let k = 0;
-  if (oldDate) {
-    const t0 = Date.parse(oldDate);
-    let best = Infinity;
-    D.epochs.dates.forEach((d, j) => { const dd = Math.abs(Date.parse(d) - t0); if (dd < best) { best = dd; k = j; } });
-  }
-  setEpoch(k);
-  populateBuildings();
-  selectBuilding(oldBuilding || D.bld.order.find(id => D.bld.buildings[id]),false);
-  $("hud").textContent = "Data input: " + ds.name;
-  S.needsRender = true;
+function heightSlice(){
+  state.height=Math.max(0,Math.min(Math.floor(ds.h_top_m/10)*10,Math.floor(state.height/10)*10));
+  $('heightSlice').max=Math.floor(ds.h_top_m/10)*10;$('heightSlice').value=state.height;
+  const label=state.height+'–'+(state.height+10)+' m';$('heightLabel').textContent=label;
+  $('heightSlice').setAttribute('aria-valuetext',label+' above ground');
+  const groups=Object.values(D.bld.buildings).flatMap(r=>supportedBands(r,D.bld.min_n).filter(b=>b.lo===state.height));
+  $('sliceStatus').textContent=groups.length+' buildings · '+groups.reduce((n,b)=>n+b.n,0).toLocaleString('en-GB')+' published points';
+  $('heightSummary').innerHTML='<b>'+label+' above ground</b><span>'+groups.length+' of '+D.bld.order.length+' building models have a published group here</span>';
+  if(uniforms)uniforms.uFocus.value=state.height/10;state.needsRender=true;
 }
-
-window.VRSData.ready.then((ds) => { DS = ds; DATA = ds.path; main(); }).catch((err) => {
-  console.error(err);
-  $("loading").textContent = "The 3D view could not start: the list of data inputs did not load (" + err.message + ").";
-});
+function drawLegend(){
+  const cv=$('legend'),w=cv.clientWidth||260,h=40,ctx=cv.getContext('2d');cv.width=w*2;cv.height=h*2;ctx.scale(2,2);
+  for(let x=0;x<w;x++){ctx.fillStyle=rgb(20+x/(w-1)*(maxCount-20));ctx.fillRect(x,2,1.5,12);}
+  ctx.font='10px system-ui';ctx.fillStyle=css('--muted');ctx.textBaseline='top';ctx.fillText('20',0,18);ctx.textAlign='center';ctx.fillText(Math.round((20+maxCount)/2),w/2,18);ctx.textAlign='right';ctx.fillText(maxCount,w,18);
+  $('legendText').textContent='Points per 10 m group · active band bright · grey: no published group';
+}
+export function setEpoch(value){state.epoch=Math.max(0,Math.min(D.epochs.n_epochs-1,Math.round(value)));drawTimeline();}
+function drawTimeline(){
+  if(!D)return;
+  const cv=$('strip'),w=cv.clientWidth,h=cv.clientHeight||90;if(!w)return;
+  const ctx=cv.getContext('2d');cv.width=w*2;cv.height=h*2;ctx.scale(2,2);ctx.clearRect(0,0,w,h);
+  $('tSlider').value=state.epoch;
+  const date=D.epochs.dates[state.epoch],v=contrast?.series[state.epoch];
+  $('epochLabel').textContent=date+' · '+(Number.isFinite(v)?(v>0?'+':'')+v.toFixed(2)+' mm LOS':'no published slab contrast');
+  if(!contrast){ctx.fillStyle=css('--muted');ctx.font='12px system-ui';ctx.fillText('Select a building with at least two published height groups.',16,28);return;}
+  const values=contrast.series.filter(Number.isFinite),lo=Math.min(0,...values),hi=Math.max(0,...values),pad=Math.max(.1,(hi-lo)*.08),x0=42,x1=w-12,y0=14,y1=h-22;
+  const X=i=>x0+i/(contrast.series.length-1)*(x1-x0),Y=v=>y1-(v-lo+pad)/(hi-lo+2*pad)*(y1-y0);
+  ctx.strokeStyle=css('--line');ctx.beginPath();ctx.moveTo(x0,Y(0));ctx.lineTo(x1,Y(0));ctx.stroke();
+  ctx.strokeStyle=css('--accent');ctx.beginPath();let pen=false;
+  contrast.series.forEach((v,i)=>{if(!Number.isFinite(v)){pen=false;return;}if(pen)ctx.lineTo(X(i),Y(v));else ctx.moveTo(X(i),Y(v));pen=true;});ctx.stroke();
+  ctx.strokeStyle=css('--warn')||'#b18b39';ctx.beginPath();ctx.moveTo(X(state.epoch),y0);ctx.lineTo(X(state.epoch),y1);ctx.stroke();
+  ctx.fillStyle=css('--muted');ctx.font='10px system-ui';ctx.textAlign='right';ctx.fillText(hi.toFixed(1),x0-5,Y(hi)+3);ctx.fillText(lo.toFixed(1),x0-5,Y(lo)+3);
+  ctx.textAlign='left';ctx.fillText(contrast.high.lo+'–'+contrast.high.hi+' m minus '+contrast.low.lo+'–'+contrast.low.hi+' m [mm LOS]: motion and air remain mixed',x0+5,11);
+  let year;D.epochs.dates.forEach((d,i)=>{if(d.slice(0,4)!==year){year=d.slice(0,4);ctx.fillText(year,X(i),h-6);}});
+}
+function pick(e){
+  if(!renderer)return;
+  const r=$('gl').getBoundingClientRect(),rc=new THREE.Raycaster();camera.updateMatrixWorld(true);
+  rc.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
+  const hit=rc.intersectObject(buildings)[0];if(hit){const row=Math.round(buildings.geometry.attributes._building.getX(hit.face.a));selectBuilding(D.bld.order[row]);}
+}
+function wire(){
+  $('buildingSelect').addEventListener('change',e=>selectBuilding(e.target.value));
+  $('heightSlice').addEventListener('input',e=>{state.height=Number(e.target.value);heightSlice();const u=new URL(location.href);u.searchParams.set('height',state.height);history.replaceState(history.state,'',u);});
+  $('tSlider').max=D.epochs.n_epochs-1;
+  $('tSlider').addEventListener('input',e=>{state.playing=false;$('tPlay').textContent='▶';setEpoch(Number(e.target.value));});
+  $('tPlay').addEventListener('click',()=>{state.playing=!state.playing;$('tPlay').textContent=state.playing?'❚❚':'▶';});
+  $('tSpeed').addEventListener('change',e=>state.speed=Number(e.target.value));
+  $('strip').addEventListener('pointerdown',e=>{state.playing=false;$('tPlay').textContent='▶';const r=e.target.getBoundingClientRect();setEpoch((e.clientX-r.left-42)/(r.width-54)*(D.epochs.n_epochs-1));});
+  $('city-map').addEventListener('change',e=>{
+    if(!ground)return;
+    if(e.target.checked&&!texture){new THREE.TextureLoader().load(geo+(innerWidth<768?'ground-512.jpg':'ground-2048.jpg'),t=>{texture=t;t.colorSpace=THREE.SRGBColorSpace;if(e.target.checked){ground.material.map=t;ground.material.color.set(0xffffff);ground.material.needsUpdate=true;state.needsRender=true;}});}
+    ground.material.map=e.target.checked?texture:null;ground.material.color.set(e.target.checked&&texture?0xffffff:0xe6e6e2);ground.material.needsUpdate=true;state.needsRender=true;
+  });
+  for(const [key,label] of [['overview','Overview'],['top','Top-down']]){const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.p=key;b.addEventListener('click',()=>setPreset(key));$('presets').appendChild(b);}
+  let down;
+  $('gl').addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
+  $('gl').addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<6)pick(e);down=null;});
+  $('gl').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();setEpoch(state.epoch+(e.key==='ArrowRight'?1:-1));}});
+  window.addEventListener('resize',()=>{resize();drawLegend();});
+  document.addEventListener('site:viewchange',e=>{if(e.detail.view!=='coverage'){state.playing=false;$('tPlay').textContent='▶';}else resize();});
+}
+let last=0,acc=0;
+function loop(t){
+  requestAnimationFrame(loop);if(!stage.getClientRects().length){last=t;return;}
+  const dt=last?t-last:0;last=t;
+  if(state.playing){acc+=dt;const step=1000/state.speed;if(acc>=step){setEpoch((state.epoch+Math.floor(acc/step))%D.epochs.n_epochs);acc%=step;}}
+  controls?.update();if(renderer&&state.needsRender){renderer.render(scene,camera);state.needsRender=false;}
+}
+async function main(){
+  const cfg=await json(root+'data/datasets.json'),q=new URLSearchParams(location.search),id=cfg.sets[q.get('data')]?q.get('data'):cfg.default;
+  ds=cfg.sets[id];const base=root+'data/'+ds.path;
+  const [geometry,bld,epochs]=await Promise.all([json(geo+'manifest.json'),json(base+'buildings.json'),json(base+'epochs.json')]);D={geometry,bld,epochs};
+  maxCount=Math.max(100,Math.ceil(Math.max(20,...Object.values(bld.buildings).flatMap(r=>supportedBands(r,bld.min_n).map(b=>b.n)))/100)*100);
+  const name=id=>window.VRSBuildings.name(id,bld.buildings[id],bld.bag3d[id]);
+  $('buildingSelect').innerHTML=[...bld.order].sort((a,b)=>name(a).localeCompare(name(b))).map(id=>'<option value="'+id+'">'+window.VRSBuildings.esc(name(id))+' · '+id+'</option>').join('');
+  if(q.has('height')&&Number.isFinite(Number(q.get('height'))))state.height=Number(q.get('height'));
+  wire();heightSlice();drawLegend();
+  const selected=bld.order.includes(q.get('building'))?q.get('building'):bld.order.find(id=>bld.buildings[id]);
+  selectBuilding(selected,false);
+  if(ds.archived){document.querySelector('#coverage .site-boundary').textContent='Archived processor-reference data, 2014–2023. These are not the current report findings.';}
+  try{initScene();await loadModels();setPreset('overview');outline(selected);$('loading').remove();}
+  catch(error){$('gl').hidden=true;$('loading').textContent='3D is unavailable here. Building search, height profiles and published counts remain usable.';}
+  if(q.has('debug'))window.__vrs={THREE,state,S:state,D,renderer,scene,buildings,uniforms,get camera(){return camera;},setEpoch,selectBuilding,pick,setPreset};
+  requestAnimationFrame(loop);
+}
+await main();
