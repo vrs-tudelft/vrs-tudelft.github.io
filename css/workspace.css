@@ -168,3 +168,9 @@
  .theory-grid .th-charts { gap:8px; }
  .theory-grid .th-ch-t { font-size:.79rem; }
 }
+@media(min-width:1000px) {
+ #overview > .site-kpis { margin-bottom:0; }
+ /* Reserve the lower row's real content height, rather than a fixed fraction
+    that lets its cards spill out of a short browser viewport. */
+ .site-main .site-grid-home { grid-template-rows:minmax(120px,1fr) auto; align-items:stretch; }
+}
