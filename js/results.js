@@ -1,12 +1,22 @@
 /* Report variants and per-pass aggregate plots, all read through the shared report source. */
 (function () {
   "use strict";
-  var form = document.getElementById("report-controls"), doc;
+  var form = document.getElementById("report-controls"), doc, metricPage=0;
   if (!form) return;
   var fmt = window.VRSReport.fmt;
   function id(name) { return document.getElementById("report-" + name); }
   function esc(s) { return String(s).replace(/[&<>\"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function selected() { return doc.results[form.elements.motion.value][form.elements.prior.value][form.elements.layers.value]; }
+  function renderMetrics(e) {
+    var size=6,total=e.layer_points.length;
+    metricPage=Math.max(0,Math.min(Math.ceil(total/size)-1,metricPage));
+    var start=metricPage*size;
+    id('metrics').innerHTML='<p><b>'+fmt(e.points_used,0)+' points on '+e.buildings+' buildings; '+doc.passes+' passes.</b> Median fitted expansion: '+fmt(e.alpha_median_per_K*1e6)+' × 10<sup>−6</sup>/K.</p>'+
+      '<table><thead><tr><th>Layer (m NAP)</th><th>Points</th><th>Station r</th><th>r without annual cycle</th><th>RMS difference (N)</th><th>Skill vs constant air</th></tr></thead><tbody>'+
+      e.layer_points.slice(start,start+size).map(function(l,j){var i=start+j;return '<tr data-layer-index="'+i+'"><td>'+fmt(e.edges[i],1)+' to '+fmt(e.edges[i+1],1)+'</td><td>'+fmt(l.n,0)+'</td><td>'+fmt(e.station_r[i].r)+'</td><td>'+fmt(e.station_r[i].r_no_annual)+'</td><td>'+fmt(e.rmse[i])+'</td><td>'+fmt(e.skill[i])+'</td></tr>';}).join('')+'</tbody></table>'+
+      (total>size?'<div class="report-pages"><span>Layers '+(start+1)+'–'+Math.min(start+size,total)+' of '+total+'</span><button type="button" data-metric-page="-1" aria-label="Previous layers" '+(start===0?'disabled':'')+'>←</button><button type="button" data-metric-page="1" aria-label="Next layers" '+(start+size>=total?'disabled':'')+'>→</button></div>':'');
+    window.VRSReport.labelTables(id('metrics'));
+  }
   function plot(x, y, station, scatter) {
     var box=id(scatter?'scatter':'time');
     var w = Math.max(280, box.clientWidth || 720), h = Math.max(140,Math.min(340,box.clientHeight||290)), left = 58, right = 20, top = 20, bottom = 44;
@@ -41,6 +51,7 @@
     var e = selected();
     if (e.error) { id("status").textContent = e.error; return; }
     if (resetLayer) {
+      metricPage=0;
       form.elements.layer.innerHTML = e.layer_points.map(function (l, k) { return '<option value="' + k + '">' + fmt(e.edges[k], 1) + ' to ' + fmt(e.edges[k + 1], 1) + ' m NAP</option>'; }).join("");
     }
     var k = +form.elements.layer.value || 0;
@@ -49,10 +60,7 @@
       [fmt(e.points_used,0),'points used'],[fmt(e.station_r[k].r),'station r'],[fmt(e.rmse[k])+' N','RMS difference']
     ].map(function(s){return '<div class="stat"><span class="v">'+s[0]+'</span><span class="k">'+s[1]+'</span></div>';}).join('');
     if(id('layer-summary'))id('layer-summary').innerHTML='<p><b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b></p><dl class="site-list"><div><dt>Points</dt><dd>'+fmt(e.layer_points[k].n,0)+'</dd></div><div><dt>r without the annual cycle</dt><dd>'+fmt(e.station_r[k].r_no_annual)+'</dd></div><div><dt>Skill against constant air</dt><dd>'+fmt(e.skill[k])+'</dd></div></dl>';
-    id("metrics").innerHTML = '<p><b>' + fmt(e.points_used, 0) + ' points on ' + e.buildings + ' buildings; ' + doc.passes + ' passes.</b> Median fitted expansion: ' + fmt(e.alpha_median_per_K * 1e6) + ' × 10<sup>−6</sup>/K.</p>' +
-      '<table><thead><tr><th>Layer (m NAP)</th><th>Points</th><th>Station r</th><th>r without annual cycle</th><th>RMS difference (N)</th><th>Skill vs constant air</th></tr></thead><tbody>' +
-      e.layer_points.map(function (l, i) { return '<tr><td>' + fmt(e.edges[i], 1) + ' to ' + fmt(e.edges[i + 1], 1) + '</td><td>' + fmt(l.n, 0) + '</td><td>' + fmt(e.station_r[i].r) + '</td><td>' + fmt(e.station_r[i].r_no_annual) + '</td><td>' + fmt(e.rmse[i]) + '</td><td>' + fmt(e.skill[i]) + '</td></tr>'; }).join("") + '</tbody></table>';
-    window.VRSReport.labelTables(id("metrics"));
+    renderMetrics(e);
     id("time").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], false);
     id("scatter").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], true);
     id("reading").textContent = (form.elements.prior.value === "ground" ? "This variant uses the station-based air prior: station agreement is partly built into the fit. " : "This fit has no station-based air prior. ") +
@@ -61,7 +69,8 @@
     id("status").textContent = doc.passes+' passes · '+doc.first.slice(0,4)+'–'+doc.last.slice(0,4)+' · aggregates only';
     id("content").hidden = false;
   }
-  form.addEventListener("change", function (event) { if (doc) render(event.target.name !== "layer"); });
+  form.addEventListener("change", function (event) { if (doc) {if(event.target.name==='layer')metricPage=Math.floor(+form.elements.layer.value/6);render(event.target.name !== "layer");} });
+  id('metrics').addEventListener('click',function(event){var button=event.target.closest('[data-metric-page]');if(button&&doc){metricPage+=+button.dataset.metricPage;renderMetrics(selected());}});
   window.addEventListener("resize", function () { if (doc) render(false); });
   window.VRSReport.load().then(function (data) { doc = data; render(true); }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
 }());

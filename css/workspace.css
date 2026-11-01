@@ -106,3 +106,7 @@
 @media(min-width:1000px) { .city-main #city { min-height:0; } }
 #report-layer-summary .site-list>div { display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 12px; margin-bottom:12px; }
 #report-layer-summary .site-list dd { margin:0; }
+.report-pages { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:.8rem; }
+.report-pages span { margin-right:auto; color:var(--muted); }
+.report-pages button { min-width:40px; min-height:36px; font:inherit; border:1px solid var(--line-2); background:var(--surface); border-radius:7px; cursor:pointer; }
+.report-pages button:disabled { opacity:.35; cursor:default; }
