@@ -8,10 +8,10 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261019a">
+<link rel="stylesheet" href="style.css?v=20261101">
 <link rel="stylesheet" href="css/results.css?v=20261013a">
 </head>
-<body class="app-page res-page">
+<body>
 <header class="top"><div class="top-inner">
   <a class="brand" href="index.html">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -25,132 +25,27 @@
   <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
 
-<div class="app" id="res">
-<aside class="app-panel sim-panel res-panel">
-  <div class="sim-head">
-    <span class="sim-head-ic" data-icon="chart"></span>
-    <div>
-      <h1>Results</h1>
-      <p class="app-intro">The <a href="estimation.html">estimation</a> on the <b>real</b> TerraSAR-X data of Kop van Zuid, Rotterdam: <span id="res-intro-passes">213</span> passes from <span id="res-intro-span">2020 to 2026</span>. There is no measured air profile to score it against, so this page shows how well it agrees with the <span class="t" tabindex="0" data-tip="KNMI 344, Rotterdam The Hague Airport: pressure, temperature and humidity at the ground at 06 UTC, the hour of the radar pass. Its refractivity N is a ground value only; it says nothing about the air higher up.">weather station</span>, not how close it is to the truth.</p>
-    </div>
-  </div>
-  <form class="sim-controls" id="res-controls" aria-label="What to show" onsubmit="return false">
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="layers"></span>Layer <span class="t i" tabindex="0" data-tip="The air is cut into two layers (heights in m NAP): 3.2-43.2 m, the lowest 40 m above the street, and 43.2-123.2 m, where only the tallest buildings reach. The top layer has fewer points and is not supported by the station check."><span class="info">i</span></span></legend>
-      <div class="seg" data-control="layer">
-        <label><input type="radio" name="layer" value="both"><span>Both</span></label>
-        <label><input type="radio" name="layer" value="0"><span>3&ndash;43 m</span></label>
-        <label><input type="radio" name="layer" value="1"><span>43&ndash;123 m</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="radar"></span>Estimate <span class="t i" tabindex="0" data-tip="Published: the team's standard estimate. Its air prior puts the weather station's ground anomaly back into every layer after the building fit, so it follows the station partly by construction. Radar only: the same estimation without the air prior. Only that one is an independent check against the station."><span class="info">i</span></span></legend>
-      <div class="seg" data-control="run">
-        <label><input type="radio" name="run" value="published"><span>Published</span></label>
-        <label><input type="radio" name="run" value="radar_only"><span>Radar only</span></label>
-      </div>
-    </fieldset>
-    <fieldset class="sim-field res-switches">
-      <legend><span class="lg-ic" data-icon="sliders"></span>Show</legend>
-      <div class="sw-row"><label class="switch"><input type="checkbox" role="switch" name="station"><span class="track" aria-hidden="true"></span>Weather station</label><span class="t i left" tabindex="0" data-tip="The KNMI 344 ground refractivity on the same mornings, as an anomaly (minus its mean over the passes), drawn in grey."><span class="info">i</span></span></div>
-      <div class="sw-row"><label class="switch"><input type="checkbox" role="switch" name="deseason"><span class="track" aria-hidden="true"></span>Remove the annual cycle</label><span class="t i left" tabindex="0" data-tip="Takes a fitted yearly sine (mean, cosine and sine of the day of the year) out of every series. Radar and station both swing with the seasons; without that shared swing the correlation is the stricter test. Not used in Seasons, which is the annual cycle."><span class="info">i</span></span></div>
-    </fieldset>
-    <fieldset class="sim-field">
-      <legend><span class="lg-ic" data-icon="clock"></span>Time window <span class="t i" tabindex="0" data-tip="Only the passes in these years. Correlation, drift and the monthly means are recomputed on the passes in the window."><span class="info">i</span></span></legend>
-      <div class="res-window">
-        <label>From <select name="from" aria-label="First year"></select></label>
-        <label>to <select name="to" aria-label="Last year"></select></label>
-      </div>
-    </fieldset>
-    <button type="button" class="sim-reset" id="res-reset"><i data-icon="reset"></i>Reset</button>
-  </form>
-  <p class="asof" id="res-asof">Averages over at least 20 radar points only; no single radar point is published.</p>
-</aside>
-
-<section class="app-main sim-results res-results" id="res-results" aria-live="polite">
-  <noscript><p class="placeholder">This page needs JavaScript to draw the results from data/real/estimation.json.</p></noscript>
-  <p class="sim-status" id="res-status" role="status">Loading the results&hellip;</p>
-  <div id="res-out" hidden>
-    <div class="sim-tabs" role="tablist" aria-label="Views">
-      <button type="button" role="tab" id="tab-time" aria-controls="view-time" data-tab="time"><i data-icon="timeline"></i>N over time</button>
-      <button type="button" role="tab" id="tab-station" aria-controls="view-station" data-tab="station"><i data-icon="scatter"></i>Station check</button>
-      <button type="button" role="tab" id="tab-seasons" aria-controls="view-seasons" data-tab="seasons"><i data-icon="sun"></i>Seasons</button>
-      <button type="button" role="tab" id="tab-build" aria-controls="view-build" data-tab="build"><i data-icon="building"></i><span class="res-long">Buildings and coverage</span><span class="res-short">Buildings</span></button>
-      <button type="button" role="tab" id="tab-means" aria-controls="view-means" data-tab="means"><i data-icon="bulb"></i>What it means</button>
-    </div>
-    <div class="sim-top">
-      <p class="verdict" id="res-verdict"></p>
-      <div class="stats sim-stats" id="res-stats"></div>
-    </div>
-
-    <div class="sim-view res-dash res-time" id="view-time" role="tabpanel" aria-labelledby="tab-time">
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-time-h"><i class="h-ic" data-icon="timeline"></i>N anomaly per pass <span class="t i left" id="res-time-tip" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
-          <ul class="sim-legend" id="res-time-legend"></ul>
-        </div>
-        <div class="res-stack" id="res-time"></div>
-      </section>
-    </div>
-
-    <div class="sim-view res-dash res-two" id="view-station" role="tabpanel" aria-labelledby="tab-station" hidden>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-sc-h"><i class="h-ic" data-icon="scatter"></i>Radar against the station <span class="t i left" id="res-sc-tip" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
-          <ul class="sim-legend" id="res-sc-legend"></ul>
-        </div>
-        <p class="res-warn" id="res-sc-warn" hidden></p>
-        <div class="sim-chart sim-fill" id="res-sc"></div>
-      </section>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-r-h"><i class="h-ic" data-icon="bars"></i>Correlation with the station <span class="t i left" id="res-r-tip" tabindex="0" data-tip="Pearson r over the passes in the window, between each layer's N anomaly and the station's ground anomaly. Dark bars: as measured; light bars: with the annual cycle removed from both. Above 0 the layer goes up and down with the station; 1 would be in lockstep. Only the radar-only rows are an independent check."><span class="info">i</span></span></h3>
-        </div>
-        <div class="sim-chart sim-fill" id="res-r"></div>
-        <ul class="sim-legend sim-mini-legend" id="res-r-legend"></ul>
-      </section>
-    </div>
-
-    <div class="sim-view res-dash res-two res-seasons" id="view-seasons" role="tabpanel" aria-labelledby="tab-seasons" hidden>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-mo-h"><i class="h-ic" data-icon="sun"></i>Mean per calendar month <span class="t i left" id="res-mo-tip" tabindex="0" data-tip=""><span class="info">i</span></span></h3>
-          <ul class="sim-legend" id="res-mo-legend"></ul>
-        </div>
-        <div class="sim-chart sim-fill" id="res-mo"></div>
-      </section>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-pm-h"><i class="h-ic" data-icon="clock"></i>Passes per month <span class="t i left" tabindex="0" data-tip="How many radar passes fall in each calendar month, over all years in the window. One pass every 11 days, with gaps; a month with few passes has a less certain mean."><span class="info">i</span></span></h3>
-        </div>
-        <div class="sim-chart sim-fill" id="res-pm"></div>
-      </section>
-    </div>
-
-    <div class="sim-view res-dash res-two res-build" id="view-build" role="tabpanel" aria-labelledby="tab-build" hidden>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-cov-h"><i class="h-ic" data-icon="grid"></i>Points, from the scene to the layers <span class="t i left" tabindex="0" data-tip="How many radar points survive each step: all points in the area, those with a stable signal (coherence above 0.6), those on the buildings the estimate uses, and how they split over the two layers. A point counts in the layer it sits in; a point higher up also crosses the layer below."><span class="info">i</span></span></h3>
-        </div>
-        <div class="sim-chart sim-fill" id="res-cov"></div>
-      </section>
-      <section class="app-card res-card">
-        <div class="sim-card-head">
-          <h3 id="res-bt-h"><i class="h-ic" data-icon="table"></i>The buildings <span class="t i left" tabindex="0" data-tip="The buildings the estimate rests on (BAG id), most points first, with what the building fit found. Mean height: of the building's points above the ground. Sinking v_s: the whole building per year. Shrinking γ0: how much faster the top sinks than the foot, per 100 m and year, slowing down with time τ_c. α: thermal expansion per kelvin. Three more buildings were left out for too few points or too little height."><span class="info">i</span></span></h3>
-        </div>
-        <div class="res-table tbl" id="res-bt"></div>
-      </section>
-    </div>
-
-    <div class="sim-view res-dash" id="view-means" role="tabpanel" aria-labelledby="tab-means" hidden>
-      <section class="app-card res-means" id="res-means"></section>
-    </div>
-  </div>
-  <div class="sim-floattip" id="res-floattip" role="tooltip" hidden></div>
-</section>
-</div>
+<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
+<h1>Report results</h1>
+<p class="lead">The real TerraSAR-X run over Kop van Zuid. Inspect motion per building or per scatterer, layer choices and the optional air prior using the same aggregate data as the simulator.</p>
+<p>The reference comparison is KNMI 344 ground refractivity carried upward, not a measured vertical urban profile. RMS differences and correlations below describe agreement with that proxy.</p>
+<form id="report-controls" class="sim-controls" onsubmit="return false" aria-label="Report variant">
+<fieldset class="sim-field"><legend>Motion fit</legend><select name="motion"><option value="building">Per building (report default)</option><option value="scatterer">Per scatterer</option></select></fieldset>
+<fieldset class="sim-field"><legend>Air prior</legend><select name="prior"><option value="none">None (independent station comparison)</option><option value="ground">Station based (reuses station data)</option></select></fieldset>
+<fieldset class="sim-field"><legend>Layers</legend><select name="layers"><option value="2">Two layers (report default)</option><option value="1">One layer</option><option value="n500">500-point layers</option><option value="n1000">1,000-point layers</option></select></fieldset>
+<fieldset class="sim-field"><legend>Plot layer</legend><select name="layer" aria-label="Plot layer"></select></fieldset>
+</form>
+<p id="report-status" role="status">Loading the report run...</p>
+<section id="report-content" hidden>
+<h2 id="metrics">Selected variant</h2><div id="report-metrics" class="tbl"></div>
+<h2 id="passes">N over the passes</h2><div id="report-time"></div><p class="asof">Blue: radar anomaly. Grey: station-based anomaly. The plotted curves are aggregate layer values; their line does not measure the unobserved weather between satellite passes.</p>
+<h2 id="station">Station comparison</h2><div id="report-scatter"></div>
+<h2 id="reading">How to read this</h2><p id="report-reading"></p>
+<p>The default report layer comparison does not establish vertical accuracy. The upper-layer result is affected by the building-motion fit. A station-based air prior makes station agreement partly circular. For per-pass P, T and vapour, explore the <a href="simulator.html?atm=real">real-data simulator</a>.</p>
+<p id="report-source" class="asof"></p></section>
+<noscript><p>This page requires JavaScript. The <a href="data/simulator/real.json">aggregate report export</a> remains available.</p></noscript>
+<footer data-shared></footer></main></div>
 <script defer src="js/nav.js?v=20261013g"></script>
-<script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/results.js?v=20261013b"></script>
-</body>
-</html>
+<script defer src="js/report.js?v=20261101"></script>
+<script defer src="js/results.js?v=20261101"></script>
+</body></html>

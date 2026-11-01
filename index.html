@@ -8,7 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261019a">
+<link rel="stylesheet" href="style.css?v=20261101">
 </head>
 <body>
 <header class="top"><div class="top-inner">
@@ -29,8 +29,7 @@
 <p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
 <p class="asof">Status on 12 October 2026. The project runs until 22 October 2026.</p>
 
-<figure><img src="figures/40-estimation-result.png" width="1641" height="660" alt="Left: on the simulation, the radar's error per 40 m layer against the weather station alone and the true variation of the air. Right: on the real data, the radar's lowest layer against the weather station, one dot per pass, correlation 0.45." loading="lazy">
-<figcaption><b>Where we are, in one picture.</b> Left: on a simulated city, where the truth is known, the radar recovers the air in 40 m layers to 3 to 5 N-units, against an air that varies by about 12. Right: on the real data of Rotterdam, the radar's lowest layer follows the weather station with <i>r</i> = 0.45. Why this works is on <a href="theory.html">Theory</a>, how the parts fit together on the <a href="overview.html">Overview</a>; try it yourself in the <a href="simulator.html">Simulator</a>, and see the real data under <a href="results.html">Results</a>.</figcaption></figure>
+<section class="app-card" data-report-summary aria-live="polite"><p>Loading the report run...</p></section>
 <!-- Source: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb (12 October 2026). -->
 
 <h2 id="idea" data-short="The idea">The idea</h2>
@@ -115,16 +114,9 @@
     <p>One manuscript by the whole team. The draft is not on this site.</p></li>
 </ol>
 
-<h2 id="claims" data-short="What holds">What holds so far, and what does not yet</h2>
-<ul>
-  <li>On simulated air alone, the estimation recovers the refractivity per layer to a few tenths of an N-unit from pass to pass. <a href="estimation.html#ideal">Estimation</a></li>
-  <li>A naive correction for building expansion also removes the air that follows temperature, about 9 N per layer on the simulation. Taking out what the weather station predicts before the correction, and putting it back after, recovers the true expansion: <b>7.02</b> against the true <b>7.00 × 10⁻⁶ per kelvin</b>. <a href="estimation.html#buildings">Estimation</a></li>
-  <li>With realistic noise and building movement the radar recovers the air to <b>3 to 5 N</b> per 40 m layer, against an air that varies by about 12 N. That is not yet better than the weather station alone per layer; for the column as a whole it is (1.1 against 3.0 N), and a radar + station combination, still being tested, beats the station in every layer (1.2 to 2.8 N). <a href="estimation.html#simulation">Estimation</a></li>
-  <li>On the real data of 2020 to 2026, the radar's lowest layer (3 to 43 m) follows the weather station with <b><i>r</i> = 0.45</b>, and 0.35 once the yearly cycle is removed. The upper layer still carries building movement. <a href="results.html">Results</a></li>
-  <li>The vertical structure of the real profile is not validated yet: no profile measurement overlaps the satellite passes below 100 m. <a href="estimation.html#limits">Estimation</a></li>
-  <li>Tying both processings to their shared ground points reduces their disagreement from <b>+0.60</b> to <b>+0.11 mm per year</b>. <a href="data.html#reference">Reference</a></li>
-</ul>
-<!-- Sources: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb and 04_python/estimation/DECISIONS.md (D2, D4, D7, D8), 12 October 2026; reference numbers as in data.html#reference. -->
+<h2 id="claims" data-short="What holds">What the report supports</h2>
+<p>The radar has modest agreement with the ground station. The report compares motion fitted per building or per scatterer, different layer choices, and an optional station-based air prior. An air prior uses station information, so its agreement with that station is not an independent validation.</p>
+<p>No collocated vertical air profile validates the real-data retrieval. The reported RMS differences use the station's refractivity carried upward as a comparison, not measured urban truth. Explore the <a href="results.html">report results</a> and the <a href="simulator.html?atm=real">real-data simulator</a>.</p>
 
 <h2 id="paper" data-short="Paper and team">Paper and team</h2>
 <p>The whole team writes one manuscript. Its draft is not on this site until it is submitted; this section says what it is about and how it is organised.</p>
@@ -192,5 +184,6 @@
 <footer data-shared></footer>
 </main></div>
 <script defer src="js/nav.js?v=20261013g"></script>
+<script defer src="js/report.js?v=20261101"></script>
 </body>
 </html>
