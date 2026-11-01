@@ -189,7 +189,10 @@ async function main(){
   wire();heightSlice();drawLegend();
   const selected=bld.order.includes(q.get('building'))?q.get('building'):bld.order.find(id=>bld.buildings[id]);
   selectBuilding(selected,false);
-  if(ds.archived){document.querySelector('#coverage .site-boundary').textContent='Archived processor-reference data, 2014–2023. These are not the current report findings.';}
+  if(ds.archived){
+    $('coverage-context').dataset.tip='Archived processor-reference data (2014–2023). These colours show published radar support, not retrieved air. This is not the current report dataset.';
+    $('coverage-archive').hidden=false;
+  }
   try{initScene();await loadModels();setPreset('overview');outline(selected);$('loading').remove();}
   catch(error){$('gl').hidden=true;$('loading').textContent='3D is unavailable here. Building search, height profiles and published counts remain usable.';}
   if(q.has('debug'))window.__vrs={THREE,state,S:state,D,renderer,scene,buildings,uniforms,get camera(){return camera;},setEpoch,selectBuilding,pick,setPreset};

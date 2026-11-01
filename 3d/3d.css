@@ -18,6 +18,8 @@
 .city-inspector p.city-profile-note { font-size:.68rem; line-height:1.4; margin:0; color:var(--muted); }
 .height-slice { margin:12px 0; }.height-slice input { display:block; width:100%; height:26px; accent-color:var(--accent); margin:0; }.height-slice output { margin-left:auto; color:var(--accent); }.height-slice p { font-size:.72rem; margin:4px 0 0; color:var(--muted); }
 .legend { margin:12px 0; }.legend canvas { width:100%; height:40px; display:block; }.legend .lt { font-size:.7rem; line-height:1.4; color:var(--muted); }
+.coverage-legend-notes { display:flex; align-items:flex-start; gap:4px; }.coverage-legend-notes .lt { flex:1; min-width:0; }
+#coverage-archive { font-size:.68rem; color:#a8433b; }
 #panel h3 { font-size:.7rem; text-transform:uppercase; color:var(--muted); margin:12px 0 5px; }
 .timepanel { flex:none; }.city-timeline-title { display:flex; align-items:center; gap:6px; font-size:.75rem; color:var(--ink-2); margin-bottom:3px; }.timepanel .row { display:flex; align-items:center; gap:6px; }.timepanel input[type=range] { min-width:90px; flex:1; height:28px; accent-color:var(--accent); margin:0; }
 .timepanel button,.timepanel select { font:inherit; font-size:.75rem; min-height:28px; border:1px solid var(--line); border-radius:6px; padding:3px 8px; color:var(--ink); background:var(--surface); }.timepanel .play { background:var(--ink); color:var(--surface); }
