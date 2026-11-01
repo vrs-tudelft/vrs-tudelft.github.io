@@ -84,13 +84,13 @@
 </div>
 </fieldset>
 <fieldset class="sim-field">
-<legend><span class="lg-ic" data-icon="layers"></span>Height layers <span class="t i" data-tip="How the air is cut into height layers (m NAP). Two layers: 3.2-43.2 m and 43.2 m to the top. One layer: 3.2 m to the top. ≥500 and ≥1000 points: from 3.2 m up, a new layer starts after every 500 or 1000 radar points on the buildings, so every layer rests on as many points (thin where points are dense, thick high up); the rest at the top joins the last layer. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
+<legend><span class="lg-ic" data-icon="layers"></span>Height layers <span class="t i" data-tip="How the air is cut into height layers (m NAP). Two layers: 3.2-43.2 m and 43.2 m to the top. One layer: 3.2 m to the top. ≥500 and ≥1000 points: from 3.2 m up, a new layer starts after every 500 or 1000 radar points on the buildings, so every layer rests on as many points (thin where points are dense, thick high up); the rest at the top joins the last layer. Cabauw (only with the Cabauw tower air): 8.2-11.8, 11.8-28.2, 28.2-51.8, 51.8-108.2 and 108.2-171.8 m, so the tower sensors at 10, 20, 40, 80 and 140 m sit exactly in the middle of a layer, where the estimate is drawn; they start 5 m above the street, where the estimation's facade points start. The Cabauw air's points are placed with the same number of facade points in every one of these layers, and its tallest building reaches 171.8 m. Thinner layers give more detail but fewer radar points per layer, so more noise."><span class="info">i</span></span></legend>
 <div class="seg" data-control="layers">
 <label><input name="layers" type="radio" value="2"/><span>Two</span></label>
 <label><input name="layers" type="radio" value="1"/><span>One</span></label>
 <label><input name="layers" type="radio" value="n500"/><span>≥500 pts</span></label>
 <label><input name="layers" type="radio" value="n1000"/><span>≥1000 pts</span></label>
-</div>
+<label><input name="layers" type="radio" value="cab"/><span>Cabauw</span></label></div>
 </fieldset>
 <button class="sim-reset" id="sim-reset" type="button"><i data-icon="reset"></i>Reset to realistic</button>
 </form>
@@ -240,7 +240,7 @@
 <li><span class="name">2. Fit the same retrieval</span><p>Remove motion and thermal dilation, then estimate the refractivity of the selected layers.</p></li>
 <li><span class="name">3. Compare like with like</span><p>Simulation: score against known truth. Real data: compare with the station-based proxy; vertical accuracy remains unverified.</p></li>
 </ol><p>The real report uses no air prior by default. Temperature memory is exponential, 72 h, using hourly weather.</p>
-<p><a href="estimation.html">Method &amp; assumptions</a> · <a href="data.html">Data context</a></p></section></div>
+<p><a href="estimation.html">Method &amp; assumptions</a> · <a href="data.html">Data context</a></p><p>Cabauw also offers layers centred on the tower sensors. <button aria-label="Cabauw sensor-centred layer context" class="t i tip-trigger" data-tip="Estimation ( 04_python/estimation , defaults: thermal fitted, air prior from the ground, mean boundary; as building temperature the one the simulation used, the 72 h memory of KNMI 344 hourly). Motion per building: deformation=&quot;report&quot; ; per scatterer: deformation=&quot;scatterer&quot; , each point's own a + bt + ct². Each simulation is estimated with both and four layer setups: two layers (3.2-43.2 m and above), one layer, and layers of at least 500 or 1000 facade points ( layer_points , the count-based layers of the building assignment). The Cabauw tower air has a fifth: layers with the tower sensors at 10, 20, 40, 80 and 140 m exactly in their middle (edges 8.2, 11.8, 28.2, 51.8, 108.2 and 171.8 m NAP; the tower's heights above its ground are used as m NAP, as in the simulation), so the estimate of a layer, drawn at its centre, can be read against the sensor in it. The layers start 5 m above the street because the estimation takes lower points as ground; the air below is the same for every point of a building and goes into its intercept. The 200 m sensor would need a layer up to 228.2 m, above the tower air. The Cabauw air's points are placed with the simulation's point heights “layers” (as many facade points in each of these layers, on buildings of at least 30 m, 20% on the street) and its tallest building is 171.8 m NAP, not the city's mix, so its results in the other setups differ from before too. The air the fit takes: site_absorbed.py ." type="button"><span aria-hidden="true" class="info">i</span></button></p></section></div>
 </div>
 <div class="sim-floattip" hidden="" id="sim-floattip" role="tooltip"></div>
 </section>

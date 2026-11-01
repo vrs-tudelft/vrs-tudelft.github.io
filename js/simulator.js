@@ -30,7 +30,8 @@
   };
   var ATM_NAME = { simulated: "KNMI-built air", radiosonde: "the balloon soundings of 2025", cabauw: "the Cabauw tower air of 2025" };
   var LAYERS_NAME = { "20": "20 m layers", "40": "40 m layers", "2": "two layers", "1": "one layer",
-    n500: "layers of at least 500 points", n1000: "layers of at least 1000 points" };
+    n500: "layers of at least 500 points", n1000: "layers of at least 1000 points",
+    cab: "layers centred on the Cabauw sensors" };
   var MOTION_NAME = { building: "motion per building", scatterer: "motion per scatterer" };
   /* Jaap's steps: the same estimation chain with parts switched off */
   var STAGES = [
@@ -143,6 +144,25 @@
     return manifest.controls[k] && manifest.controls[k].map(String).indexOf(String(v)) >= 0;
   }
   function isReal() { return state.atm === "real"; }
+  /* the layer setups an atmosphere has (the Cabauw-centred layers only for the Cabauw tower air) */
+  function layersFor(atm) {
+    var by = manifest.layers_of || {};
+    return (by[atm] || by.simulated || manifest.controls.layers).map(String);
+  }
+  /* disable the setups the chosen air does not have; fall back to the default when the choice is one */
+  function syncLayers() {
+    var atm = (form.querySelector('input[name="atm"]:checked') || {}).value || String(manifest.defaults.atm), ok = layersFor(atm);
+    form.querySelectorAll('input[name="layers"]').forEach(function (r) {
+      if (!valid("layers", r.value)) return;
+      var on = ok.indexOf(r.value) >= 0;
+      r.disabled = !on;
+      if (!on && r.checked) {
+        r.checked = false;
+        var d = form.querySelector('input[name="layers"][value="' + manifest.defaults.layers + '"]');
+        if (d) d.checked = true;
+      }
+    });
+  }
   function initialState() {
     var q = new URLSearchParams(location.search), s = {};
     KEYS.forEach(function (k) { var v = q.get(k); s[k] = v !== null && valid(k, v) ? v : String(manifest.defaults[k]); });
@@ -188,6 +208,7 @@
   var simMsg = "";
   function update() {
     var prevLayers = state.layers;
+    syncLayers();
     state = fromForm();
     if (state.layers !== prevLayers) { scLayer = -1; realScLayer = -1; }
     writeUrl(state);
@@ -1380,7 +1401,7 @@
         " N instead of " + num(sm.column_rmse, 2) + " N (" + pct + ").");
     }
     /* layer choice: the column error is comparable across the four setups, the skill per layer is not */
-    var lay = (manifest.controls.layers || []).map(String).map(function (L) {
+    var lay = layersFor(s.atm).map(function (L) {
       var v = summ(variant(s, { layers: L }));
       return v ? { L: L, c: v.column_rmse, w: v.skill.filter(function (x) { return x > 0; }).length, n: v.skill.length } : { L: L, c: NaN };
     });
