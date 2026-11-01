@@ -1,15 +1,15 @@
 /* The whole-project flowchart, as data. js/overview.js draws it.
    Lanes run left to right; inside a lane, row = step down, col = -1 left side, 0 main, 1 right side.
    type: input | process | decision | output | result.  icon: a key of VRS_ICONS in js/overview.js. paths (at the end): ordered steps for "follow a path".
-   Sources (12 October 2026, team repository virtual-radiosonde):
+   Sources: report source of 31 October 2026 and the retained 2025 weather setup:
    - air: 03_notebooks/05_annual_low_level_reconstruction/ (04_python/*.py, README, 05_results/19_...)
    - sim: 06_simulation/ (run_pipeline.py, settings.py, step0..7, io_utils.py)
    - est: 04_python/estimation/ (README, DECISIONS.md D1-D10), 03_notebooks/07_estimation/estimation.ipynb */
 window.VRS_FLOW = {
   lanes: [
     {
-      id: "air", icon: "balloon", num: "1", title: "Air near the ground", who: "Sander da Costa",
-      summary: ["Balloons, stations and a weather model", "rebuilt into the lowest 200 m", "every 10 m, for every 2025 launch", "784 launches, De Bilt and Beauvechain"],
+      id: "air", icon: "balloon", num: "1", title: "Report weather inputs", who: "Sander da Costa",
+      summary: ["Frozen 2025 weather reconstruction", "soundings, stations and tower inputs", "feeds the report simulation", "Expanded archive: see Data"],
       tip: "Weather balloons keep few readings in the lowest 200 m. This part rebuilds that layer for every 2025 launch at De Bilt and Beauvechain from the balloon, the weather station and the ICON-D2 weather model, with an uncertainty.",
       code: "03_notebooks/05_annual_low_level_reconstruction/",
       link: "data.html#low-level", linkText: "The air near the ground"
@@ -34,7 +34,7 @@ window.VRS_FLOW = {
     /* ---------------- 1. air near the ground ---------------- */
     { id: "a_sonde", lane: "air", icon: "balloon", row: 0, col: -1, type: "input", title: "Balloon soundings 2025", sub: "De Bilt and Beauvechain",
       tip: "Every 2025 weather-balloon launch at De Bilt (Netherlands) and Beauvechain (Belgium), from the NOAA IGRA archive, with all its measured levels.",
-      number: "784 launches: 453 De Bilt, 331 Beauvechain", code: "radiosonde_annual_low_level_inputs.build_inputs",
+      number: "Frozen 2025 source pool: 453 De Bilt, 331 Beauvechain", code: "radiosonde_annual_low_level_inputs.build_inputs",
       link: "data.html#soundings", linkText: "Balloon soundings" },
     { id: "a_station", lane: "air", icon: "thermo", row: 0, col: 0, type: "input", title: "Station weather", sub: "T, pressure, humidity",
       tip: "The weather station next to each launch site (KNMI De Bilt, RMI Beauvechain), interpolated in time to the moment of release.",
@@ -82,7 +82,7 @@ window.VRS_FLOW = {
       code: "E2E_annual_low200_100m.csv, E2E_annual_low200_joint_draws.npz" },
 
     /* ---------------- 2. simulation ---------------- */
-    { id: "s_tower", lane: "sim", icon: "tower", row: 0, type: "input", title: "Cabauw tower", sub: "measured profiles, 124 days",
+    { id: "s_tower", lane: "sim", icon: "tower", row: 0, type: "input", title: "Cabauw tower", sub: "116 retained mornings",
       tip: "The 200 m Cabauw measurement mast: real measured profiles at 06 UTC, as a third choice of atmosphere.",
       code: "io_utils (tower)", link: "data.html#weather", linkText: "Towers" },
     { id: "s_knmi", lane: "sim", icon: "thermo", row: 0, col: 1, type: "input", title: "KNMI weather Rotterdam", sub: "station 344, hourly",
@@ -90,7 +90,7 @@ window.VRS_FLOW = {
       code: "02_data/05_weather/knmi/, io_utils.knmi_hourly", link: "data.html#weather", linkText: "Weather stations" },
     { id: "s_atm", lane: "sim", icon: "fork", row: 1, type: "decision", title: "Which atmosphere?",
       tip: "Three choices: built from the KNMI weather (one profile per radar pass, 2020 to 2026, the default), the reconstructed 2025 balloon profiles, or the Cabauw tower.",
-      number: "simulated (213 passes) · radiosonde (453 launches) · tower (124 days)", code: "run_pipeline.py --atmosphere",
+      number: "KNMI-built: 213 epochs · selected soundings: 361 · Cabauw: 116", code: "run_pipeline.py --atmosphere",
       link: "estimation.html#sim-chain", linkText: "From air to radar measurement" },
     { id: "s_profiles", lane: "sim", icon: "profile", row: 2, type: "process", title: "Profiles and refractivity", sub: "steps 1–2: P, T, e and N every 1 m",
       tip: "The chosen atmosphere on 1 m levels, and its refractivity N. This is the truth that the estimation should find back.",
@@ -102,7 +102,7 @@ window.VRS_FLOW = {
       tip: "How much the air delays the radar signal up to the height of every point, along the line of sight at 23 degrees.",
       code: "step3_delay.py, step4_delay_at_points.py, step5_phase_los.py", link: "estimation.html#sim-chain", linkText: "From air to radar measurement" },
     { id: "s_nuis", lane: "sim", icon: "zap", row: 4, type: "process", title: "Add what makes it hard", sub: "step 6: sinking, warm buildings, noise",
-      tip: "Ground and buildings sink and shrink, buildings expand when warm (five days behind the KNMI temperature), each point has a small position error, and 2 mm of noise. Each can be switched off.",
+      tip: "Buildings sink and shrink, thermal dilation follows the 72 h exponential memory of hourly KNMI temperature, and cross-range error and constant Gaussian noise disturb the observation. Each term can be switched off.",
       number: "α·η = 7 × 10⁻⁶ /K, noise 2.07 mm", code: "step6_nuisances.py --use_displacement --use_thermal --use_cross_range --use_noise",
       link: "simulator.html", linkText: "Switch them on and off in the simulator" },
     { id: "s_dd", lane: "sim", icon: "compare", row: 5, type: "process", title: "Double differences", sub: "step 7: against the street and the first pass",
@@ -125,22 +125,22 @@ window.VRS_FLOW = {
     { id: "e_ground", lane: "est", icon: "thermo", row: 2, col: -1, type: "input", title: "Air at the street", sub: "KNMI at the overpass, 06 UTC",
       tip: "Pressure, temperature and humidity at the overpass time, and from those the refractivity of the air at the street.",
       code: "ground.ground_conditions (D5, D6)", link: "estimation.html#chain", linkText: "Match the weather" },
-    { id: "e_ref", lane: "est", icon: "crosshair", row: 2, type: "process", title: "Shared ground as the zero", sub: "477 stable ground points",
+    { id: "e_ref", lane: "est", icon: "crosshair", row: 2, type: "process", title: "Shared ground as the zero", sub: "499 shared reference points",
       tip: "All movement is measured against the ground points the two radar processings share, so the zero is the same everywhere. Ground that sinks by itself, such as a subsiding parking lot, is left out.",
-      number: "477 shared ground points (499 minus sinking ground such as a parking lot)", code: "reference.choose_reference, shared_ground_ids",
+      number: "499 shared ground reference points in the report run", code: "reference.choose_reference, shared_ground_ids",
       link: "data.html#reference", linkText: "Where the zero sits" },
-    { id: "e_prior", lane: "est", icon: "shield", row: 3, type: "process", title: "Air prior", sub: "set aside what the station predicts",
+    { id: "e_prior", lane: "est", icon: "shield", row: 3, type: "process", title: "Optional air prior", sub: "off in the radar-only report run",
       tip: "Before the building fit, the delay the ground station predicts is set aside and added back afterwards. Otherwise the warm-building term swallows part of the air.",
-      number: "fitted α 7.02 × 10⁻⁶ /K (true 7.00); without the prior 9.05", code: "estimate(air_prior=\"ground\")",
+      number: "Station agreement is partly circular when this option is on", code: "estimate(air_prior=\"ground\")",
       link: "buildings.html", linkText: "How the buildings move" },
-    { id: "e_method", lane: "est", icon: "history", row: 4, col: 1, type: "decision", title: "Which memory?", sub: "5 days or Jaap's 72 h",
-      tip: "How the buildings remember the temperature: the default 5-day memory (like the simulation), or Jaap de Ruiter's 72-hour memory with a temperature-driven air term.",
-      code: "dilation_method=\"jaap\": ground.temperature_memory (D10)", link: "simulator.html", linkText: "Compare them in the simulator" },
+    { id: "e_method", lane: "est", icon: "history", row: 4, col: 1, type: "process", title: "Temperature memory", sub: "72 h, from hourly weather",
+      tip: "The report uses an exponential 72 h memory of hourly KNMI temperature. An hour three days old has 1/e of the current observation's weight.",
+      code: "ground.temperature_memory", link: "buildings.html#thermal", linkText: "Inspect the thermal response" },
     { id: "e_motion", lane: "est", icon: "building", row: 4, type: "process", title: "Remove what the buildings do", sub: "sinking, shrinking, growing when warm",
       tip: "Per building: a steady sink, slow shrinking, and expansion with temperature (α fitted per building). What is left is the air plus noise.",
       code: "deformation.fit_report_group (D2)", link: "estimation.html#buildings", linkText: "Telling the buildings from the air" },
-    { id: "e_layers", lane: "est", icon: "layers", row: 5, type: "process", title: "Layer by layer", sub: "average per 40 m layer and per pass",
-      tip: "Points are averaged per height layer of 40 m and per pass, relative to the first pass.",
+    { id: "e_layers", lane: "est", icon: "layers", row: 5, type: "process", title: "Layer by layer", sub: "two layers or count-based bins",
+      tip: "The report default has edges at 3.2, 43.2 and 148 m NAP. One layer and count-based alternatives trade vertical detail against the number of contributing points.",
       code: "layers.solve, profiles.differential_delay_profiles (D7)", link: "estimation.html#chain", linkText: "The steps" },
     { id: "e_mother", lane: "est", icon: "flag", row: 6, type: "process", title: "The first pass", sub: "assume −55 N per km",
       tip: "The radar only sees changes from the first pass. That one pass gets one stated assumption: the air thins by 55 N-units per km, as measured at dawn.",
@@ -151,11 +151,11 @@ window.VRS_FLOW = {
     { id: "e_out", lane: "est", icon: "profile", row: 8, type: "output", title: "N per layer, per pass", sub: "and optionally P, T and e",
       tip: "The refractivity of every height layer at every pass: the virtual radiosonde.",
       code: "EstimationResult.refractivity_profile(), pte.pte_profiles", link: "estimation.html", linkText: "Estimation" },
-    { id: "e_check", lane: "est", icon: "target", row: 8, col: -1, type: "result", title: "Checked against the truth", sub: "3 to 5 N per 40 m layer",
-      tip: "On the simulation the true air is known: the error per 40 m layer is 3 to 5 N-units, mostly noise, which is not better than a weather station alone (1.3 to 4.2). As one thick layer the radar wins: 1.1 against 3.0 N. Combined with the station (opt-in), it wins in every layer.",
-      number: "3.3–4.9 N per full layer; 1.1 N as one layer (station 3.0)", code: "sim_import.py, sim_outputs.py",
+    { id: "e_check", lane: "est", icon: "target", row: 8, col: -1, type: "result", title: "Controlled validation", sub: "known truth in the simulation only",
+      tip: "The controlled simulation has known truth. Error depends on the atmosphere, noise, point count, layers and motion fit. The real-data comparison uses a station-based proxy instead of measured urban truth.",
+      number: "Inspect the selected case in the simulator", code: "site_simulator.py",
       link: "estimation.html#simulation", linkText: "Tested on the simulation" },
-    { id: "e_sim", lane: "est", icon: "play", row: 8, col: 1, type: "result", title: "The simulator", sub: "1 536 results to play with",
+    { id: "e_sim", lane: "est", icon: "play", row: 8, col: 1, type: "result", title: "The simulator", sub: "compare the precomputed scenarios",
       tip: "Every combination of atmosphere, building movement, noise level, number of points and layer thickness, simulated and estimated beforehand. As in Jaap's figure, each estimate is also run with parts of the chain switched off (layer inversion only, + shrinking, standard), so you see what each part adds.",
       number: "3 atmospheres × 16 disturbance mixes × 4 noise levels × 2 point counts = 384 simulations, each with 4 layer setups, each estimated 3 ways step by step", code: "site_simulator.py → data/simulator/",
       link: "simulator.html", linkText: "Open the simulator" },

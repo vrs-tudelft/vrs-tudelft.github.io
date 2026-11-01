@@ -1,279 +1,180 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Theory · Virtual Radiosonde</title>
-<meta name="description" content="The physics behind the project in plain language: how a radar phase becomes a delay, how the refractivity of moist air depends on pressure, temperature and water vapour, why warming can raise or lower the delay, and what a double difference can and cannot recover. With a refractivity calculator.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261019a">
-<link rel="stylesheet" href="css/theory.css?v=20261013a">
-</head>
-<body>
+<meta content="Change the air and see how refractivity and radar delay respond." name="description"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="favicon.ico" rel="icon" sizes="any"/>
+<link href="apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css?v=20261101b" rel="stylesheet"/>
+<link href="css/theory.css?v=20261101b" rel="stylesheet"/>
+<link href="css/workspace.css?v=20261101b" rel="stylesheet"/></head>
+<body class="app-page site-page" data-workspace="theory">
 <header class="top"><div class="top-inner">
-  <a class="brand" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
-      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
-      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
-    </svg>
+<a class="brand" href="index.html">
+<svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
+<rect height="13" rx="1" stroke="currentColor" stroke-width="1.6" width="7" x="3" y="8"></rect>
+<rect height="6" opacity=".45" rx="1" stroke="currentColor" stroke-width="1.6" width="7.5" x="13.5" y="15"></rect>
+<path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-dasharray="2.6 2.6" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="10" cy="11" fill="#a8433b" r="1.9"></circle>
+</svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+<noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
-<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
-<h1>Theory: how the air shows up in a radar measurement</h1>
-<p class="lead">Radar waves travel a little slower through air than through empty space, and moist air slows them more than dry air. This page follows the physics from the radar's phase to the refractivity of the air, and states what a double difference between buildings and passes can and cannot tell us.</p>
-<p class="asof">Status on 13 October 2026. Condensed from chapter 2 (Theory) of the team's report draft, version 0.1.</p>
-
-<h2 id="short" data-short="In short">In short</h2>
-<ul>
-  <li><b>Phase is distance.</b> Comparing a high and a low point on buildings, and one pass with another, leaves mostly the change in delay through the air between the two heights. <a href="#phase">Below</a></li>
-  <li><b>The delay is the refractivity <i>N</i>, summed along the path.</b> <i>N</i> has a large dry part set by pressure and temperature and a smaller wet part set by water vapour. <a href="#refractivity">Try the calculator</a></li>
-  <li><b>Water vapour matters most.</b> One hPa of vapour changes <i>N</i> as much as nearly four degrees of temperature. Whether warming raises or lowers the delay depends on what the humidity does at the same time. <a href="#temperature">Below</a></li>
-  <li><b>The radar sees changes, never the absolute profile.</b> Pressure can be predicted almost exactly; water vapour is the real unknown; anything common to both passes cancels. <a href="#concepts">Below</a></li>
-</ul>
-
-<h2 id="phase" data-short="Phase to delay">From phase to delay</h2>
-<p>A <span class="t" data-tip="Synthetic aperture radar: a side-looking radar on a satellite that builds a sharp image from its own motion along the orbit.">SAR</span> image stores, for every resolution cell, an amplitude and a <b>phase</b>. That phase is the sum of three parts: the distance from antenna to target, the delay of the wave in the air, and a random part from the many small reflectors inside the cell.</p>
-<p>Two images taken from almost the same orbit, days apart, are combined into an <span class="t" data-tip="The phase difference of two radar images of the same area. Repeat-pass: the satellite comes back over the same area later, here every 11 days.">interferogram</span>. If the target is stable, such as a building corner, the random part is the same in both images and cancels. The two orbits are not exactly the same, so a height-dependent pattern remains; it is computed from an elevation model (AHN5) and subtracted. After <span class="t" data-tip="The phase repeats every full cycle. Unwrapping adds back the right number of whole cycles, so the phase becomes a continuous distance.">unwrapping</span>, what is left is a change in delay, plus any real movement of the target.</p>
-<p class="eq">d = − (λ / 4π) · φ,&nbsp;&nbsp; λ ≈ 3.1 cm, so one full phase cycle = 1.55 cm of one-way path</p>
-<p>That is why the radar resolves millimetres: it measures a fraction of a 1.55 cm cycle, not a travel time. The radar looks about 23° from vertical; a simple cosine converts between the slant path and the vertical, and is accurate enough at such a steep angle.</p>
-
-<h3>The double difference</h3>
-<p>A single delay contains the whole atmosphere, kilometres of it. The trick of this project is to subtract twice. <b>Between points:</b> the ray to a low point B crosses one extra layer of air that the ray to a high point A does not; everything above A is common and cancels. <b>Between passes:</b> a later pass (a <span class="t" data-tip="Every pass is compared with the same first pass, the mother. The later passes are the daughters.">daughter</span>) is compared with the first one (the mother), so whatever did not change cancels too.</p>
-
-<figure class="diagram th-dd" aria-labelledby="ddcap">
+<div class="app site-app">
+<aside class="app-panel sim-panel site-panel">
+<div class="sim-head"><span class="sim-head-ic" data-icon="thermo"></span><div><h1>Theory</h1><p class="app-intro">Change the air and see how refractivity and radar delay respond.</p></div></div>
+<fieldset class="sim-field" data-for-view="geometry"><legend>Geometry example</legend><select aria-label="Geometry example" data-switch="geometry-example"><option value="difference">Double difference</option><option value="common">Common mode</option></select></fieldset><div class="site-calc-controls" id="calc"><div class="th-ctl">
+<div class="th-head"><span class="th-ic" data-icon="sliders"></span><b>The air</b></div>
+<div aria-label="Presets" class="th-presets" role="group">
+<button data-preset="std" type="button">Standard, 15 °C</button>
+<button data-preset="rdam" type="button">Rotterdam mean</button>
+<button data-preset="cold" type="button">Cold, dry morning</button>
+<button data-preset="summer" type="button">Humid summer day</button>
+</div>
+<label class="th-sl"><span class="th-sl-k">Pressure <i>P</i></span><output id="o-p">1013 hPa</output>
+<input id="s-p" max="1050" min="960" step="0.5" type="range" value="1013.25"/></label>
+<label class="th-sl"><span class="th-sl-k">Temperature <i>T</i></span><output id="o-t">15.0 °C</output>
+<input id="s-t" max="35" min="-10" step="0.1" type="range" value="15"/></label>
+<div class="th-sl">
+<div aria-label="Humidity as" class="seg th-seg" role="radiogroup">
+<label><input checked="" name="hmode" type="radio" value="rh"/><span>relative humidity</span></label>
+<label><input name="hmode" type="radio" value="e"/><span>vapour pressure</span></label>
+</div>
+</div>
+<label class="th-sl"><span class="th-sl-k" id="k-h">Relative humidity</span><output id="o-h">50 %</output>
+<input aria-labelledby="k-h" id="s-h" max="100" min="0" step="1" type="range" value="50"/></label>
+<p class="th-note" id="o-sat"></p>
+</div></div>
+<footer class="site-foot"><a href="index.html#about">Sources &amp; team</a><span>·</span><a href="https://github.com/vrs-tudelft">GitHub</a></footer>
+</aside>
+<main class="app-main site-main">
+<div aria-label="Theory views" class="sim-tabs site-tabs" role="tablist"><button aria-controls="explore" data-site-tab="explore" id="tab-explore" role="tab" type="button"><i data-icon="thermo"></i>Explore the air</button><button aria-controls="geometry" data-site-tab="geometry" id="tab-geometry" role="tab" type="button"><i data-icon="satellite"></i>Radar geometry</button><button aria-controls="assumptions" data-site-tab="assumptions" id="tab-assumptions" role="tab" type="button"><i data-icon="info"></i>Assumptions</button></div>
+<section aria-labelledby="tab-explore" class="site-view" data-site-view="explore" id="explore" role="tabpanel"><span class="section-anchor" id="temperature"></span><span class="section-anchor" id="refractivity"></span><span class="section-anchor" id="short"></span><div class="site-grid theory-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="thermo"></i>What this air does<button aria-label="About What this air does" class="t i tip-trigger" data-tip="Smith and Weintraub refractivity: the dry contribution depends on dry-air pressure; the wet contribution depends strongly on water vapour." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><div aria-live="polite" class="th-out">
+<div class="th-big"><span class="th-big-k">Refractivity</span> <span class="th-big-v" id="r-n">N = 311.2</span> <span class="th-big-s" id="r-idx">n = 1.000311</span></div>
+<div aria-hidden="true" class="th-bar" id="r-bar"><span class="th-bar-d" style="width:87%"></span><span class="th-bar-w" style="width:13%"></span></div>
+<div class="th-legend"><span><i class="th-sw th-sw-d"></i>dry <b id="r-dry">270.6</b></span><span><i class="th-sw th-sw-w"></i>wet <b id="r-wet">40.7</b> <span class="th-sub" id="r-wetsplit"></span></span></div>
+<div class="th-tiles">
+<div class="stat"><span class="v" id="r-delay">13.5 <span class="u">mm</span></span><span class="k">delay across 40 m at 23°</span></div>
+<div class="stat"><span class="v" id="r-per">0.043 <span class="u">mm</span></span><span class="k">delay change per 1 N</span></div>
+</div>
+<details class="th-detail"><summary>Sensitivity &amp; moisture</summary><div class="th-tiles"><div class="stat"><span class="v" id="r-dt">−1.21 <span class="u">N/K</span></span><span class="k">∂N/∂T: one degree warmer, same <i>P</i> and <i>e</i></span></div><div class="stat"><span class="v" id="r-de">+4.50 <span class="u">N/hPa</span></span><span class="k">∂N/∂e: one hPa more vapour, same <i>P</i> and <i>T</i></span></div><div class="stat"><span class="v" id="r-ratio">3.7 <span class="u">K</span></span><span class="k">of temperature change does what 1 hPa of vapour does</span></div><div class="stat"><span class="v" id="r-hum">8.5 <span class="u">hPa</span></span><span class="k" id="r-humk">vapour pressure; dew point 4.7 °C</span></div></div></details></div></section><section class="app-card site-feature"><div class="sim-card-head"><h2><i class="h-ic" data-icon="sun"></i>What a warmer day changes<button aria-label="About What a warmer day changes" class="t i tip-trigger" data-tip="Solid curves hold relative humidity fixed; dashed curves hold vapour pressure fixed. These assumptions can reverse the sign of the temperature effect." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><figure class="th-sens" id="sens">
+<div class="th-charts">
+<div class="th-chart"><div class="th-ch-t">N against temperature, at fixed relative humidity</div><div class="th-svg" id="ch-nt"></div></div>
+<div class="th-chart"><div class="th-ch-t">Does warming raise or lower N? <span class="th-hint">Drag on the map to move the point.</span></div><div class="th-svg th-drag" id="ch-map"></div></div>
+<div class="th-chart th-wide"><div class="th-ch-t">One degree warmer: apparent rise of a point 40 m up, relative to the street, along the line of sight</div><div class="th-svg" id="ch-bars"></div></div>
+</div>
+</figure></section></div></section><section aria-labelledby="tab-geometry" class="site-view" data-site-view="geometry" id="geometry" role="tabpanel"><span class="section-anchor" id="saastamoinen"></span><span class="section-anchor" id="sizes"></span><span class="section-anchor" id="phase"></span><div data-choice="difference" data-choice-group="geometry-example"><section class="app-card geometry-card"><div class="sim-card-head"><h2>What the double difference retains</h2></div><figure aria-labelledby="ddcap" class="diagram th-dd">
 <div class="th-pair">
-<svg viewBox="0 0 360 290" role="img" aria-labelledby="dd1t dd1d" xmlns="http://www.w3.org/2000/svg">
-  <title id="dd1t">Pass 1, the mother</title>
-  <desc id="dd1d">A tall building with radar point A about 50 m up, a low building with point B about 5 m up, and two parallel rays from the satellite. The ray to B crosses the layer of air between the two heights, which is shaded.</desc>
-  <defs><marker id="dda1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
-  <text x="14" y="24" class="svg-text" font-weight="600">Pass 1 (mother), t₁</text>
-  <text x="196" y="44" class="svg-small" text-anchor="middle">from the satellite,</text>
-  <text x="196" y="57" class="svg-small" text-anchor="middle">23° from vertical</text>
-  <line x1="20" y1="100" x2="340" y2="100" class="svg-line" stroke-dasharray="4 4"/>
-  <line x1="20" y1="228" x2="340" y2="228" class="svg-line" stroke-dasharray="4 4"/>
-  <rect x="100" y="100" width="240" height="128" class="svg-layer"/>
-  <line x1="304.3" y1="100" x2="250" y2="228" stroke="var(--accent)" stroke-width="5" opacity=".45"/>
-  <rect x="40" y="70" width="60" height="180" class="svg-building"/>
-  <line x1="40" y1="110" x2="100" y2="110" class="svg-line"/><line x1="40" y1="150" x2="100" y2="150" class="svg-line"/><line x1="40" y1="190" x2="100" y2="190" class="svg-line"/>
-  <rect x="190" y="228" width="60" height="22" class="svg-building"/>
-  <rect x="10" y="250" width="340" height="9" class="svg-ground"/>
-  <line x1="138.2" y1="10" x2="102" y2="97" class="svg-ray" marker-end="url(#dda1)"/>
-  <line x1="342.5" y1="10" x2="252" y2="224" class="svg-ray" marker-end="url(#dda1)"/>
-  <circle cx="100" cy="100" r="4.5" class="svg-dot"/>
-  <text x="116" y="92" class="svg-text" font-weight="600">A</text>
-  <text x="129" y="92" class="svg-small">about 50 m NAP</text>
-  <circle cx="250" cy="228" r="4.5" class="svg-dot"/>
-  <text x="240" y="221" class="svg-text" font-weight="600" text-anchor="end">B</text>
-  <text x="184" y="244" class="svg-small" text-anchor="end">about 5 m NAP</text>
-  <text x="180" y="160" class="svg-text" text-anchor="middle">the layer: N</text>
-  <text x="180" y="176" class="svg-small" text-anchor="middle">extra air on the ray to B</text>
-  <text x="180" y="280" class="svg-small" text-anchor="middle">d(B) − d(A) at t₁ = 10⁻⁶ ∫ N ds through the layer</text>
+<svg aria-labelledby="dd1t dd1d" role="img" viewbox="0 0 360 290" xmlns="http://www.w3.org/2000/svg">
+<title id="dd1t">Pass 1, the mother</title>
+<desc id="dd1d">A tall building with radar point A about 50 m up, a low building with point B about 5 m up, and two parallel rays from the satellite. The ray to B crosses the layer of air between the two heights, which is shaded.</desc>
+<defs><marker id="dda1" markerheight="7" markerwidth="7" orient="auto-start-reverse" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"></path></marker></defs>
+<text class="svg-text" font-weight="600" x="14" y="24">Pass 1 (mother), t₁</text>
+<text class="svg-small" text-anchor="middle" x="196" y="44">from the satellite,</text>
+<text class="svg-small" text-anchor="middle" x="196" y="57">23° from vertical</text>
+<line class="svg-line" stroke-dasharray="4 4" x1="20" x2="340" y1="100" y2="100"></line>
+<line class="svg-line" stroke-dasharray="4 4" x1="20" x2="340" y1="228" y2="228"></line>
+<rect class="svg-layer" height="128" width="240" x="100" y="100"></rect>
+<line opacity=".45" stroke="var(--accent)" stroke-width="5" x1="304.3" x2="250" y1="100" y2="228"></line>
+<rect class="svg-building" height="180" width="60" x="40" y="70"></rect>
+<line class="svg-line" x1="40" x2="100" y1="110" y2="110"></line><line class="svg-line" x1="40" x2="100" y1="150" y2="150"></line><line class="svg-line" x1="40" x2="100" y1="190" y2="190"></line>
+<rect class="svg-building" height="22" width="60" x="190" y="228"></rect>
+<rect class="svg-ground" height="9" width="340" x="10" y="250"></rect>
+<line class="svg-ray" marker-end="url(#dda1)" x1="138.2" x2="102" y1="10" y2="97"></line>
+<line class="svg-ray" marker-end="url(#dda1)" x1="342.5" x2="252" y1="10" y2="224"></line>
+<circle class="svg-dot" cx="100" cy="100" r="4.5"></circle>
+<text class="svg-text" font-weight="600" x="116" y="92">A</text>
+<text class="svg-small" x="129" y="92">about 50 m NAP</text>
+<circle class="svg-dot" cx="250" cy="228" r="4.5"></circle>
+<text class="svg-text" font-weight="600" text-anchor="end" x="240" y="221">B</text>
+<text class="svg-small" text-anchor="end" x="184" y="244">about 5 m NAP</text>
+<text class="svg-text" text-anchor="middle" x="180" y="160">the layer: N</text>
+<text class="svg-small" text-anchor="middle" x="180" y="176">extra air on the ray to B</text>
+<text class="svg-small" text-anchor="middle" x="180" y="280">d(B) − d(A) at t₁ = 10⁻⁶ ∫ N ds through the layer</text>
 </svg>
-<svg viewBox="0 0 360 290" role="img" aria-labelledby="dd2t dd2d" xmlns="http://www.w3.org/2000/svg">
-  <title id="dd2t">Pass 2, a daughter</title>
-  <desc id="dd2d">The same scene at a later pass. The layer between the two heights now holds different air, shaded darker, with refractivity N plus delta N.</desc>
-  <defs><marker id="dda2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
-  <text x="14" y="24" class="svg-text" font-weight="600">Pass 2 (daughter), t₂</text>
-  <text x="196" y="44" class="svg-small" text-anchor="middle">11 days or more</text>
-  <text x="196" y="57" class="svg-small" text-anchor="middle">later</text>
-  <line x1="20" y1="100" x2="340" y2="100" class="svg-line" stroke-dasharray="4 4"/>
-  <line x1="20" y1="228" x2="340" y2="228" class="svg-line" stroke-dasharray="4 4"/>
-  <rect x="100" y="100" width="240" height="128" class="svg-layer th-layer2"/>
-  <line x1="304.3" y1="100" x2="250" y2="228" stroke="var(--accent)" stroke-width="5" opacity=".6"/>
-  <rect x="40" y="70" width="60" height="180" class="svg-building"/>
-  <line x1="40" y1="110" x2="100" y2="110" class="svg-line"/><line x1="40" y1="150" x2="100" y2="150" class="svg-line"/><line x1="40" y1="190" x2="100" y2="190" class="svg-line"/>
-  <rect x="190" y="228" width="60" height="22" class="svg-building"/>
-  <rect x="10" y="250" width="340" height="9" class="svg-ground"/>
-  <line x1="138.2" y1="10" x2="102" y2="97" class="svg-ray" marker-end="url(#dda2)"/>
-  <line x1="342.5" y1="10" x2="252" y2="224" class="svg-ray" marker-end="url(#dda2)"/>
-  <circle cx="100" cy="100" r="4.5" class="svg-dot"/>
-  <text x="116" y="92" class="svg-text" font-weight="600">A</text>
-  <text x="129" y="92" class="svg-small">grew a little when warm</text>
-  <circle cx="250" cy="228" r="4.5" class="svg-dot"/>
-  <text x="240" y="221" class="svg-text" font-weight="600" text-anchor="end">B</text>
-  <text x="180" y="160" class="svg-text" text-anchor="middle">the layer: N + ΔN</text>
-  <text x="180" y="176" class="svg-small" text-anchor="middle">warmer, moister, or both</text>
-  <text x="180" y="280" class="svg-small" text-anchor="middle">d(B) − d(A) at t₂ = 10⁻⁶ ∫ (N + ΔN) ds</text>
+<svg aria-labelledby="dd2t dd2d" role="img" viewbox="0 0 360 290" xmlns="http://www.w3.org/2000/svg">
+<title id="dd2t">Pass 2, a daughter</title>
+<desc id="dd2d">The same scene at a later pass. The layer between the two heights now holds different air, shaded darker, with refractivity N plus delta N.</desc>
+<defs><marker id="dda2" markerheight="7" markerwidth="7" orient="auto-start-reverse" refx="9" refy="5" viewbox="0 0 10 10"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"></path></marker></defs>
+<text class="svg-text" font-weight="600" x="14" y="24">Pass 2 (daughter), t₂</text>
+<text class="svg-small" text-anchor="middle" x="196" y="44">11 days or more</text>
+<text class="svg-small" text-anchor="middle" x="196" y="57">later</text>
+<line class="svg-line" stroke-dasharray="4 4" x1="20" x2="340" y1="100" y2="100"></line>
+<line class="svg-line" stroke-dasharray="4 4" x1="20" x2="340" y1="228" y2="228"></line>
+<rect class="svg-layer th-layer2" height="128" width="240" x="100" y="100"></rect>
+<line opacity=".6" stroke="var(--accent)" stroke-width="5" x1="304.3" x2="250" y1="100" y2="228"></line>
+<rect class="svg-building" height="180" width="60" x="40" y="70"></rect>
+<line class="svg-line" x1="40" x2="100" y1="110" y2="110"></line><line class="svg-line" x1="40" x2="100" y1="150" y2="150"></line><line class="svg-line" x1="40" x2="100" y1="190" y2="190"></line>
+<rect class="svg-building" height="22" width="60" x="190" y="228"></rect>
+<rect class="svg-ground" height="9" width="340" x="10" y="250"></rect>
+<line class="svg-ray" marker-end="url(#dda2)" x1="138.2" x2="102" y1="10" y2="97"></line>
+<line class="svg-ray" marker-end="url(#dda2)" x1="342.5" x2="252" y1="10" y2="224"></line>
+<circle class="svg-dot" cx="100" cy="100" r="4.5"></circle>
+<text class="svg-text" font-weight="600" x="116" y="92">A</text>
+<text class="svg-small" x="129" y="92">grew a little when warm</text>
+<circle class="svg-dot" cx="250" cy="228" r="4.5"></circle>
+<text class="svg-text" font-weight="600" text-anchor="end" x="240" y="221">B</text>
+<text class="svg-text" text-anchor="middle" x="180" y="160">the layer: N + ΔN</text>
+<text class="svg-small" text-anchor="middle" x="180" y="176">warmer, moister, or both</text>
+<text class="svg-small" text-anchor="middle" x="180" y="280">d(B) − d(A) at t₂ = 10⁻⁶ ∫ (N + ΔN) ds</text>
 </svg>
 </div>
-<p class="eq th-eq-wide">[d(B) − d(A)]<sub>t₂</sub> − [d(B) − d(A)]<sub>t₁</sub> ≈ 10⁻⁶ / cos θ · ∫ ΔN dz &nbsp;+&nbsp; what the buildings did &nbsp;+&nbsp; noise</p>
-<figcaption id="ddcap">The double difference, between two points and between two passes. What survives is the <i>change</i> ΔN in the layer between the two heights, along with any movement of the buildings, such as thermal expansion of the tall one. Heights are in m NAP, the Dutch reference level, close to mean sea level.</figcaption>
-</figure>
-
-<h2 id="refractivity" data-short="Refractivity">Refractivity of moist air</h2>
-<p>How much the air slows the wave is its <span class="t" data-tip="The ratio of the speed of light in vacuum to its speed in the medium. For air near the ground it is about 1.0003.">refractive index</span> <i>n</i>, about 1.0003 near the ground. Because only the fourth decimal matters, we use the <b>refractivity</b> <i>N</i> = (<i>n</i> − 1) × 10⁶, a number of a few hundred.</p>
-<p>Two mechanisms make up <i>N</i> at radar frequencies. The <b>dry</b> (or <span class="t" data-tip="Set by the weight of the air above, so by pressure: the air column is in balance between gravity and the pressure gradient.">hydrostatic</span>) term: the wave's field nudges the electrons of nitrogen and oxygen molecules; it depends only on how many molecules there are, so on pressure and temperature. The <b>wet</b> term: water molecules are permanent dipoles that partly turn with the field, which adds a contribution that grows with the water vapour and falls steeply with temperature. Free electrons in the ionosphere and cloud droplets add smaller effects that are left out here.</p>
-<p class="eq">N = k₁ · P<sub>d</sub> / T &nbsp;+&nbsp; k₂ · e / T &nbsp;+&nbsp; k₃ · e / T²</p>
-<p>with <i>P</i><sub>d</sub> the pressure of the dry air and <i>e</i> the <span class="t" data-tip="The part of the total air pressure that comes from water vapour, in hPa. Typically 5 to 20 hPa in Rotterdam. It cannot exceed the saturation vapour pressure, which rises steeply with temperature.">partial pressure of water vapour</span>, both in hPa, <i>T</i> in kelvin, and <i>k</i>₁ = 77.6 K/hPa, <i>k</i>₂ = 72 K/hPa, <i>k</i>₃ = 3.75 × 10⁵ K²/hPa (Smith and Weintraub, 1953). The first term is the dry part, the last two together the wet part. The delay is <i>N</i> summed along the path:</p>
-<p class="eq">d = 10⁻⁶ ∫ N ds</p>
-
-<div class="th-calc" id="calc">
-  <div class="th-ctl">
-    <div class="th-head"><span data-icon="sliders" class="th-ic"></span><b>The air</b></div>
-    <div class="th-presets" role="group" aria-label="Presets">
-      <button type="button" data-preset="std">Standard, 15 °C</button>
-      <button type="button" data-preset="rdam">Rotterdam mean</button>
-      <button type="button" data-preset="cold">Cold, dry morning</button>
-      <button type="button" data-preset="summer">Humid summer day</button>
-    </div>
-    <label class="th-sl"><span class="th-sl-k">Pressure <i>P</i></span><output id="o-p">1013 hPa</output>
-      <input type="range" id="s-p" min="960" max="1050" step="0.5" value="1013.25"></label>
-    <label class="th-sl"><span class="th-sl-k">Temperature <i>T</i></span><output id="o-t">15.0 °C</output>
-      <input type="range" id="s-t" min="-10" max="35" step="0.1" value="15"></label>
-    <div class="th-sl">
-      <div class="seg th-seg" role="radiogroup" aria-label="Humidity as">
-        <label><input type="radio" name="hmode" value="rh" checked><span>relative humidity</span></label>
-        <label><input type="radio" name="hmode" value="e"><span>vapour pressure</span></label>
-      </div>
-    </div>
-    <label class="th-sl"><span class="th-sl-k" id="k-h">Relative humidity</span><output id="o-h">50 %</output>
-      <input type="range" id="s-h" min="0" max="100" step="1" value="50" aria-labelledby="k-h"></label>
-    <p class="th-note" id="o-sat"></p>
-  </div>
-  <div class="th-out" aria-live="polite">
-    <div class="th-big"><span class="th-big-k">Refractivity</span> <span class="th-big-v" id="r-n">N = 311.2</span> <span class="th-big-s" id="r-idx">n = 1.000311</span></div>
-    <div class="th-bar" id="r-bar" aria-hidden="true"><span class="th-bar-d" style="width:87%"></span><span class="th-bar-w" style="width:13%"></span></div>
-    <div class="th-legend"><span><i class="th-sw th-sw-d"></i>dry <b id="r-dry">270.6</b></span><span><i class="th-sw th-sw-w"></i>wet <b id="r-wet">40.7</b> <span class="th-sub" id="r-wetsplit"></span></span></div>
-    <div class="th-tiles">
-      <div class="stat"><span class="v" id="r-delay">13.5 <span class="u">mm</span></span><span class="k">delay across a 40 m layer, one way, along the line of sight at 23°</span></div>
-      <div class="stat"><span class="v" id="r-per">0.043 <span class="u">mm</span></span><span class="k">per 1 N of change in that layer</span></div>
-      <div class="stat"><span class="v" id="r-dt">−1.21 <span class="u">N/K</span></span><span class="k">∂N/∂T: one degree warmer, same <i>P</i> and <i>e</i></span></div>
-      <div class="stat"><span class="v" id="r-de">+4.50 <span class="u">N/hPa</span></span><span class="k">∂N/∂e: one hPa more vapour, same <i>P</i> and <i>T</i></span></div>
-      <div class="stat"><span class="v" id="r-ratio">3.7 <span class="u">K</span></span><span class="k">of temperature change does what 1 hPa of vapour does</span></div>
-      <div class="stat"><span class="v" id="r-hum">8.5 <span class="u">hPa</span></span><span class="k" id="r-humk">vapour pressure; dew point 4.7 °C</span></div>
-    </div>
-  </div>
-  <noscript><p class="placeholder">The calculator needs JavaScript. For 15 °C, 1013.25 hPa and 50 % relative humidity: e = 8.53 hPa, N ≈ 311, of which about 271 dry and 41 wet, and about 13.5 mm of delay across a 40 m layer at 23°.</p></noscript>
-</div>
-<p class="small">The 40 m layer matches the layer thickness of the <a href="estimation.html">estimation</a>. Vapour pressure from relative humidity uses the Magnus formula, e<sub>s</sub>(T) = 6.112 exp(17.62 T / (243.12 + T)) hPa with T in °C.</p>
-
-<h2 id="sizes" data-short="Sizes">Sizes: large is not the same as variable</h2>
-<p>Expressed as a delay straight up through the whole atmosphere, the four contributions differ a lot in size:</p>
-<div class="stats">
-  <div class="stat"><span class="v">≈ 2.3 <span class="u">m</span></span><span class="k">dry, hydrostatic: by far the largest</span></div>
-  <div class="stat"><span class="v">&lt; 0.3 <span class="u">m</span></span><span class="k">wet: water vapour</span></div>
-  <div class="stat"><span class="v">mm</span><span class="k">cloud liquid water, even under thick cloud</span></div>
-  <div class="stat"><span class="v">small</span><span class="k">ionosphere, at X band (far larger at L band)</span></div>
-</div>
-<p>Interferometry, however, only sees what <b>changes</b> between passes and between points. The dry term is large but smooth and slow; the wet term is smaller but varies much more in space and time, and that is what the radar picks up.</p>
-
-<h2 id="saastamoinen" data-short="Saastamoinen">The Saastamoinen model</h2>
-<p>The standard way to predict the total delay straight up, the <span class="t" data-tip="Zenith total delay: the extra path of a signal coming straight down through the whole atmosphere, split into a hydrostatic (ZHD) and a wet (ZWD) part.">zenith total delay</span>, from weather at the ground alone:</p>
-<p class="eq">ZTD = ZHD + ZWD<br>ZHD = 0.0022768 · P / (1 − 0.00266 cos 2φ − 0.00028 H)<br>ZWD = 0.002277 · (1255 / T + 0.05) · e</p>
-<p>with <i>P</i> and <i>e</i> at the surface in hPa, <i>T</i> in kelvin, latitude φ and station height <i>H</i> in km; the result is in metres. For Rotterdam (φ ≈ 52°, <i>H</i> ≈ 0) and the air set in the calculator: <b>ZHD = <span id="sa-zhd">2.31</span> m</b>, <b>ZWD = <span id="sa-zwd">0.10</span> m</b>, total <b><span id="sa-ztd">2.41</span> m</b>, or <span id="sa-slant">2.62</span> m along a slant path at 23°.</p>
-<p>Saastamoinen does not retrieve a profile. It turns three surface numbers into a column total by <i>assuming</i> how the atmosphere is built above the station. A <span class="t" data-tip="A function of the viewing angle that converts a zenith delay into a slant delay. At 23° from vertical a simple 1 / cos θ is accurate enough.">mapping function</span> then converts the zenith value to the radar's slant path.</p>
-
-<h2 id="temperature" data-short="Temperature">Temperature: two effects, one sign problem</h2>
-<p>When the air between two passes is warmer, two things happen at once to a high point on a building, compared with a point at the street:</p>
-<ol>
-  <li><b>The building expands.</b> Concrete grows by about 10 × 10⁻⁶ per kelvin, so a point 100 m up rises about <b>1 mm per K</b>.</li>
-  <li><b>The air changes its refractivity</b>, which changes the delay on the ray to the low point. Its size is only about a tenth of the expansion, and its sign depends on the humidity.</li>
-</ol>
-
-<h3>Dry case: vapour pressure stays the same</h3>
-<p>Hold <i>P</i> and <i>e</i> fixed and warm the air by 1 K, from 15 to 16 °C at 50 % humidity. <i>N</i> drops by about 1.2. Over 100 m that is 0.12 mm less delay: the low point seems to come up, so the high point seems to go <b>down</b>. This works against the expansion: 1 − 0.12 = 0.88 mm net.</p>
-
-<h3>Wet case: relative humidity stays the same</h3>
-<p>Over days to weeks the vapour pressure rarely stays put. If instead the relative humidity is held at 50 %, the warmer air carries more vapour, because the <span class="t" data-tip="The most water vapour the air can hold at a given temperature. It roughly doubles for every 10 to 11 K of warming.">saturation vapour pressure</span> rises steeply with temperature: <i>e</i> goes from 8.53 to 9.07 hPa. Now <i>N</i> <b>rises</b> by about 1.2 to 1.3: the same size, opposite sign. The air effect reinforces the expansion: 1 + 0.12 = 1.12 mm.</p>
-
-<h3>The real, hybrid case</h3>
-<p>In reality neither <i>e</i> nor the relative humidity stays fixed. Ten years of hourly observations at KNMI station 344, Rotterdam airport, show that temperature explains most of the vapour pressure (<i>e</i> = 0.511 <i>T</i> + 5.262 hPa, <i>R</i>² = 0.715) but little of the relative humidity (<i>R</i>² = 0.272). Most hours fall on the wet side of the boundary below, where warming raises <i>N</i>; a real minority, mostly cold and dry hours, falls on the dry side.</p>
-
-<figure class="th-sens" id="sens">
-  <div class="th-charts">
-    <div class="th-chart"><div class="th-ch-t">N against temperature, at fixed relative humidity</div><div id="ch-nt" class="th-svg"></div></div>
-    <div class="th-chart"><div class="th-ch-t">Does warming raise or lower N? <span class="th-hint">Drag on the map to move the point.</span></div><div id="ch-map" class="th-svg th-drag"></div></div>
-    <div class="th-chart th-wide"><div class="th-ch-t">One degree warmer: apparent rise of a point 40 m up, relative to the street, along the line of sight</div><div id="ch-bars" class="th-svg"></div></div>
-  </div>
-  <noscript><p class="placeholder">The charts need JavaScript. At 15 °C, 1013 hPa and 50 %: one degree of warming moves N by −1.2 with e fixed, +1.2 with relative humidity fixed, and about +1.1 when e follows the Rotterdam average of 0.511 hPa per K.</p></noscript>
-  <figcaption><b>N against temperature:</b> <i>N</i> rises with temperature when the relative humidity is held fixed (solid lines), and falls slowly when the vapour pressure is held fixed (dashed, through the current point). <b>The map:</b> the boundary where the two effects of warming on <i>N</i> cancel at fixed relative humidity; above it the wet effect wins. <b>The bars:</b> for the current air, what one kelvin does to a point 40 m up: the building's expansion against the air in the three cases. Hybrid uses the Rotterdam average d<i>e</i>/d<i>T</i> = 0.511 hPa/K. The point follows the calculator above.</figcaption>
-</figure>
-<p>The practical consequence: <b>the sign and size of the air's contribution cannot be read from the temperature change alone.</b> Separating expansion from air needs the vapour pressure at each pass, from temperature with humidity or dew point. That is the job of the ground weather station in this project.</p>
-
-<h2 id="rotterdam" data-short="Rotterdam's air">Rotterdam's air near the ground</h2>
-<p>KNMI station 344 at Rotterdam airport (51.962° N, 4.447° E, −4.3 m) gives ten years of hourly data, 17 September 2016 to 16 September 2026, <i>n</i> = 87 624 hours:</p>
-<div class="stats">
-  <div class="stat"><span class="v">11.7 <span class="u">± 6.6 °C</span></span><span class="k">temperature, −10.2 to 37.2 °C; enters both terms and sets the saturation pressure</span></div>
-  <div class="stat"><span class="v">79 <span class="u">± 15 %</span></span><span class="k">relative humidity; nearly a third of all hours at 90 to 100 %, close to the North Sea</span></div>
-  <div class="stat"><span class="v">11.2 <span class="u">± 4.0 hPa</span></span><span class="k">vapour pressure: drives the wet term, the most variable part of <i>N</i></span></div>
-  <div class="stat"><span class="v">1015.5 <span class="u">± 10.4 hPa</span></span><span class="k">sea-level pressure, down to 968 hPa in Atlantic storms; smooth and slow</span></div>
-</div>
-
-<h2 id="concepts" data-short="Concepts">Concepts: what has to be assumed</h2>
-
-<h3>One number, a whole profile</h3>
-<p>The radar gives one number per point and pass: a delay summed along the path, already a double difference. We want a profile, <i>N</i>(<i>z</i>), or better <i>P</i>(<i>z</i>), <i>T</i>(<i>z</i>) and <i>e</i>(<i>z</i>). That is an <span class="t" data-tip="Working back from an observed effect to its cause. Here under-determined: one integral fits infinitely many profiles.">inverse problem</span>, and under-determined: one integral fits infinitely many profiles. Every method of this kind, GNSS meteorology and delay models for geodesy included, closes the gap with assumptions about how the atmosphere is built. The question is which assumptions are cheap and which are expensive.</p>
-
-<h3>Pressure: nearly free</h3>
-<p>Pressure follows hydrostatic balance: it falls exponentially with a <span class="t" data-tip="The height over which pressure falls by a factor e (about 2.7). About 8.4 km for air at 15 °C.">scale height</span> of about 8.4 km. Over the lowest 150 m that is almost a straight line, about 1 hPa per 8 to 9 m, whatever the weather. With the calculator's surface pressure: <b><span id="pz-40">1008</span> hPa at 40 m NAP</b> and <b><span id="pz-150">995</span> hPa at 150 m NAP</b>, which by itself lowers <i>N</i> by about <span id="pz-dn">3.7</span> per 100 m. So <i>P</i>(<i>z</i>) is fixed from one ground observation at almost no cost; this is also why Saastamoinen's hydrostatic delay is accurate to millimetres.</p>
-
-<h3>Temperature and moisture: the real unknown</h3>
-<p>Water vapour is not layered so neatly. It is carried, mixed and trapped by turbulence near the ground, and in cities by the layering above roofs and streets. The dry and wet cases above predict opposite signs for the same warming, and Rotterdam's hours fall on both sides. So <i>e</i>(<i>z</i>), or <i>T</i>(<i>z</i>) and humidity together, is the genuinely unresolved part, and it is exactly the part a fixed climatological model cannot supply case by case.</p>
-
-<h3>Is a ground station enough?</h3>
-<p>Saastamoinen and similar surface models map one set of ground values onto the column total, with an assumed decay of <i>N</i> with height fitted to years of balloon soundings. For the dry part this works almost by definition. For the wet part it works only on average: it cannot see tonight's shallow, humid inversion or today's well-mixed layer. A station constrains the total well, but not the vertical distribution. Radar points at many heights on many buildings can add that, not by replacing the station but on top of it, with the station as the starting point and prior.</p>
-
-<h3>The common-mode limitation</h3>
-<p>Every radar observation is a difference in time and in space. Anything in the refractivity that is the same at both passes cancels and can never be recovered, however good the data. The method can only retrieve <b>changes</b> of the vertical structure between passes, or, after <a href="estimation.html">stacking</a> on one mother, relative to an estimated mean; never an absolute profile.</p>
-
-<figure class="diagram th-cm" aria-labelledby="cmcap">
+<p class="eq th-eq-wide">[d(B) − d(A)]<sub>t₂</sub> − [d(B) − d(A)]<sub>t₁</sub> ≈ 10⁻⁶ / cos θ · ∫ ΔN dz  +  what the buildings did  +  noise</p>
+<figcaption id="ddcap">Compare two point heights and two acquisition times. The height-dependent part survives.</figcaption>
+</figure></section></div><div data-choice="common" data-choice-group="geometry-example"><section class="app-card geometry-card"><div class="sim-card-head"><h2>What a shared delay cannot reveal</h2></div><figure aria-labelledby="cmcap" class="diagram th-cm">
 <div class="th-pair">
-<svg viewBox="0 0 340 300" role="img" aria-labelledby="cm1t cm1d" xmlns="http://www.w3.org/2000/svg">
-  <title id="cm1t">The air at two passes</title>
-  <desc id="cm1d">Refractivity against height from 0 to 150 m NAP at the mother pass (grey, about 322 at the ground) and at a later pass (blue, about 329 at the ground, with a moist layer near the ground). Most of N is shared by both.</desc>
-  <text x="12" y="18" class="svg-text" font-weight="600">What the air is: N(z)</text>
-  <g class="th-grid">
-    <line x1="50" y1="250" x2="320" y2="250"/><line x1="50" y1="176.7" x2="320" y2="176.7"/><line x1="50" y1="103.3" x2="320" y2="103.3"/><line x1="50" y1="30" x2="320" y2="30"/>
-    <line x1="140" y1="30" x2="140" y2="250"/><line x1="230" y1="30" x2="230" y2="250"/>
-  </g>
-  <line x1="50" y1="30" x2="50" y2="250" class="th-axis"/><line x1="50" y1="250" x2="320" y2="250" class="th-axis"/>
-  <text x="44" y="254" class="svg-small" text-anchor="end">0</text><text x="44" y="180.7" class="svg-small" text-anchor="end">50</text><text x="44" y="107.3" class="svg-small" text-anchor="end">100</text><text x="44" y="34" class="svg-small" text-anchor="end">150</text>
-  <text x="50" y="266" class="svg-small" text-anchor="middle">305</text><text x="140" y="266" class="svg-small" text-anchor="middle">315</text><text x="230" y="266" class="svg-small" text-anchor="middle">325</text><text x="320" y="266" class="svg-small" text-anchor="end">335</text>
-  <text x="185" y="286" class="svg-small" text-anchor="middle">N</text>
-  <text x="14" y="140" class="svg-small" text-anchor="middle" transform="rotate(-90 14 140)">m NAP</text>
-  <polyline points="203,250 199.4,220.7 194.9,191.3 190.4,162 185,132.7 179.6,103.3 174.2,74 168.8,44.7 166.1,30" fill="none" stroke="#9a9a9a" stroke-width="2"/>
-  <polyline points="266,250 261.5,220.7 248,191.3 225.5,162 207.5,132.7 195.8,103.3 185.9,74 176.9,44.7 172.4,30" fill="none" stroke="var(--accent)" stroke-width="2"/>
-  <text x="150" y="60" class="svg-small" text-anchor="end">mother</text>
-  <text x="216" y="110" class="svg-small" fill="var(--accent)">later pass</text>
+<svg aria-labelledby="cm1t cm1d" role="img" viewbox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">
+<title id="cm1t">The air at two passes</title>
+<desc id="cm1d">Refractivity against height from 0 to 150 m NAP at the mother pass (grey, about 322 at the ground) and at a later pass (blue, about 329 at the ground, with a moist layer near the ground). Most of N is shared by both.</desc>
+<text class="svg-text" font-weight="600" x="12" y="18">What the air is: N(z)</text>
+<g class="th-grid">
+<line x1="50" x2="320" y1="250" y2="250"></line><line x1="50" x2="320" y1="176.7" y2="176.7"></line><line x1="50" x2="320" y1="103.3" y2="103.3"></line><line x1="50" x2="320" y1="30" y2="30"></line>
+<line x1="140" x2="140" y1="30" y2="250"></line><line x1="230" x2="230" y1="30" y2="250"></line>
+</g>
+<line class="th-axis" x1="50" x2="50" y1="30" y2="250"></line><line class="th-axis" x1="50" x2="320" y1="250" y2="250"></line>
+<text class="svg-small" text-anchor="end" x="44" y="254">0</text><text class="svg-small" text-anchor="end" x="44" y="180.7">50</text><text class="svg-small" text-anchor="end" x="44" y="107.3">100</text><text class="svg-small" text-anchor="end" x="44" y="34">150</text>
+<text class="svg-small" text-anchor="middle" x="50" y="266">305</text><text class="svg-small" text-anchor="middle" x="140" y="266">315</text><text class="svg-small" text-anchor="middle" x="230" y="266">325</text><text class="svg-small" text-anchor="end" x="320" y="266">335</text>
+<text class="svg-small" text-anchor="middle" x="185" y="286">N</text>
+<text class="svg-small" text-anchor="middle" transform="rotate(-90 14 140)" x="14" y="140">m NAP</text>
+<polyline fill="none" points="203,250 199.4,220.7 194.9,191.3 190.4,162 185,132.7 179.6,103.3 174.2,74 168.8,44.7 166.1,30" stroke="#9a9a9a" stroke-width="2"></polyline>
+<polyline fill="none" points="266,250 261.5,220.7 248,191.3 225.5,162 207.5,132.7 195.8,103.3 185.9,74 176.9,44.7 172.4,30" stroke="var(--accent)" stroke-width="2"></polyline>
+<text class="svg-small" text-anchor="end" x="150" y="60">mother</text>
+<text class="svg-small" fill="var(--accent)" x="216" y="110">later pass</text>
 </svg>
-<svg viewBox="0 0 340 300" role="img" aria-labelledby="cm2t cm2d" xmlns="http://www.w3.org/2000/svg">
-  <title id="cm2t">What the radar can recover</title>
-  <desc id="cm2d">The difference of the two profiles, delta N against height, about 7 at the ground and under 1 at 150 m, and its averages over the layers 0 to 40, 40 to 80 and 80 to 120 m NAP as bars.</desc>
-  <text x="12" y="18" class="svg-text" font-weight="600">What the radar can recover: ΔN per layer</text>
-  <g class="th-grid">
-    <line x1="50" y1="250" x2="320" y2="250"/><line x1="50" y1="176.7" x2="320" y2="176.7"/><line x1="50" y1="103.3" x2="320" y2="103.3"/><line x1="50" y1="30" x2="320" y2="30"/>
-    <line x1="185" y1="30" x2="185" y2="250"/><line x1="320" y1="30" x2="320" y2="250"/>
-  </g>
-  <rect x="50" y="191.3" width="178.2" height="58.7" class="th-bar-l"/>
-  <rect x="50" y="132.7" width="110.7" height="58.6" class="th-bar-l"/>
-  <rect x="50" y="74" width="50.4" height="58.7" class="th-bar-l"/>
-  <line x1="50" y1="30" x2="50" y2="250" class="th-axis"/><line x1="50" y1="250" x2="320" y2="250" class="th-axis"/>
-  <polyline points="239,250 236.3,220.7 209.3,191.3 155.3,162 117.5,132.7 98.6,103.3 85.1,74 74.3,44.7 68.9,30" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4"/>
-  <text x="44" y="254" class="svg-small" text-anchor="end">0</text><text x="44" y="180.7" class="svg-small" text-anchor="end">50</text><text x="44" y="107.3" class="svg-small" text-anchor="end">100</text><text x="44" y="34" class="svg-small" text-anchor="end">150</text>
-  <text x="50" y="266" class="svg-small" text-anchor="middle">0</text><text x="185" y="266" class="svg-small" text-anchor="middle">5</text><text x="320" y="266" class="svg-small" text-anchor="end">10</text>
-  <text x="185" y="286" class="svg-small" text-anchor="middle">ΔN, later pass minus mother</text>
-  <text x="14" y="140" class="svg-small" text-anchor="middle" transform="rotate(-90 14 140)">m NAP</text>
-  <text x="314" y="224" class="svg-small" text-anchor="end">0 to 40 m</text>
-  <text x="314" y="166" class="svg-small" text-anchor="end">40 to 80 m</text>
-  <text x="314" y="107" class="svg-small" text-anchor="end">80 to 120 m</text>
-  <text x="96" y="52" class="svg-small">the about 320 that both</text>
-  <text x="96" y="65" class="svg-small">passes share is gone</text>
+<svg aria-labelledby="cm2t cm2d" role="img" viewbox="0 0 340 300" xmlns="http://www.w3.org/2000/svg">
+<title id="cm2t">What the radar can recover</title>
+<desc id="cm2d">The difference of the two profiles, delta N against height, about 7 at the ground and under 1 at 150 m, and its averages over the layers 0 to 40, 40 to 80 and 80 to 120 m NAP as bars.</desc>
+<text class="svg-text" font-weight="600" x="12" y="18">What the radar can recover: ΔN per layer</text>
+<g class="th-grid">
+<line x1="50" x2="320" y1="250" y2="250"></line><line x1="50" x2="320" y1="176.7" y2="176.7"></line><line x1="50" x2="320" y1="103.3" y2="103.3"></line><line x1="50" x2="320" y1="30" y2="30"></line>
+<line x1="185" x2="185" y1="30" y2="250"></line><line x1="320" x2="320" y1="30" y2="250"></line>
+</g>
+<rect class="th-bar-l" height="58.7" width="178.2" x="50" y="191.3"></rect>
+<rect class="th-bar-l" height="58.6" width="110.7" x="50" y="132.7"></rect>
+<rect class="th-bar-l" height="58.7" width="50.4" x="50" y="74"></rect>
+<line class="th-axis" x1="50" x2="50" y1="30" y2="250"></line><line class="th-axis" x1="50" x2="320" y1="250" y2="250"></line>
+<polyline fill="none" points="239,250 236.3,220.7 209.3,191.3 155.3,162 117.5,132.7 98.6,103.3 85.1,74 74.3,44.7 68.9,30" stroke="var(--accent)" stroke-dasharray="5 4" stroke-width="1.6"></polyline>
+<text class="svg-small" text-anchor="end" x="44" y="254">0</text><text class="svg-small" text-anchor="end" x="44" y="180.7">50</text><text class="svg-small" text-anchor="end" x="44" y="107.3">100</text><text class="svg-small" text-anchor="end" x="44" y="34">150</text>
+<text class="svg-small" text-anchor="middle" x="50" y="266">0</text><text class="svg-small" text-anchor="middle" x="185" y="266">5</text><text class="svg-small" text-anchor="end" x="320" y="266">10</text>
+<text class="svg-small" text-anchor="middle" x="185" y="286">ΔN, later pass minus mother</text>
+<text class="svg-small" text-anchor="middle" transform="rotate(-90 14 140)" x="14" y="140">m NAP</text>
+<text class="svg-small" text-anchor="end" x="314" y="224">0 to 40 m</text>
+<text class="svg-small" text-anchor="end" x="314" y="166">40 to 80 m</text>
+<text class="svg-small" text-anchor="end" x="314" y="107">80 to 120 m</text>
+<text class="svg-small" x="96" y="52">the about 320 that both</text>
+<text class="svg-small" x="96" y="65">passes share is gone</text>
 </svg>
 </div>
-<figcaption id="cmcap">The common-mode limitation, with illustrative numbers. <b>The profiles:</b> the profile of the air at the mother pass and at a later pass. <b>The layers:</b> all the radar can ever deliver is the change between them, averaged over layers (bars); the absolute level of about 320 never enters the measurement. The site's 40 m layers are the ones the <a href="estimation.html">estimation</a> uses.</figcaption>
-</figure>
-
-<footer data-shared></footer>
+<figcaption id="cmcap">A delay shared by both points cancels. An absolute profile needs additional assumptions.</figcaption>
+</figure></section></div></section><section aria-labelledby="tab-assumptions" class="site-view" data-site-view="assumptions" id="assumptions" role="tabpanel"><span class="section-anchor" id="concepts"></span><span class="section-anchor" id="rotterdam"></span><div class="site-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="layers"></i>Pressure from the ground</h2></div><p>Pressure follows hydrostatic balance: it falls exponentially with a <span class="t" data-tip="The height over which pressure falls by a factor e (about 2.7). About 8.4 km for air at 15 °C.">scale height</span> of about 8.4 km. Over the lowest 150 m that is almost a straight line, about 1 hPa per 8 to 9 m, whatever the weather. With the calculator's surface pressure: <b><span id="pz-40">1008</span> hPa at 40 m NAP</b> and <b><span id="pz-150">995</span> hPa at 150 m NAP</b>, which by itself lowers <i>N</i> by about <span id="pz-dn">3.7</span> per 100 m. So <i>P</i>(<i>z</i>) is fixed from one ground observation at almost no cost; this is also why Saastamoinen's hydrostatic delay is accurate to millimetres.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="split"></i>N is not three independent measurements</h2></div><p>Pressure, temperature and vapour all affect refractivity. A single radar-derived N cannot independently identify all three.</p><p>P and T profiles use surface observations and prescribed physics; the derived vapour pressure is conditional on those assumptions.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="target"></i>The common-mode limit</h2></div><p>A contribution shared by both radar points cancels in the height contrast. The ground reference sets the zero; it does not measure an absolute atmosphere.</p><p class="site-boundary">A profile measurement over the city is needed to validate the vertical retrieval.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="wave"></i>Delay through a whole atmosphere<button aria-label="About Delay through a whole atmosphere" class="t i tip-trigger" data-tip="Saastamoinen separates hydrostatic and wet zenith delay. These whole-column values should not be confused with the small height contrast between building points." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>with <i>P</i> and <i>e</i> at the surface in hPa, <i>T</i> in kelvin, latitude φ and station height <i>H</i> in km; the result is in metres. For Rotterdam (φ ≈ 52°, <i>H</i> ≈ 0) and the air set in the calculator: <b>ZHD = <span id="sa-zhd">2.31</span> m</b>, <b>ZWD = <span id="sa-zwd">0.10</span> m</b>, total <b><span id="sa-ztd">2.41</span> m</b>, or <span id="sa-slant">2.62</span> m along a slant path at 23°.</p></section></div></section>
 </main></div>
-<script defer src="js/nav.js?v=20261013g"></script>
-<script defer src="js/icons.js?v=20261013a"></script>
-<script defer src="js/theory.js?v=20261013a"></script>
-</body>
-</html>
+<script defer="" src="js/nav.js?v=20261101b"></script>
+<script defer="" src="js/icons.js?v=20261101b"></script>
+<script defer="" src="js/site-layout.js?v=20261101b"></script>
+<script defer="" src="js/theory.js?v=20261101b"></script>
+</body></html>

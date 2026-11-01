@@ -1,66 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Estimation · Virtual Radiosonde</title>
-<meta name="description" content="How the radar measurements of building points are turned into the refractivity of the air per height layer, one profile per satellite pass: the method, the test on the simulation and the first results on the real data.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261101">
-</head>
-<body>
+<meta content="Separate building motion from the height-dependent air signal." name="description"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="favicon.ico" rel="icon" sizes="any"/>
+<link href="apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css?v=20261101b" rel="stylesheet"/>
+<link href="css/workspace.css?v=20261101b" rel="stylesheet"/></head>
+<body class="app-page site-page" data-workspace="estimation">
 <header class="top"><div class="top-inner">
-  <a class="brand" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
-      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
-      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
-    </svg>
+<a class="brand" href="index.html">
+<svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
+<rect height="13" rx="1" stroke="currentColor" stroke-width="1.6" width="7" x="3" y="8"></rect>
+<rect height="6" opacity=".45" rx="1" stroke="currentColor" stroke-width="1.6" width="7.5" x="13.5" y="15"></rect>
+<path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-dasharray="2.6 2.6" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="10" cy="11" fill="#a8433b" r="1.9"></circle>
+</svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+<noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
-<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
-<h1>Estimation: from radar points to an air profile</h1>
-<p class="lead">A higher radar point looks through more near-surface air. The estimation separates the height-dependent atmospheric contribution from building motion, then estimates refractivity in layers on each satellite pass.</p>
-<p class="asof">Method and results aligned with the report source of 31 October 2026. Home, Results and the simulator read the same aggregate export.</p>
-<h2 id="short" data-short="Report run">The report run</h2>
-<section data-report-summary aria-live="polite"><p>Loading the report run...</p></section>
-<h2 id="chain" data-short="The steps">The estimation steps</h2>
-<ol><li>Assign radar points to the 3DBAG buildings and choose shared ground reference points.</li>
-<li>Model sinking, height-dependent shrinking and thermal expansion. Use hourly station temperature with an exponential 72 h building-temperature memory.</li>
-<li>Fit the remaining height contrast as refractivity in the selected layers. Each layer needs at least 100 points.</li>
-<li>Compare the estimated anomalies with simulated truth or, on the real data, the station-based proxy.</li></ol>
-<h2 id="buildings" data-short="Buildings and air">Separating buildings and air</h2>
-<p>Both thermal expansion and the air can track temperature. A building correction can therefore remove part of the atmosphere too. The report's default fits motion per building without an air prior; the per-scatterer fit and station-based air prior are comparisons. The prior carries the station anomaly into the retrieval and must not be treated as independent agreement with that station.</p>
-<h2 id="mother" data-short="The first pass">The reference and the missing zero</h2>
-<p>Radar differences do not give an absolute air profile on the first pass. The shared ground reference sets the zero, and calibration supplies the mean profile. The pass-to-pass anomaly and its height contrast are distinct from that chosen absolute level.</p>
-<h2 id="sim-model" data-short="Simulation">A simulation with known truth</h2>
-<h3 id="sim-why">Why simulate</h3><p>The real scene has no collocated vertical truth. The simulation tests the same estimation against an atmosphere whose refractivity is known.</p>
-<h3 id="sim-chain">From atmosphere to radar</h3><p>The forward model constructs pressure, temperature and vapour, computes refractivity and path delay, samples it at radar points, then adds sinking, shrinking, thermal expansion, cross-range error and constant Gaussian noise before differencing. The experimental amplitude-noise model remains separate.</p>
-<h3 id="sim-checks">Frozen samples</h3><p>The report uses 213 radar-date model epochs, 361 selected sounding epochs and 116 Cabauw mornings. Their original input products are frozen; the newer corrected weather archive is not silently substituted.</p>
-<h3 id="sim-simulator">Try the same cases</h3><p>The <a href="simulator.html">simulator</a> exposes atmospheres, disturbances, point counts, motion models and layer choices. Its real-data mode reads the same report export shown here.</p>
-<h3 id="sim-limits">Simulation limits</h3><p>The constructed city and disturbance model are controlled experiments. Success there does not establish vertical accuracy over Rotterdam.</p>
-<h2 id="simulation" data-short="Simulation tests">What was reproduced</h2>
-<p>The frozen real run and twelve report simulation cases were regenerated from committed source. All 867,805 compared numeric values match the published export exactly. This covers both motion models and four layer choices in those cases; it does not claim a rerun of the entire exploratory grid. Preserved optional per-pass vapour arrays are identified separately in the private release manifest.</p>
-<h2 id="ideal" data-short="Ideal tests">Start with the ideal case</h2>
-<p>The retained ideal fixtures test the atmosphere-to-radar and radar-to-profile chain without the full disturbance set. Add disturbances in the simulator to inspect where recovery changes.</p>
-<h2 id="real" data-short="Real data">Read the real-data comparison</h2>
-<p>The <a href="results.html">Results page</a> compares the report variants and plots the same per-pass anomalies. The default is two layers, motion per building and no air prior. Correlation with a ground station is a boundary check, not a measured validation of the upper layer.</p>
-<h2 id="choices" data-short="Choices">Choices that matter</h2>
-<p>Layer boundaries, point counts, reference selection, the thermal-memory assumption and the motion model affect the recovered profile. Keep those settings with every result. P and T are carried upward from surface observations; radar-derived N does not independently measure all of P, T and vapour.</p>
-<h2 id="limits" data-short="Limits">What remains unresolved</h2>
-<p>Collocated air profiles on pass dates are still needed to validate vertical accuracy. Building-wide errors and temperature-correlated atmosphere can survive the fit. Station-prior results reuse station information, and a single correlation cannot establish retrieval skill.</p>
-<h2 id="pilot" data-short="Earlier work">Earlier experiments</h2>
-<p>The October 12-13 summaries used a different point selection, layer top and daily-temperature lag. They are superseded here by the report run. Their code and exports remain recoverable in repository history; they are not a second current result presentation.</p>
-<h2 id="reproduce" data-short="Reproduce">Reproduce</h2>
-<p>The private analysis repository contains <code>04_python/estimation/site_real_sim.py</code> and <code>site_simulator.py</code>. The private data release <code>report-2026-10-31</code> pins inputs, products, source revisions and SHA256 hashes. Use <code>fetch_report.py</code> from <code>vrs-data</code> to verify or restore it. Course-restricted radar points remain private; this site publishes aggregates only.</p>
-<footer data-shared></footer>
+<div class="app site-app">
+<aside class="app-panel sim-panel site-panel">
+<div class="sim-head"><span class="sim-head-ic" data-icon="fork"></span><div><h1>Estimation</h1><p class="app-intro">Separate building motion from the height-dependent air signal.</p></div></div>
+<div class="site-context"><h2>Report settings</h2><dl><div><dt>Motion</dt><dd>Per building</dd></div><div><dt>Air prior</dt><dd>None</dd></div><div><dt>Temperature memory</dt><dd>72 h <button aria-label="About temperature memory" class="t i tip-trigger" data-tip="An hourly observation 72 h old has 1/e of the current observation's weight. The source uses a six-time-constant lookback window." type="button"><span aria-hidden="true" class="info">i</span></button></dd></div></dl></div><a class="site-primary" href="simulator.html"><i data-icon="play"></i>Test the method</a>
+<footer class="site-foot"><a href="index.html#about">Sources &amp; team</a><span>·</span><a href="https://github.com/vrs-tudelft">GitHub</a></footer>
+</aside>
+<main class="app-main site-main">
+<div aria-label="Estimation views" class="sim-tabs site-tabs" role="tablist"><button aria-controls="method" data-site-tab="method" id="tab-method" role="tab" type="button"><i data-icon="fork"></i>The steps</button><button aria-controls="tests" data-site-tab="tests" id="tab-tests" role="tab" type="button"><i data-icon="chart"></i>Report tests</button><button aria-controls="limits" data-site-tab="limits" id="tab-limits" role="tab" type="button"><i data-icon="info"></i>Limits &amp; sources</button></div>
+<section aria-labelledby="tab-method" class="site-view" data-site-view="method" id="method" role="tabpanel"><span class="section-anchor" id="mother"></span><span class="section-anchor" id="buildings"></span><span class="section-anchor" id="chain"></span><span class="section-anchor" id="short"></span><div class="site-grid method-grid"><section class="app-card method-schematic"><div class="sim-card-head"><h2>From height contrast to layers</h2></div>
+<div class="site-scene-frame"><svg aria-label="Schematic: fit building movement before interpreting the remaining height contrast as refractivity in two layers. These are not measured vertical truth." role="img" viewbox="0 0 620 480" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#fbfaf7" height="385" rx="12" width="560" x="30" y="32"></rect>
+<rect fill="#eaf1f5" height="240" stroke="#9cc3d6" width="135" x="395" y="64"></rect><rect fill="#fcf2df" height="82" stroke="#d5b36f" width="135" x="395" y="304"></rect>
+<path d="M74 386H552M74 304H552M74 64H552" stroke="#cdc9be" stroke-dasharray="4 5"></path>
+<path d="M104 386V94h64v292M210 386V214h64v172" fill="#fff" stroke="#3c4249" stroke-width="2"></path>
+<g fill="#15688f"><circle cx="121" cy="119" r="5"></circle><circle cx="145" cy="164" r="5"></circle><circle cx="126" cy="258" r="5"></circle><circle cx="230" cy="238" r="5"></circle><circle cx="249" cy="342" r="5"></circle></g>
+<path d="M294 224H368m-10-8 10 8-10 8" fill="none" stroke="#15688f" stroke-width="2.5"></path>
+<g fill="#3c4249" font-family="system-ui,sans-serif" font-size="16"><text x="80" y="443">Radar-point heights</text><text x="406" y="443">Layer estimates</text><text x="418" y="183">Layer 2</text><text x="418" y="352">Layer 1</text><text data-report-value="edge2" x="37" y="52">148</text><text data-report-value="edge1" x="32" y="297">43.2</text><text data-report-value="edge0" x="39" y="408">3.2</text><text x="38" y="25">m NAP</text></g>
+</svg></div><p class="site-boundary">Schematic only. The real vertical profile remains unvalidated.</p></section><div class="method-steps"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="fork"></i>1. Reference<button aria-label="About 1. Reference" class="t i tip-trigger" data-tip="The 499 shared ground reference points set the zero; the radar does not supply an absolute atmospheric profile." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>Tie every pass to the shared ground points.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="fork"></i>2. Motion<button aria-label="About 2. Motion" class="t i tip-trigger" data-tip="The default fits motion per building. The 72 h exponential memory of hourly temperature drives thermal dilation." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>Fit sinking, shrinking and thermal dilation.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="fork"></i>3. Layers<button aria-label="About 3. Layers" class="t i tip-trigger" data-tip="The report default uses 3.2–43.2 and 43.2–148 m NAP; other layer choices are available in Results." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>Fit the remaining height-dependent signal.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="fork"></i>4. Comparison<button aria-label="About 4. Comparison" class="t i tip-trigger" data-tip="Only the controlled simulation has known truth. In the real scene, the station is a boundary comparison." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>Compare against simulated truth or a station proxy.</p></section></div></div></section><section aria-labelledby="tab-tests" class="site-view" data-site-view="tests" id="tests" role="tabpanel"><span class="section-anchor" id="real"></span><span class="section-anchor" id="ideal"></span><span class="section-anchor" id="simulation"></span><span class="section-anchor" id="sim-limits"></span><span class="section-anchor" id="sim-simulator"></span><span class="section-anchor" id="sim-checks"></span><span class="section-anchor" id="sim-chain"></span><span class="section-anchor" id="sim-why"></span><span class="section-anchor" id="sim-model"></span><div class="site-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="flask"></i>Controlled tests<button aria-label="About Controlled tests" class="t i tip-trigger" data-tip="These are the report's frozen atmosphere samples. They are not the full source-archive counts, and newer corrected weather products are not interchangeable inputs." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><dl class="site-list"><div><dt>KNMI-built air</dt><dd>213 radar-date epochs</dd></div><div><dt>Soundings</dt><dd>361 selected launches</dd></div><div><dt>Cabauw</dt><dd>116 mornings</dd></div></dl><p>Choose a disturbance and inspect its effect in the <a href="simulator.html">simulator</a>.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="chart"></i>Real-data comparison</h2></div><div data-report-summary=""></div></section></div></section><section aria-labelledby="tab-limits" class="site-view" data-site-view="limits" id="limits" role="tabpanel"><span class="section-anchor" id="reproduce"></span><span class="section-anchor" id="pilot"></span><span class="section-anchor" id="choices"></span><div class="site-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="sun"></i>Temperature can imitate air</h2></div><p>The building and the atmosphere can both track temperature and height. A building correction can remove real atmospheric variation or leave a thermal residual.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="target"></i>No collocated vertical truth</h2></div><p>Station agreement is a boundary check. Neither an air prior nor a weather-model column establishes a measured validation of the urban profile.</p></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="table"></i>Reproduce the report<button aria-label="About Reproduce the report" class="t i tip-trigger" data-tip="The private report-2026-10-31 release pins source revisions and SHA256. The real run and twelve simulation cases match all 867,805 compared numeric values; the full exploratory grid is preserved, not claimed to have been rerun." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>The analysis and exact input/output bundle are preserved in the private project repositories. Only aggregate products are public here.</p><p><a href="data.html#rule">Public-data policy</a></p></section></div></section>
 </main></div>
-<script defer src="js/nav.js?v=20261013g"></script>
-<script defer src="js/report.js?v=20261101"></script>
+<script defer="" src="js/nav.js?v=20261101b"></script>
+<script defer="" src="js/icons.js?v=20261101b"></script>
+<script defer="" src="js/site-layout.js?v=20261101b"></script>
+<script defer="" src="js/report.js?v=20261101b"></script>
 </body></html>

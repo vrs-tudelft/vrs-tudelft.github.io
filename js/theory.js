@@ -91,7 +91,7 @@
 
   /* ------------------------------------------------------------ chart 1: N against T */
   function chartNT(el, p, t, e) {
-    var w = width(el), H = 260, m = { l: 40, r: 44, t: 10, b: 34 };
+    var w = width(el), H = 235, m = { l: 40, r: 44, t: 10, b: 34 };
     var T0 = -10, T1 = 35, xs = lin(T0, T1, m.l, w - m.r);
     var curves = RH_LINES.map(function (c) {
       var pts = [];
@@ -127,7 +127,7 @@
   /* ------------------------------------------------------------ chart 2: the sign map in (T, RH) */
   var mapGeo = null;
   function chartMap(el, p, t, e) {
-    var w = width(el), H = 260, m = { l: 40, r: 14, t: 10, b: 34 };
+    var w = width(el), H = 235, m = { l: 40, r: 14, t: 10, b: 34 };
     var T0 = -10, T1 = 35, xs = lin(T0, T1, m.l, w - m.r), ys = lin(0, 100, H - m.b, m.t);
     mapGeo = { xs: lin(m.l, w - m.r, T0, T1), ys: lin(H - m.b, m.t, 0, 100), w: w };
     var b = [];
@@ -307,4 +307,5 @@
   });
 
   setAll(PRESETS.std);
+  document.addEventListener('site:viewchange',charts);
 })();

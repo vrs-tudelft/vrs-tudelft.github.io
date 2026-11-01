@@ -1,124 +1,69 @@
-/* Header, on-page section nav with scroll-spy, footer, and tooltips on touch. */
+/* Shared navigation and viewport-safe, keyboard/touch tooltips. */
 (function () {
-  /* the story of the report: introduction, theory, methodology (overview, end-to-end simulation,
-     estimation, the buildings' functional model), results, and the data as appendix. The method's
-     chapters share one top tab and get their own row of sub-tabs. */
-  var pages = [
-    { href: "index.html", label: "Home" },
-    { href: "theory.html", label: "Theory" },
-    { href: "overview.html", label: "Method", sub: [
-      { href: "overview.html", label: "Overview" },
-      { href: "simulator.html", label: "Simulator" },
-      { href: "estimation.html", label: "Estimation" },
-      { href: "buildings.html", label: "Buildings", also: ["animations.html"], in3d: true }
-    ] },
-    { href: "results.html", label: "Results" },
-    { href: "data.html", label: "Data" }
+  "use strict";
+  var pages=[
+    {href: "index.html",label:"Home"},
+    {href: "simulator.html",label:"Simulator"},
+    {href: "results.html",label:"Results"},
+    {href: "overview.html",label:"Method",sub:[
+      {href: "overview.html",label:"Workflow"},{href: "estimation.html",label:"Estimation"},
+      {href: "buildings.html",label:"Buildings",also:["animations.html"],in3d:true},
+      {href: "theory.html",label:"Theory"}
+    ]},
+    {href: "data.html",label:"Data"}
   ];
-  var root = document.documentElement.getAttribute("data-root") || "";
-  var here = location.pathname.replace(/\/+$/, "").split("/").pop() || "index.html";
-  var in3d = document.documentElement.hasAttribute("data-3d");
-  function isHere(p) { return p.in3d && in3d ? true : !in3d && (p.href === here || (p.also || []).indexOf(here) >= 0); }
-  function link(p, cur) {
-    var a = document.createElement("a");
-    a.href = root + p.href;
-    a.textContent = p.label;
-    if (cur) a.setAttribute("aria-current", "page");
-    return a;
+  var root=document.documentElement.getAttribute('data-root')||'';
+  var here=location.pathname.replace(/\/+$/,'').split('/').pop()||'index.html';
+  var in3d=document.documentElement.hasAttribute('data-3d');
+  function current(p){return p.in3d&&in3d?true:!in3d&&(p.href===here||(p.also||[]).indexOf(here)>=0);}
+  function link(p,on){var a=document.createElement('a');a.href=root+p.href;a.textContent=p.label;if(on)a.setAttribute('aria-current','page');return a;}
+  var header=document.querySelector('header.top .top-inner');
+  if(header){
+    header.querySelectorAll('nav,noscript').forEach(function(n){n.remove();});
+    document.documentElement.classList.remove('has-subnav');
+    var nav=document.createElement('nav');nav.setAttribute('aria-label','Site');
+    pages.forEach(function(p){
+      if(!p.sub){nav.appendChild(link(p,current(p)));return;}
+      var menu=document.createElement('details');menu.className='site-menu';
+      var summary=document.createElement('summary');summary.textContent=p.label;
+      if(p.sub.some(current))summary.setAttribute('aria-current','page');
+      menu.appendChild(summary);
+      var items=document.createElement('div');items.className='site-menu-items';
+      p.sub.forEach(function(child){items.appendChild(link(child,current(child)));});menu.appendChild(items);nav.appendChild(menu);
+    });header.appendChild(nav);
+    document.addEventListener('click',function(e){nav.querySelectorAll('details[open]').forEach(function(d){if(!d.contains(e.target))d.open=false;});});
   }
-
-  /* ---- header: main tabs right; on a method page its sub-tabs next to the brand ---- */
-  var inner = document.querySelector("header.top .top-inner");
-  if (inner) {
-    var old = inner.querySelector("nav"); if (old) old.remove();
-    var ns = inner.querySelector("noscript"); if (ns) ns.remove();
-    var nav = document.createElement("nav");
-    nav.setAttribute("aria-label", "Site");
-    var subOf = null;
-    pages.forEach(function (p) {
-      var cur = p.sub ? p.sub.some(isHere) : isHere(p);
-      if (p.sub && cur) subOf = p;
-      nav.appendChild(link(p, cur));
-    });
-    if (subOf) {
-      var sub = document.createElement("nav");
-      sub.className = "subnav";
-      sub.setAttribute("aria-label", subOf.label);
-      subOf.sub.forEach(function (p) { sub.appendChild(link(p, isHere(p))); });
-      inner.appendChild(sub);
-      document.documentElement.classList.add("has-subnav");
-    }
-    inner.appendChild(nav);
+  var footer=document.querySelector('footer[data-shared]');
+  if(footer&&!footer.innerHTML.trim())footer.innerHTML='<p>Virtual Radiosonde · TU Delft · <a href="'+root+'index.html#about">Sources & licences</a> · <a href="https://github.com/vrs-tudelft">GitHub</a></p>';
+  var bubble=document.createElement('div');bubble.id='site-tooltip';bubble.className='site-tooltip';bubble.role='tooltip';bubble.hidden=true;document.body.appendChild(bubble);
+  document.documentElement.classList.add('has-portal-tooltips');
+  var active=null,timer;
+  function hide(){clearTimeout(timer);if(active){active.dataset.tipPinned='false';active.classList.remove('open');active.setAttribute('aria-expanded','false');var old=(active.getAttribute('aria-describedby')||'').split(/\s+/).filter(function(x){return x&&x!=='site-tooltip';});if(old.length)active.setAttribute('aria-describedby',old.join(' '));else active.removeAttribute('aria-describedby');}active=null;bubble.hidden=true;}
+  function place(){
+    if(!active)return;
+    var r=active.getBoundingClientRect(),pad=12;
+    bubble.style.maxWidth=Math.min(340,innerWidth-pad*2)+'px';bubble.style.maxHeight=Math.max(120,innerHeight-pad*2)+'px';
+    var b=bubble.getBoundingClientRect();
+    var left=Math.max(pad,Math.min(innerWidth-b.width-pad,r.left+r.width/2-b.width/2));
+    var top=r.bottom+8;
+    if(top+b.height>innerHeight-pad&&r.top-b.height-8>=pad)top=r.top-b.height-8;
+    top=Math.max(pad,Math.min(top,innerHeight-b.height-pad));
+    bubble.style.left=left+'px';bubble.style.top=top+'px';
   }
-
-  /* ---- on-page section nav, built from the h2 headings ---- */
-  var side = document.querySelector("nav.side");
-  var heads = [].slice.call(document.querySelectorAll("main h2[id]"));
-  if (side && heads.length > 1) {
-    heads.forEach(function (h) {
-      var a = document.createElement("a");
-      a.href = "#" + h.id;
-      a.textContent = h.getAttribute("data-short") || h.textContent;
-      side.appendChild(a);
-    });
-    var links = {};
-    [].slice.call(side.children).forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
-    var current = null;
-    function mark(id) {
-      if (id === current) return;
-      current = id;
-      for (var k in links) links[k].classList.toggle("on", k === id);
-    }
-    var ticking = false;
-    function spy() {
-      var best = null;
-      heads.forEach(function (h) { if (h.getBoundingClientRect().top <= 140) best = h.id; });
-      mark(best || heads[0].id);
-    }
-    window.addEventListener("scroll", function () {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(function () { ticking = false; spy(); });
-    }, { passive: true });
-    spy();
-  } else if (side) {
-    side.remove();
+  function show(t){
+    clearTimeout(timer);var text=t.getAttribute('data-tip');if(!text)return;
+    if(active!==t)hide();active=t;bubble.textContent=text;bubble.hidden=false;
+    t.classList.add('open');t.setAttribute('aria-expanded','true');
+    var ids=(t.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);if(ids.indexOf('site-tooltip')<0)ids.push('site-tooltip');t.setAttribute('aria-describedby',ids.join(' '));place();
   }
-
-  /* ---- footer ---- */
-  var footer = document.querySelector("footer[data-shared]");
-  if (footer && !footer.innerHTML.trim()) {
-    footer.innerHTML =
-      "<p>Virtual Radiosonde, a student team project of the course Applied Space Geodesy, TU Delft, 2026. " +
-      "Radar: two TerraSAR-X point sets provided for the course by R.F. Hanssen; the point data is not public and nothing on this site is a single point. " +
-      "Weather and soundings: KNMI (CC BY 4.0), NOAA IGRA2, ICOS (CC BY 4.0). Buildings: BAG via PDOK (CC0), 3DBAG (CC BY 4.0). " +
-      "Work in progress; nothing here is a validated result unless it says so. " +
-      "<a href=\"" + root + "index.html#about\">About and licences</a> · <a href=\"https://github.com/vrs-tudelft\">GitHub</a></p>";
-  }
-
-  /* ---- tooltips: hover and focus are CSS; a tap toggles ---- */
-  document.addEventListener("click", function (e) {
-    var t = e.target.closest ? e.target.closest(".t") : null;
-    document.querySelectorAll(".t.open").forEach(function (o) { if (o !== t) o.classList.remove("open"); });
-    if (t) { t.classList.toggle("open"); }
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") document.querySelectorAll(".t.open").forEach(function (o) { o.classList.remove("open"); });
-  });
-  /* keep a tooltip inside the window: flip it to the left or right edge when needed */
-  function place(t) {
-    t.classList.remove("left", "right");
-    /* inside a scrolling panel (the simulator) the panel's edges count, not the window's */
-    var box = t.closest(".app-panel"), lo = 0, hi = innerWidth;
-    if (box) { var b = box.getBoundingClientRect(); lo = b.left; hi = b.right; }
-    var r = t.getBoundingClientRect(), w = Math.min(box ? 270 : 330, (hi - lo) * 0.76);
-    if (r.left + r.width / 2 - w / 2 < lo + 12) t.classList.add("left");
-    else if (r.left + r.width / 2 + w / 2 > hi - 12) t.classList.add("right");
-  }
-  document.querySelectorAll(".t").forEach(function (t) {
-    if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "0");
-    t.addEventListener("pointerenter", function () { place(t); });
-    t.addEventListener("focus", function () { place(t); });
-    t.addEventListener("click", function () { place(t); });
-  });
-})();
+  function prepare(t){if(!t.hasAttribute('tabindex')&&!t.matches('button,a,input'))t.tabIndex=0;if(!t.matches('button,a,input'))t.setAttribute('role','button');}
+  document.querySelectorAll('.t[data-tip]').forEach(prepare);
+  new MutationObserver(function(records){records.forEach(function(r){r.addedNodes.forEach(function(n){if(n.nodeType!==1)return;if(n.matches('.t[data-tip]'))prepare(n);n.querySelectorAll('.t[data-tip]').forEach(prepare);});});}).observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('pointerover',function(e){var t=e.target.closest('.t[data-tip]');if(t)show(t);else if(!bubble.contains(e.target)&&active&&document.activeElement!==active)timer=setTimeout(hide,140);});
+  document.addEventListener('focusin',function(e){var t=e.target.closest('.t[data-tip]');if(t)show(t);else hide();});
+  document.addEventListener('click',function(e){var t=e.target.closest('.t[data-tip]');if(t){if(active===t&&t.dataset.tipPinned==='true'){t.dataset.tipPinned='false';hide();}else{t.dataset.tipPinned='true';show(t);}}else if(!bubble.contains(e.target))hide();});
+  bubble.addEventListener('pointerenter',function(){clearTimeout(timer);});bubble.addEventListener('pointerleave',function(){if(!active||document.activeElement!==active)timer=setTimeout(hide,140);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){hide();document.querySelectorAll('.site-menu[open]').forEach(function(m){m.open=false;});}var t=e.target.closest('.t[data-tip]');if(t&&!t.matches('button,a')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();t.click();}});
+  document.addEventListener('scroll',function(e){if(!bubble.contains(e.target)){if(active&&document.activeElement===active)place();else hide();}},true);
+  window.addEventListener('resize',function(){if(active&&document.activeElement===active)place();else hide();});
+}());

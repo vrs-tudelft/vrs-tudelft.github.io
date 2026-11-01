@@ -8,13 +8,13 @@
      y       = cos(theta) d            (positive towards the satellite)
 
    The shrinking term is the form of the report and of fit_report_group in the team's estimation
-   code. The temperatures are the KNMI 344 daily means on the pass dates (an aggregate file of
-   this site); nothing here is radar data. */
+   code. Temperatures use the report's 72 h exponential memory of KNMI 344 hourly weather
+   at the pass dates; nothing in this illustration is radar point data. */
 (function () {
   "use strict";
   var root = document.documentElement.getAttribute("data-root") || "";
   var COS = Math.cos(23 * Math.PI / 180);
-  var H_HI = 85, H_LO = 5;                 /* m above the foundation: 80 m apart, the two 40 m layers */
+  var H_HI = 85, H_LO = 5;                 /* illustrative 80 m contrast, not the report's layer edges */
   var NS = "http://www.w3.org/2000/svg";
 
   /* parameters: id, symbol, unit, min, max, step, default, scale (slider value -> model value), format */
@@ -64,7 +64,9 @@
 
     mount.classList.add("bm");
     mount.innerHTML = "";
-    var controls = document.createElement("div"); controls.className = "bm-controls"; mount.appendChild(controls);
+    var controls = document.createElement("div"); controls.className = "bm-controls";
+    var target=mount.getAttribute('data-controls-target');
+    (target&&document.querySelector(target)||mount).appendChild(controls);
     var outputs = {}, inputs = {};
     ids.forEach(function (id) {
       var q = P[id], lab = document.createElement("label"); lab.className = "bm-slider";
@@ -162,7 +164,8 @@
         txt += " Between the coldest and the warmest pass, temperature moves it by " + swing.toFixed(1) + " mm. Ten N-units of air across the same 80 m move the contrast by " +
           air.toFixed(2) + " mm (green band), about " + Math.round(Math.max(swing, Math.abs(last)) / air) + " times less than the buildings.";
       }
-      read.textContent = txt;
+      read.textContent = 'Final high / low: '+sgn(hi[n-1])+' / '+sgn(lo[n-1])+' mm · contrast '+sgn(last)+' mm. ';
+      var help=document.createElement('button');help.type='button';help.className='t i tip-trigger';help.setAttribute('aria-label','About the building curves');help.setAttribute('data-tip',txt);help.innerHTML='<span class="info" aria-hidden="true">i</span>';read.appendChild(help);
       svg.setAttribute("aria-label", "Line-of-sight displacement over 2020 to 2026 of a point " + H_HI + " m and a point " + H_LO + " m up the building, and their difference. " + txt);
     }
     if (window.ResizeObserver) new ResizeObserver(function () { draw(); }).observe(box);
@@ -170,19 +173,15 @@
     draw();
   }
 
-  /* time and temperature of the 213 passes; a smooth year if the file cannot be read */
+  /* Time and the report's temperature memory on the 213 passes; fail clearly if unavailable. */
   function times() {
-    return fetch(root + "data/2020-2026-ground/epochs.json").then(function (r) {
+    return fetch(root + "data/building-temperature.json").then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.json();
     }).then(function (ep) {
-      var tg = ep.knmi.tg.slice(), last = null;
-      for (var k = 0; k < tg.length; k++) { if (tg[k] === null || tg[k] === undefined) tg[k] = last === null ? 10 : last; last = tg[k]; }
-      return { dt: ep.days_since_ref.map(function (d) { return d / 365.25; }), dT: tg.map(function (v) { return v - tg[0]; }), first: ep.dates[0] };
-    }).catch(function () {
-      var dt = [], dT = [];
-      for (var k = 0; k < 213; k++) { var t = k * 11 / 365.25; dt.push(t); dT.push(-7 * Math.cos(2 * Math.PI * (t - 0.55)) - 7 * Math.cos(2 * Math.PI * -0.55)); }
-      return { dt: dt, dT: dT, first: "2020-01-08" };
+      if(ep.memory_h!==72||ep.dates.length!==ep.temperature_c.length||!ep.temperature_c.every(Number.isFinite))throw new Error('Incomplete temperature memory series');
+      var first=Date.parse(ep.dates[0]);
+      return {dt:ep.dates.map(function(d){return (Date.parse(d)-first)/864e5/365.25;}),dT:ep.temperature_c.map(function(v){return v-ep.temperature_c[0];}),first:ep.dates[0]};
     }).then(function (T) {
       var y0 = parseInt(T.first.slice(0, 4), 10), d0 = new Date(T.first + "T00:00:00Z");
       T.years = [];
@@ -194,5 +193,5 @@
   var mounts = document.querySelectorAll("[data-bmodel]");
   if (mounts.length) times().then(function (T) {
     [].forEach.call(mounts, function (m) { try { build(m, T); } catch (e) { console.error(e); } });
-  });
+  }).catch(function(){mounts.forEach(function(m){m.textContent='The hourly temperature-memory series could not be loaded. Reload to try again.';});});
 })();
