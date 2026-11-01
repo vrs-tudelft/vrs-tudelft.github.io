@@ -1,4 +1,74 @@
 /* The 3D view: layout on top of the site tokens in ../style.css */
+.city-control-label { display:flex; gap:6px; align-items:center; font-size:.77rem; font-weight:600; margin:0 0 6px; }
+.city-control-label output { margin-left:auto; color:var(--accent); font-variant-numeric:tabular-nums; }
+.height-slice { margin:14px 0; }
+.height-slice input { display:block; width:100%; height:26px; margin:0; accent-color:var(--accent); }
+.height-slice p { font-size:.73rem; margin:4px 0 0; color:var(--muted); }
+.city-research-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(270px,310px); gap:12px; min-height:0; }
+.city-scene { display:flex; min-width:0; min-height:0; }
+.city-inspector { min-width:0; min-height:0; padding:12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); display:flex; }
+.city-inspector .card { border:0; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; flex:1; min-width:0; min-height:0; }
+.city-selection-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.city-selection-head a { font-size:.88rem; text-decoration:none; font-weight:650; }
+.city-selection-head .bag-id { display:block; font-size:.67rem; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums; }
+.city-selection-head button { font:inherit; font-size:.71rem; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); min-height:30px; padding:3px 7px; cursor:pointer; }
+.city-selection-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; border-block:1px solid var(--line); padding:8px 0; }
+.city-selection-stats b { display:block; font-size:.93rem; }
+.city-selection-stats span { display:block; font-size:.65rem; color:var(--muted); }
+.height-profile { flex:1; min-height:150px; display:flex; align-items:center; }
+.height-profile svg { width:100%; height:100%; max-height:280px; }
+.city-inspector .card p.city-profile-note { font-size:.68rem; line-height:1.45; color:var(--muted); margin:0; }
+.city-contrast { flex:none; }
+.city-inspector .card h4 { font-size:.78rem; margin:0 0 3px; display:flex; align-items:center; gap:6px; }
+.city-inspector .card .city-contrast p { font-size:.68rem; color:var(--muted); line-height:1.4; }
+.city-inspector .card canvas { height:70px; margin:4px 0 0; }
+.city-inspector .card table { font-size:.71rem; line-height:1.35; }
+.height-summary { position:absolute; top:12px; left:12px; z-index:2; padding:8px 10px; border:1px solid var(--line); border-radius:7px; background:color-mix(in srgb,var(--surface) 95%,transparent); pointer-events:none; max-width:calc(100% - 24px); }
+.height-summary b { display:block; font-size:.81rem; }.height-summary span { display:block; font-size:.7rem; color:var(--muted); margin-top:3px; }
+.height-summary[hidden],.city-key[hidden] { display:none; }
+.city-key { position:absolute; left:52px; bottom:12px; display:flex; gap:5px; align-items:center; font-size:.65rem; color:var(--muted); pointer-events:none; }
+.city-key span { display:inline-block; width:10px; height:10px; margin-left:5px; border-radius:2px; }.city-key .key-supported { background:#2b637d; }.city-key .key-missing { background:#cdd0d1; }
+.city-main .stage .hud { top:auto; bottom:34px; left:14px; font-size:.67rem; }
+.city-timeline-title { font-size:.77rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+.city-timeline-title button:not(.t) { background:none; border-color:transparent; font-weight:600; color:var(--muted); }
+.city-timeline-title button[aria-pressed=true] { color:var(--accent); border-color:var(--line); background:var(--surface); }
+.city-main .timepanel .modes { display:none; }
+.city-data-note { border-top:1px solid var(--line); padding-top:10px; margin-top:12px!important; }
+.city-main .stage .hud { display:none; }
+.city-inspector .t,.site-panel #panel .t,.city-timeline-title .t { min-height:24px; min-width:24px; padding:2px; border:0; background:none; }
+.city-main .city-options p { font-size:.8rem; }
+.city-options select { width:100%; font:inherit; font-size:.8rem; padding:7px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink); }
+.city-options .checks { margin:12px 0; }.city-options .checks label { display:block; margin:8px 0; font-size:.8rem; }
+.city-options .modes label { display:flex; gap:6px; margin:8px 0; font-size:.78rem; }
+.city-options button { font:inherit; font-size:.8rem; padding:7px 10px; border:1px solid var(--line); border-radius:7px; color:var(--ink); background:var(--surface); cursor:pointer; }
+@media(min-width:1000px) {
+ .city-main .city-research-grid { flex:1; }
+ .city-main .city-scene .stage { min-height:0; }
+ .city-main .timepanel { margin:0; }
+ .city-main .timepanel .row { gap:6px; }
+ .city-main .timepanel button,.city-main .timepanel select { min-height:28px; font-size:.75rem; padding:3px 8px; }
+ .city-main .timepanel input[type=range] { height:28px; }
+ .city-main .timepanel .modes label { margin:3px 10px 0 0; font-size:.71rem; }
+ .city-main .timepanel .epoch { font-size:.69rem; margin:3px 0 0; }
+ .city-main .strip { height:75px; margin-top:4px; }
+ .site-panel #panel h3 { margin:12px 0 5px; font-size:.7rem; }
+ .site-panel #panel .row { margin-top:5px; gap:5px; }
+ .site-panel #panel button:not(.t) { min-height:30px; font-size:.75rem; padding:3px 7px; }
+ .site-panel #panel .legend { margin-top:12px; }
+ .site-panel #panel .legend .lt { font-size:.7rem; line-height:1.4; }
+}
+@media(max-width:1199px) and (min-width:1000px) {
+ .city-research-grid { grid-template-columns:minmax(0,1fr) 250px; gap:9px; }
+ .city-inspector { padding:9px; }
+}
+@media(max-width:999px) {
+ .city-research-grid { grid-template-columns:1fr; }
+ .city-main .city-scene .stage { height:420px; min-height:350px; }
+ .city-inspector { min-height:520px; }
+ .height-profile { height:270px; }
+ .city-main .timepanel { margin-top:6px; }
+ .city-key { font-size:.6rem; gap:3px; left:42px; }
+}
 .viewer { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 22px; margin: 10px 0 0; align-items: start; }
 @media (max-width: 900px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
 .viewer > * { min-width: 0; }  /* a grid item would otherwise grow to the canvas pixel width on phones */

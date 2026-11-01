@@ -91,7 +91,7 @@
 
   /* ------------------------------------------------------------ chart 1: N against T */
   function chartNT(el, p, t, e) {
-    var w = width(el), H = 235, m = { l: 40, r: 44, t: 10, b: 34 };
+    var w = width(el), H = innerWidth>=1000 && innerHeight<760 ? 185 : 235, m = { l: 40, r: 44, t: 10, b: 34 };
     var T0 = -10, T1 = 35, xs = lin(T0, T1, m.l, w - m.r);
     var curves = RH_LINES.map(function (c) {
       var pts = [];
@@ -127,7 +127,7 @@
   /* ------------------------------------------------------------ chart 2: the sign map in (T, RH) */
   var mapGeo = null;
   function chartMap(el, p, t, e) {
-    var w = width(el), H = 235, m = { l: 40, r: 14, t: 10, b: 34 };
+    var w = width(el), H = innerWidth>=1000 && innerHeight<760 ? 185 : 235, m = { l: 40, r: 14, t: 10, b: 34 };
     var T0 = -10, T1 = 35, xs = lin(T0, T1, m.l, w - m.r), ys = lin(0, 100, H - m.b, m.t);
     mapGeo = { xs: lin(m.l, w - m.r, T0, T1), ys: lin(H - m.b, m.t, 0, 100), w: w };
     var b = [];
@@ -298,10 +298,10 @@
     window.addEventListener("pointerup", function () { dragging = false; });
   }
 
-  var raf = 0, lastW = window.innerWidth;
+  var raf = 0, lastW = window.innerWidth, lastH = window.innerHeight;
   window.addEventListener("resize", function () {
-    if (window.innerWidth === lastW) return;
-    lastW = window.innerWidth;
+    if (window.innerWidth === lastW && window.innerHeight === lastH) return;
+    lastW = window.innerWidth; lastH = window.innerHeight;
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(charts);
   });
