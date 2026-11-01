@@ -2,16 +2,9 @@
 (function () {
   "use strict";
   var pages=[
-    {href: "index.html",label:"Home"},
-    {href: "simulator.html",label:"Simulator"},
-    {href: "results.html",label:"Results"},
-    {href: "overview.html",label:"Method",sub:[
-      {href: "overview.html",label:"Workflow"},{href: "estimation.html",label:"Estimation"},
-      {href: "buildings.html",label:"Buildings",also:["animations.html"]},
-      {href: "3d/index.html",label:"3D city",in3d:true},
-      {href: "theory.html",label:"Theory"}
-    ]},
-    {href: "data.html",label:"Data"}
+    {href: "index.html",label:"1 · Idea"},
+    {href: "simulator.html",label:"2 · Experiment"},
+    {href: "results.html",label:"3 · Findings"}
   ];
   var root=document.documentElement.getAttribute('data-root')||'';
   var here=location.pathname.replace(/\/+$/,'').split('/').pop()||'index.html';
@@ -53,6 +46,7 @@
   }
   function show(t){
     clearTimeout(timer);var text=t.getAttribute('data-tip');if(!text)return;
+    var scope=t.closest('dialog')||document.body;if(bubble.parentNode!==scope)scope.appendChild(bubble);
     if(active!==t)hide();active=t;bubble.textContent=text;bubble.hidden=false;
     t.classList.add('open');t.setAttribute('aria-expanded','true');
     var ids=(t.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);if(ids.indexOf('site-tooltip')<0)ids.push('site-tooltip');t.setAttribute('aria-describedby',ids.join(' '));place();

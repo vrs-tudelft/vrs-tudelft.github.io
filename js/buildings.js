@@ -101,7 +101,7 @@
       var p = {};
       ids.forEach(function (id) { p[id] = val(id); outputs[id].textContent = P[id].fmt(p[id]) + " " + P[id].unit; });
       var W = Math.max(280, Math.round(box.clientWidth || 600)), narrow = W < 520;
-      var H = narrow ? 250 : 290, m = { l: narrow ? 40 : 48, r: 12, t: 14, b: 28 };
+      var H = innerWidth>=1000 ? Math.max(180,Math.round(box.clientHeight||290)) : (narrow ? 250 : 290), m = { l: narrow ? 40 : 48, r: 12, t: 14, b: 28 };
       svg.setAttribute("viewBox", "0 0 " + W + " " + H);
       svg.setAttribute("width", W); svg.setAttribute("height", H);
       while (svg.firstChild) svg.removeChild(svg.firstChild);

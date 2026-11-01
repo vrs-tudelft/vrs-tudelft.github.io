@@ -4,12 +4,17 @@
    26_long_term_temperature/cabauw_ideal.py): (a) the error per pass with parts of the chain switched
    off and the predicted drift, (b) the error per layer step by step against the station alone, (c) the
    standard estimate against the truth; then which disturbance costs what, and the cumulative trend
-   when the disturbances are added one by one. The "Real data" tab draws (a)-(c) from real.json: the same
-   breakdown on the real 2020-2026 passes, with KNMI 344 as the truth and the constant air as the reference
-   (team repo 04_python/estimation/site_real_sim.py). Plain script, no libraries. Nothing is computed here beyond picking entries, means,
+   when the disturbances are added one by one. Observed-data links route to Findings, where KNMI 344
+   is explicitly a proxy rather than vertical truth. Plain script, no libraries. Nothing is computed here beyond picking entries, means,
    departures and the station's correlation, and formatting them. */
 (function () {
   "use strict";
+  // Observed evidence has one home; old real-mode links retain their fit choices.
+  if(new URLSearchParams(location.search).get('atm')==='real'){
+    var legacyQuery=new URLSearchParams(location.search);legacyQuery.delete('atm');
+    location.replace('results.html?'+legacyQuery.toString()+'#signal');return;
+  }
+
 
   var BASE = "data/simulator/";
   var C = {
@@ -35,9 +40,9 @@
   var MOTION_NAME = { building: "motion per building", scatterer: "motion per scatterer" };
   /* Jaap's steps: the same estimation chain with parts switched off */
   var STAGES = [
-    { key: "layers", label: "layer inversion only (no deformation fit)", short: "layers only", color: "#b9cbe3", w: 1.3 },
-    { key: "shrink", label: "+ motion fit (sinking and shrinking per building, or each point's own trend)", short: "+ motion", color: "#6f95c8", w: 1.3 },
-    { key: "std", label: "+ thermal term = standard", short: "standard", color: "#1f5fa8", w: 1.9 }
+    { key: "layers", label: "layer inversion only (no deformation fit)", short: "No motion fit", color: "#b9cbe3", w: 1.3 },
+    { key: "shrink", label: "+ motion fit (sinking and shrinking per building, or each point's own trend)", short: "Motion fitted", color: "#6f95c8", w: 1.3 },
+    { key: "std", label: "+ thermal term = standard", short: "Motion + thermal", color: "#1f5fa8", w: 1.9 }
   ];
   var PRED = "#d1662b";
   /* the words that change between the simulation and the real data */
@@ -111,7 +116,20 @@
   function height(el, fallback) { var h = Math.floor(el.clientHeight || 0); return h > 80 ? h : fallback; }
   function plain(html) { var d = document.createElement("div"); d.innerHTML = html; return d.textContent; }
   /* the explanation behind an (i) mark */
-  function setTip(id, html) { var t = document.getElementById(id); if (t) { t.setAttribute("data-tip", plain(html)); t.setAttribute("aria-label", plain(html)); } }
+  var shortHelp={
+    'sim-pass-sub':'Error against the known air input, averaged over the layers on each pass. Compare no motion fit, fitted sinking/shrinking, and the full fit including thermal expansion. Click a legend item to isolate a curve.',
+    'sim-lay-sub':'RMS error in each height layer. Smaller bars are better. The black mark is the station-only baseline. Column averaging can hide a poor thin layer.',
+    'sim-sc-sub':'One dot per layer and pass: recovered air change against the known input. The dashed line is exact agreement. These are simulated radar data, not measured city validation.',
+    'sim-attr-sub':'Each source switched on separately, compared with air only. Bars show column RMS error; they are not additive error budgets.',
+    'sim-cum-sub':'Selected sources added in the displayed order. Each step changes the column RMS error. Changing their order can change the apparent contribution.',
+    'sim-abs-sub':'A diagnostic fit of the known air alone shows how much the motion model absorbs. The prior protects the station-predicted part; it does not independently validate the urban air.',
+    'pte-N-sub':'N is the quantity estimated from the simulated radar. Error is scored against the known layer input; station extrapolation is the baseline. Joined layer means do not add vertical observations.',
+    'pte-P-sub':'Pressure is propagated from the surface boundary with hydrostatic balance. The radar does not independently measure it. This plot scores that assumption against the known input.',
+    'pte-T-sub':'Temperature follows the selected profile assumption or fitted profile constraint. It is not independently recovered from N. Errors propagate into the derived vapour pressure.',
+    'pte-e-sub':'Vapour pressure is derived from N with the selected P and T assumptions. Its reported uncertainty is conditional and does not include all P/T uncertainty. It is not an independent humidity measurement.'
+  };
+  function setTip(id, html) { var t=document.getElementById(id),help=shortHelp[id]||plain(html);if(t){t.setAttribute('data-tip',help);t.setAttribute('aria-label','About '+(id.includes('pte-')?'weather inference':'this comparison'));} }
+
   function ft(html) { return ' data-ftip="' + esc(html) + '"'; }
 
   /* ------------------------------------------------------------ state and the manifest */
@@ -155,7 +173,7 @@
     form.querySelectorAll('input[name="layers"]').forEach(function (r) {
       if (!valid("layers", r.value)) return;
       var on = ok.indexOf(r.value) >= 0;
-      r.disabled = !on;
+      r.disabled = !on; r.closest("label").hidden = !on;
       if (!on && r.checked) {
         r.checked = false;
         var d = form.querySelector('input[name="layers"][value="' + manifest.defaults.layers + '"]');
@@ -227,7 +245,7 @@
       if (my !== token) return;
       clearTimeout(slow); out.classList.remove("busy");
       last = null;
-      simMsg = err && err.missing ? "This combination (" + err.message + ") is not in the published results yet. Try another setting, or press “Reset to realistic”."
+      simMsg = err && err.missing ? "This combination (" + err.message + ") is not in the published results yet. Try another setting, or press “Reset experiment”."
         : "The results for this combination could not be loaded (" + (err && err.message) + "). Try another setting, or reload the page.";
       renderView();
     });
@@ -235,14 +253,14 @@
 
   /* ------------------------------------------------------------ rendering */
   /* the views behind the tabs: only the visible one is drawn (a hidden chart has no size) */
-  var VIEWS = ["steps", "dist", "pte", "decide", "how"], view = "steps";
+  var VIEWS = ["steps", "dist", "pte"], view = "steps";
   try { var v0 = localStorage.getItem("vrs-sim-view"); if (VIEWS.indexOf(v0) >= 0) view = v0; } catch (err) { /* storage blocked */ }
   if (VIEWS.indexOf(location.hash.slice(1)) >= 0) view = location.hash.slice(1);
   function showTabs() {
     document.querySelectorAll(".sim-tabs [data-tab]").forEach(function (b) { var on = b.getAttribute("data-tab") === view; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
     /* with the real data, "Step by step" shows the real data's own cards */
     VIEWS.forEach(function (k) { document.getElementById("view-" + k).hidden = k !== view || (k === "steps" && isReal()); });
-    document.getElementById("view-real").hidden = !(view === "steps" && isReal());
+
   }
   /* a message instead of the numbers and the charts; the tabs stay, so another view can be picked */
   function failed(msg) { out.classList.toggle("failed", !!msg); setStatus(msg, msg ? "error" : ""); }
@@ -293,6 +311,7 @@
   }
   function hideTip() { tipEl.hidden = true; out.querySelectorAll(".sim-cross").forEach(function (c) { c.setAttribute("visibility", "hidden"); }); }
   out.addEventListener("mousemove", function (ev) {
+    var scope=ev.target.closest('dialog')||document.body;if(tipEl.parentNode!==scope)scope.appendChild(tipEl);
     var pass = ev.target.closest && ev.target.closest("[data-pick]");
     if (pass && pass._pick) {
       var box = pass.getBoundingClientRect(), hit = pass._pick(ev.clientX - box.left), cr = pass.querySelector(".sim-cross");
@@ -310,11 +329,9 @@
   function wins(e) { var w = []; for (var k = 0; k < e.rmse.length; k++) if (e.skill[k] > 0) w.push(k); return w; }
 
   function verdict(e, s, sm) {
-    var nl = e.rmse.length, k = wins(e).length, col = sm.column_rmse < sm.column_station_rmse;
-    if (nl === 1) return col ? "The radar beats the weather station alone." : "The weather station alone does better than the radar.";
-    var lay = k === nl ? "all " + nl + " layers" : k + " of " + nl + " layers";
-    if (col) return k ? "The radar beats the weather station on the column, and in " + lay + "." : "The radar beats the weather station on the column, but in none of the " + nl + " layers.";
-    return k ? "The weather station beats the radar on the column, but the radar wins in " + lay + "." : "The weather station alone beats the radar on the column and in every layer.";
+    var n=e.rmse.length,k=wins(e).length;
+    return k+' of '+n+' layers beat station extrapolation. '+
+      (sm.column_rmse<sm.column_station_rmse?'The column mean also improves.':'The column mean does not improve.');
   }
 
   function stat(v, unit, k, ic, cls) {
@@ -322,12 +339,13 @@
     return '<div class="stat' + (cls ? " " + cls : "") + '">' + i + '<span class="v">' + v + (unit ? ' <span class="u">' + unit + "</span>" : "") + '</span><span class="k">' + k + "</span></div>";
   }
   function renderStats(e, s, sm) {
-    var nl = e.rmse.length, w = wins(e), cs = colSkill(sm);
-    var html = stat(num(sm.column_rmse, 2), "N", "radar, rms error" + (nl > 1 ? " of the column" : ""), "radar", "s-radar") +
-      stat(num(sm.column_station_rmse, 2), "N", "weather station alone", "thermo", "s-station") +
-      stat('<span style="color:' + skillColor(cs) + '">' + signed(cs, 2) + "</span>", "", "skill" + (nl > 1 ? ", beats the station in " + w.length + "/" + nl + " layers" : " vs the station"), "target", "s-skill") +
-      stat(ok(e.points_used) ? thousands(e.points_used) : "n/a", "points", "used of " + thousands(s.points) + (ok(e.buildings) ? ", " + e.buildings + " buildings" : ""), "grid");
-    document.getElementById("sim-stats").innerHTML = html;
+    var worst=Math.max.apply(null,e.rmse);
+    document.getElementById('sim-stats').innerHTML=
+      stat(num(sm.column_rmse,2),'N','column RMS error','radar','s-radar')+
+      stat(num(worst,2),'N','worst layer RMS error','layers','s-worst')+
+      stat(num(sm.column_station_rmse,2),'N','station-only column baseline','thermo','s-station');
+    document.getElementById('experiment-context').textContent='Simulated radar · '+ATM_NAME[s.atm]+' · ground-air prior · '+
+      (MOTION_NAME[s.motion]||s.motion)+' · '+thousands(e.points_used)+' used points · matched-model test';
   }
 
   /* ---- 1. estimate against the truth over time: one panel per layer, highest on top, shared time axis */
@@ -939,7 +957,7 @@
     pts.push([x[n - 1] + m[n - 1] * (e[nl] - z[n - 1]), e[nl]]);
     return pts;
   }
-  var pteInterp = "smooth", pteEdges = [];
+  var pteInterp = "lin", pteEdges = [];
   function pteProfile(el, q, ps, edges, err, real) {
     pteEdges = edges;
     var ref = q === "P" ? ps.ground.P : 0, nl = edges.length - 1, top = edges[nl];
@@ -1080,10 +1098,7 @@
     var tProfTxt = mode === "lin" ? "6.5 K per km" : mode === "log" ? "a logarithmic departure from 6.5 K per km through the ground and the 29 m station"
       : "6.5 K per km in blue, the two-point log (ground + 29 m station) in orange";
     var nUp = tpd ? tpd.T_upper.filter(ok).length : 0;
-    note.textContent = (ps ? (ps.label === "random" ? "Random pass: " : "") + fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
-      (real ? "P and T come from KNMI 344 alone (hydrostatic, " + tProfTxt + "); nothing measures them above the street. N and e come from the radar, set against KNMI 344 carried up."
-        : "P and T come from the station alone (hydrostatic, " + tProfTxt + "); N and e come from the radar.") +
-      (real && mode !== "lin" ? " The Sanders roof has data on " + nUp + " of the " + epochs.length + " passes (marked ★ in the pass list); on the others the two-point profile is the 6.5 K/km line." : "");
+    note.textContent=(ps?fmtDate(ps.date)+' · ':'')+'P: surface boundary + hydrostatics. T: '+tProfTxt+'. Vapour pressure uses N, P and T.';
     var nl = e.edges.length - 1;
     /* T and e lumped: the T card shows the wet refractivity, the e card is hidden */
     document.getElementById("pte-e").closest("section").hidden = pteLump;
@@ -1337,9 +1352,8 @@
           : "; per pass " + pct(w.trend) + " slow trend and " + pct(w.temp) + " building temperature beyond it";
       return "<b>" + esc(t.name.charAt(0).toUpperCase() + t.name.slice(1)) + "</b> takes " + num(r, 2) + " N rms per layer, " + pct(sh) + " of the true swings" + what + ".";
     });
-    note.innerHTML = words.join(" ") + (s.motion === "building" ? " Sinking takes nothing (one value per building and pass, which the layer fit removes anyway)." : "") +
-      (st.truth_r_T ? " The true air itself follows the building temperature with r " + num(mean(st.truth_r_T), 2) + ", which is why a free thermal fit can take it." : "");
-    setTip("sim-abs-sub", "How much of the true air the motion fit removes along with the building motion, measured exactly: the same fit is repeated on the simulation's air alone (per building at the shrinking time each building's fit chose; per scatterer as it is, that fit being linear), and each fitted term is passed through the layer inversion. Bars: per layer, the rms over the passes of the N each term took, next to how much the true air swings (grey); hover for the share of the true swings taken (the slope of the taken N on the true anomaly; negative: the term adds to the swings). The text below says which signal each term takes, from its mean over the layers per pass: the share a slow trend in time (1, t, t²) explains, and the share the building temperature (the 72 h memory of the air temperature) explains beyond that trend. Over a single year a slow trend and the seasons look alike, so the trend is counted first. Right: per pass, the N taken, mean over the layers, with the building temperature. Shrinking and the per-scatterer trend take air that drifts slowly; thermal dilation air that follows the building temperature and grows with height. Sinking is the same for every point of a building, which the layer fit removes anyway, so it takes nothing. With the ground air prior (how the estimation runs) the ground station's air is taken out before the fit and put back after, so the fit sees only the air the ground station does not predict; switch it off to see what the prior protects.");
+    note.textContent='Compare the known air spread with the fitted components. Air absorbed by the motion fit is missing from the radar-only estimate.';
+
   }
 
   /* ---- 5. what this means: plain-language reading of the numbers above */
@@ -1574,9 +1588,9 @@
   out.querySelectorAll(".app-card").forEach(function (card) {
     var head = card.querySelector(".sim-card-head");
     if (!head || !card.querySelector(".sim-chart")) return;
-    var s = document.createElement("span");
+    var s = document.createElement("details");
     s.className = "sim-save";
-    s.innerHTML = '<button type="button" data-save="png" title="Save this figure as a PNG image, with its title, legend and settings">PNG</button>' +
+    s.innerHTML = '<summary aria-label="Download this figure">↓</summary>' + '<button type="button" data-save="png" title="Save this figure as a PNG image, with its title, legend and settings">PNG</button>' +
       '<button type="button" data-save="svg" title="Save this figure as an SVG drawing (scalable, for reports)">SVG</button>';
     head.appendChild(s);
   });
@@ -1648,7 +1662,7 @@
       document.querySelectorAll('input[name="pte-show"]').forEach(function (r) { r.checked = false; });
       renderView();
     });
-    realSel.addEventListener("change", function () { realScLayer = +realSel.value; if (isReal()) renderReal(); });
+
     var tabs = document.querySelector(".sim-tabs");
     tabs.addEventListener("click", function (ev) { var b = ev.target.closest("[data-tab]"); if (b) setView(b.getAttribute("data-tab")); });
     tabs.addEventListener("keydown", function (ev) {
@@ -1664,7 +1678,7 @@
       shown[k] = !shown[k];
       renderView();
     }
-    ["sim-pass-legend", "real-pass-legend"].forEach(function (id) {
+    ["sim-pass-legend"].forEach(function (id) {
       var pl = document.getElementById(id);
       pl.addEventListener("click", flip);
       pl.addEventListener("keydown", flip);

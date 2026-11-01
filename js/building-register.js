@@ -23,10 +23,10 @@
   var host = document.querySelector('[data-building-directory]');
   if (!host) return;
   var root = document.documentElement.getAttribute('data-root') || '';
-  var dataset = '2020-2026-ground', doc, page = 0, size = 5;
+  var dataset = new URLSearchParams(location.search).get('data')==='2014-2023-processor'?'2014-2023-processor':'2020-2026-ground', doc, page = 0, size = 5;
   host.innerHTML = '<div class="directory-tools"><input type="search" aria-label="Find a building by name or BAG ID" placeholder="Find a name or BAG ID…">' +
     '<label><input type="checkbox" checked>With radar support</label></div>' +
-    '<div class="directory-table"></div><div class="report-pages" aria-label="Building pages"></div>';
+    '<div class="directory-table tbl"></div><div class="report-pages" aria-label="Building pages"></div>';
   var search = host.querySelector('[type=search]'), supported = host.querySelector('[type=checkbox]');
   function render() {
     if (!doc) return;
@@ -45,9 +45,10 @@
         var r = doc.buildings[id], a = doc.bag3d[id];
         return '<tr data-building-id="' + id + '"><td>' + identity(id, r, a) + '</td><td class="directory-roof">' +
           (a && Number.isFinite(a.height_agl) ? a.height_agl.toFixed(0) + ' m' : 'Unknown') + '</td><td>' +
-          (r ? r.n.toLocaleString('en-GB') : 'No published group') + '</td><td><a href="' + root + '3d/index.html?data=' + dataset +
-          '&amp;building=' + id + '">Show in 3D →</a></td></tr>';
+          (r ? r.n.toLocaleString('en-GB') : 'No published group') + '</td><td><a href="' + root + 'results.html?data=' + dataset +
+          '&amp;building=' + id + '#coverage" data-select-building="' + id + '">Locate →</a></td></tr>';
       }).join('') + '</tbody></table>' + (!ids.length ? '<p>No buildings match this search.</p>' : '');
+    if(window.VRSReport)window.VRSReport.labelTables(host.querySelector('.directory-table'));
     host.querySelector('.report-pages').innerHTML = '<span role="status">' + ids.length + ' buildings' +
       (ids.length ? ' · ' + (start + 1) + '–' + Math.min(start + size, ids.length) : '') + '</span>' +
       '<button type="button" data-directory-page="-1" aria-label="Previous buildings" ' + (page === 0 ? 'disabled' : '') + '>←</button>' +
@@ -59,7 +60,7 @@
     var button = e.target.closest('[data-directory-page]');
     if (button && !button.disabled) { page += Number(button.dataset.directoryPage); render(); }
   });
-  fetch(root + 'data/2020-2026-ground/buildings.json').then(function (r) {
+  fetch(root + 'data/'+(dataset==='2014-2023-processor'?'':'2020-2026-ground/')+'buildings.json').then(function (r) {
     if (!r.ok) throw new Error('Building register ' + r.status);
     return r.json();
   }).then(function (d) { doc=d; render(); }).catch(function (err) {

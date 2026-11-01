@@ -57,20 +57,50 @@
     var k = +form.elements.layer.value || 0;
     id("content").hidden = false;
     if(id('kpis'))id('kpis').innerHTML=[
-      [fmt(e.points_used,0),'points used'],[fmt(e.station_r[k].r),'station r'],[fmt(e.rmse[k])+' N','RMS difference']
+      [fmt(e.station_r[k].r),'station agreement (r)'],[fmt(e.rmse[k])+' N','RMS difference to proxy'],[fmt(e.skill[k]),'skill vs constant air']
     ].map(function(s){return '<div class="stat"><span class="v">'+s[0]+'</span><span class="k">'+s[1]+'</span></div>';}).join('');
-    if(id('layer-summary'))id('layer-summary').innerHTML='<p><b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b></p><dl class="site-list"><div><dt>Points</dt><dd>'+fmt(e.layer_points[k].n,0)+'</dd></div><div><dt>r without the annual cycle</dt><dd>'+fmt(e.station_r[k].r_no_annual)+'</dd></div><div><dt>Skill against constant air</dt><dd>'+fmt(e.skill[k])+'</dd></div></dl>';
+    if(id('layer-summary'))id('layer-summary').innerHTML='<p><b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b></p><dl class="site-list"><div><dt>Radar points</dt><dd>'+fmt(e.layer_points[k].n,0)+'</dd></div><div><dt>r without the annual cycle</dt><dd>'+fmt(e.station_r[k].r_no_annual)+'</dd></div></dl>';
     renderMetrics(e);
     id("time").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], false);
     id("scatter").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], true);
     id("reading").textContent = (form.elements.prior.value === "ground" ? "This variant uses the station-based air prior: station agreement is partly built into the fit. " : "This fit has no station-based air prior. ") +
       "Skill compares RMS difference against predicting constant air using the same station-based proxy; negative skill means that constant prediction has a smaller RMS difference. It does not measure independently validated urban retrieval skill.";
     id("source").innerHTML = 'Report export · '+doc.generated+' '+window.VRSReport.help('reproducibility','All sixteen real-run variants reproduced from committed source '+doc.code.virtual_radiosonde+'. Canonical export: data/simulator/real.json.');
-    id("status").textContent = doc.passes+' passes · '+doc.first.slice(0,4)+'–'+doc.last.slice(0,4)+' · aggregates only';
+    id("status").textContent = doc.passes+' passes · '+e.buildings+' buildings · '+fmt(e.points_used,0)+' points';
+    var verdict=document.getElementById('finding-verdict'),circular=form.elements.prior.value==='ground';
+    verdict.className='finding-verdict'+(circular?' circular':e.skill[k]>0?' positive':'');
+    verdict.textContent=circular?'Station information is inside this fit: its agreement is partly circular.':
+      e.skill[k]>0?'This fit beats constant air against the station proxy. Vertical accuracy remains unverified.':
+      'Constant air has the lower error against the station proxy in this layer. Vertical accuracy remains unverified.';
     id("content").hidden = false;
   }
-  form.addEventListener("change", function (event) { if (doc) {if(event.target.name==='layer')metricPage=Math.floor(+form.elements.layer.value/6);render(event.target.name !== "layer");} });
+  function saveChoice(){
+    var url=new URL(location.href);
+    ['motion','prior','layers','layer'].forEach(function(key){var value=form.elements[key].value,def=key==='layer'?'0':String(doc.defaults[key]);if(value===def)url.searchParams.delete(key);else url.searchParams.set(key,value);});
+    history.replaceState(history.state,'',url);
+  }
+  form.addEventListener("change", function (event) { if (doc) {if(event.target.name==='layer')metricPage=Math.floor(+form.elements.layer.value/6);render(event.target.name !== "layer");saveChoice();} });
   id('metrics').addEventListener('click',function(event){var button=event.target.closest('[data-metric-page]');if(button&&doc){metricPage+=+button.dataset.metricPage;renderMetrics(selected());}});
   window.addEventListener("resize", function () { if (doc) render(false); });
-  window.VRSReport.load().then(function (data) { doc = data; render(true); }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
+  window.VRSReport.load().then(function (data) {
+    doc=data;var query=new URLSearchParams(location.search);
+    ['motion','prior','layers'].forEach(function(key){if(doc.controls[key].includes(query.get(key)))form.elements[key].value=query.get(key);});
+    render(true);
+    var layer=Number(query.get('layer'));if(Number.isInteger(layer)&&layer>=0&&layer<selected().layer_points.length){form.elements.layer.value=layer;render(false);}
+  }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
+  var coverage;
+  function loadCoverage(){
+    if(!coverage)coverage=import('../3d/viewer.js?v=20261101-story').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
+    return coverage;
+  }
+  document.addEventListener('site:viewchange',function(e){if(e.detail.view==='coverage')loadCoverage().catch(function(){});});
+  document.addEventListener('click',function(e){
+    var link=e.target.closest('[data-select-building]');if(!link)return;e.preventDefault();
+    var url=new URL(location.href);url.searchParams.set('building',link.dataset.selectBuilding);url.hash='coverage';history.replaceState(history.state,'',url);
+    link.closest('dialog')?.close();document.querySelector('[data-site-tab=coverage]').click();
+    loadCoverage().then(function(api){api.selectBuilding(link.dataset.selectBuilding);}).catch(function(){});
+  });
+  if(['coverage','buildings','city'].includes(location.hash.slice(1))||new URLSearchParams(location.search).has('building')){
+    document.querySelector('[data-site-tab=coverage]').click();loadCoverage().catch(function(){});
+  }
 }());
