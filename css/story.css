@@ -33,6 +33,7 @@
 .story-motion .bm-chart { flex:1; min-height:180px; }.story-motion .bm-legend { margin-bottom:6px; }
 .site-main .story-insight { font-size:.8rem; color:var(--ink-2); margin:0; }
 .plot-key { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; margin:0 0 10px; font-size:.76rem; color:var(--ink-2); }
+#report-layer-summary { margin-left:auto; font-size:.72rem; }
 .plot-key>span { display:flex; align-items:center; gap:6px; }.key-line { width:22px; border-top:2px solid; }.key-line.radar { border-color:#15688f; }.key-line.station { border-color:#8a8f96; }
 .finding-verdict { padding:9px 12px; margin:0!important; font-size:.83rem!important; line-height:1.45!important; background:#f7eedb; border-left:3px solid #b18b39; border-radius:7px; }
 .finding-verdict.positive { background:var(--accent-soft); border-color:var(--accent); }
@@ -68,7 +69,8 @@
  .story-kpis { flex:none; }.idea-height { gap:10px; }
  .site-panel .story-method { margin-top:0; }
  .site-panel #report-controls select { min-height:34px; padding:5px 8px; font-size:.79rem; }
- .report-grid { grid-template-rows:minmax(150px,1fr) minmax(150px,1fr); }
+ .report-grid { grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+ .report-chart svg { max-height:none; }
  #sim .app-panel.sim-panel { overflow:visible; padding:14px 16px; }
  #sim .app-intro { font-size:.77rem; line-height:1.4; }
  #sim .tiles-4 { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -100,7 +102,7 @@
  #sim .sim-head { gap:9px; }#sim .sim-field { margin-bottom:9px; }#sim .sim-head h1 { font-size:1.05rem; }
  #sim .sim-panel { gap:7px; }#sim .sim-reset { min-height:31px; margin-top:7px; }#sim .atmosphere-choices .tile>span { min-height:56px; }
  #sim .sim-top .stat { padding-top:6px; padding-bottom:6px; }#sim .sim-top .stat .v { font-size:.98rem; }
- .report-grid { grid-template-rows:minmax(120px,1fr) minmax(130px,1fr); }
+
  .site-main .report-grid .sim-card-head { margin-bottom:6px; }
  #report-layer-summary .site-list>div { margin-bottom:6px; }
  .city-inspector { padding:9px; }.city-inspector .card { gap:5px; }

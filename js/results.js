@@ -19,7 +19,7 @@
   }
   function plot(x, y, station, scatter) {
     var box=id(scatter?'scatter':'time');
-    var w = Math.max(280, box.clientWidth || 720), h = Math.max(140,Math.min(340,box.clientHeight||290)), left = 58, right = 20, top = 20, bottom = 44;
+    var w = Math.max(280, box.clientWidth || 720), h = Math.max(140,Math.min(650,box.clientHeight||290)), left = 58, right = 20, top = 20, bottom = 44;
     var values = y.concat(station).filter(Number.isFinite), lo = Math.min.apply(null, values), hi = Math.max.apply(null, values);
     var pad = (hi - lo || 1) * 0.08; lo -= pad; hi += pad;
     var xmin = scatter ? lo : Date.parse(x[0]), xmax = scatter ? hi : Date.parse(x[x.length - 1]);
@@ -59,7 +59,7 @@
     if(id('kpis'))id('kpis').innerHTML=[
       [fmt(e.station_r[k].r),'station agreement (r)'],[fmt(e.rmse[k])+' N','RMS difference to proxy'],[fmt(e.skill[k]),'skill vs constant air']
     ].map(function(s){return '<div class="stat"><span class="v">'+s[0]+'</span><span class="k">'+s[1]+'</span></div>';}).join('');
-    if(id('layer-summary'))id('layer-summary').innerHTML='<p><b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b></p><dl class="site-list"><div><dt>Radar points</dt><dd>'+fmt(e.layer_points[k].n,0)+'</dd></div><div><dt>r without the annual cycle</dt><dd>'+fmt(e.station_r[k].r_no_annual)+'</dd></div></dl>';
+    if(id('layer-summary'))id('layer-summary').innerHTML='<b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b> · '+fmt(e.layer_points[k].n,0)+' points · r without annual cycle '+fmt(e.station_r[k].r_no_annual);
     renderMetrics(e);
     id("time").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], false);
     id("scatter").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], true);
