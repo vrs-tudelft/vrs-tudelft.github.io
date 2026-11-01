@@ -1,51 +1,47 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Results · Virtual Radiosonde</title>
-<meta name="description" content="The estimation on the real TerraSAR-X radar data of Rotterdam, 213 passes from 2020 to 2026: the air refractivity per 40 m layer over time, how well the lowest layer follows the KNMI weather station, the seasons, the buildings it rests on, and what it does and does not show.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261101">
-<link rel="stylesheet" href="css/results.css?v=20261013a">
-</head>
-<body>
+<meta content="Explore the report's real TerraSAR-X run over Rotterdam." name="description"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="favicon.ico" rel="icon" sizes="any"/>
+<link href="apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css?v=20261101b" rel="stylesheet"/>
+<link href="css/results.css?v=20261101b" rel="stylesheet"/>
+<link href="css/workspace.css?v=20261101b" rel="stylesheet"/></head>
+<body class="app-page site-page" data-workspace="results">
 <header class="top"><div class="top-inner">
-  <a class="brand" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
-      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
-      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
-    </svg>
+<a class="brand" href="index.html">
+<svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
+<rect height="13" rx="1" stroke="currentColor" stroke-width="1.6" width="7" x="3" y="8"></rect>
+<rect height="6" opacity=".45" rx="1" stroke="currentColor" stroke-width="1.6" width="7.5" x="13.5" y="15"></rect>
+<path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-dasharray="2.6 2.6" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="10" cy="11" fill="#a8433b" r="1.9"></circle>
+</svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+<noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
-<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
-<h1>Report results</h1>
-<p class="lead">The real TerraSAR-X run over Kop van Zuid. Inspect motion per building or per scatterer, layer choices and the optional air prior using the same aggregate data as the simulator.</p>
-<p>The reference comparison is KNMI 344 ground refractivity carried upward, not a measured vertical urban profile. RMS differences and correlations below describe agreement with that proxy.</p>
-<form id="report-controls" class="sim-controls" onsubmit="return false" aria-label="Report variant">
-<fieldset class="sim-field"><legend>Motion fit</legend><select name="motion"><option value="building">Per building (report default)</option><option value="scatterer">Per scatterer</option></select></fieldset>
-<fieldset class="sim-field"><legend>Air prior</legend><select name="prior"><option value="none">None (independent station comparison)</option><option value="ground">Station based (reuses station data)</option></select></fieldset>
-<fieldset class="sim-field"><legend>Layers</legend><select name="layers"><option value="2">Two layers (report default)</option><option value="1">One layer</option><option value="n500">500-point layers</option><option value="n1000">1,000-point layers</option></select></fieldset>
-<fieldset class="sim-field"><legend>Plot layer</legend><select name="layer" aria-label="Plot layer"></select></fieldset>
-</form>
-<p id="report-status" role="status">Loading the report run...</p>
-<section id="report-content" hidden>
-<h2 id="metrics">Selected variant</h2><div id="report-metrics" class="tbl"></div>
-<h2 id="passes">N over the passes</h2><div id="report-time"></div><p class="asof">Blue: radar anomaly. Grey: station-based anomaly. The plotted curves are aggregate layer values; their line does not measure the unobserved weather between satellite passes.</p>
-<h2 id="station">Station comparison</h2><div id="report-scatter"></div>
-<h2 id="reading">How to read this</h2><p id="report-reading"></p>
-<p>The default report layer comparison does not establish vertical accuracy. The upper-layer result is affected by the building-motion fit. A station-based air prior makes station agreement partly circular. For per-pass P, T and vapour, explore the <a href="simulator.html?atm=real">real-data simulator</a>.</p>
-<p id="report-source" class="asof"></p></section>
-<noscript><p>This page requires JavaScript. The <a href="data/simulator/real.json">aggregate report export</a> remains available.</p></noscript>
-<footer data-shared></footer></main></div>
-<script defer src="js/nav.js?v=20261013g"></script>
-<script defer src="js/report.js?v=20261101"></script>
-<script defer src="js/results.js?v=20261101"></script>
+<div class="app site-app">
+<aside class="app-panel sim-panel site-panel">
+<div class="sim-head"><span class="sim-head-ic" data-icon="timeline"></span><div><h1>Results</h1><p class="app-intro">Explore the report's real TerraSAR-X run over Rotterdam.</p></div></div>
+<form aria-label="Report variant" class="sim-controls" id="report-controls" onsubmit="return false">
+<fieldset class="sim-field"><legend>Motion fit<button aria-label="About motion" class="t i tip-trigger" data-tip="Per building fits one sinking/shrinking model to a building. Per scatterer allows every radar point its own temporal trend." type="button"><span aria-hidden="true" class="info">i</span></button></legend><select name="motion"><option value="building">Per building (report default)</option><option value="scatterer">Per scatterer</option></select></fieldset>
+<fieldset class="sim-field"><legend>Air prior<button aria-label="About prior" class="t i tip-trigger" data-tip="No air prior is the report default. A ground-station air prior reuses station information, making station agreement partly circular." type="button"><span aria-hidden="true" class="info">i</span></button></legend><select name="prior"><option value="none">None (independent station comparison)</option><option value="ground">Station based (reuses station data)</option></select></fieldset>
+<fieldset class="sim-field"><legend>Layers<button aria-label="About layers" class="t i tip-trigger" data-tip="Two layers is the report default. Count-based alternatives trade vertical resolution against the number of contributing radar points." type="button"><span aria-hidden="true" class="info">i</span></button></legend><select name="layers"><option value="2">Two layers (report default)</option><option value="1">One layer</option><option value="n500">500-point layers</option><option value="n1000">1,000-point layers</option></select></fieldset>
+<fieldset class="sim-field"><legend>Plot layer<button aria-label="About layer" class="t i tip-trigger" data-tip="Choose the layer plotted in both charts; the fit and the other layer metrics stay unchanged." type="button"><span aria-hidden="true" class="info">i</span></button></legend><select aria-label="Plot layer" name="layer"></select></fieldset>
+</form><p class="site-small" id="report-status" role="status">Loading the report run…</p>
+<footer class="site-foot"><a href="index.html#about">Sources &amp; team</a><span>·</span><a href="https://github.com/vrs-tudelft">GitHub</a></footer>
+</aside>
+<main class="app-main site-main">
+<div class="sim-tabs site-tabs" role="tablist" aria-label="Results views"><button type="button" role="tab" id="tab-signal" aria-controls="signal" data-site-tab="signal"><i data-icon="timeline"></i>Signal</button><button type="button" role="tab" id="tab-readout" aria-controls="readout" data-site-tab="readout"><i data-icon="table"></i>Layer metrics</button><button type="button" role="tab" id="tab-interpretation" aria-controls="interpretation" data-site-tab="interpretation"><i data-icon="info"></i>Interpretation</button></div>
+<section class="site-view" id="signal" role="tabpanel" aria-labelledby="tab-signal" data-site-view="signal"><div id="report-content"><div class="site-kpis" id="report-kpis"></div><p class="site-boundary">Station-based comparison. Vertical accuracy is unverified.</p><div class="site-grid report-grid"><section class="app-card report-wide" id="passes"><div class="sim-card-head"><h2><i class="h-ic" data-icon="timeline"></i>N over the passes<button type="button" class="t i tip-trigger" data-tip="Blue: radar anomaly. Grey: the station-based anomaly carried upward. Lines connect satellite passes; they do not resolve the weather between passes." aria-label="About N over the passes"><span class="info" aria-hidden="true">i</span></button></h2></div><div id="report-time" class="report-chart"></div></section><section class="app-card " id="station"><div class="sim-card-head"><h2><i class="h-ic" data-icon="scatter"></i>Against the station<button type="button" class="t i tip-trigger" data-tip="One aggregate layer value per pass. The dashed line is one-to-one agreement with the proxy, not measured urban truth." aria-label="About Against the station"><span class="info" aria-hidden="true">i</span></button></h2></div><div id="report-scatter" class="report-chart"></div></section><section class="app-card "><div class="sim-card-head"><h2><i class="h-ic" data-icon="layers"></i>Selected layer<button type="button" class="t i tip-trigger" data-tip="RMS difference and skill are against the ground-station proxy. Negative skill means constant air has a smaller RMS difference." aria-label="About Selected layer"><span class="info" aria-hidden="true">i</span></button></h2></div><div id="report-layer-summary"></div></section></div></div></section><section class="site-view" id="readout" role="tabpanel" aria-labelledby="tab-readout" data-site-view="readout"><section class="app-card " id="metrics"><div class="sim-card-head"><h2><i class="h-ic" data-icon="table"></i>All layers in this variant</h2></div><div id="report-metrics" class="tbl"></div></section></section><section class="site-view" id="interpretation" role="tabpanel" aria-labelledby="tab-interpretation" data-site-view="interpretation"><div class="site-grid"><section class="app-card " id="reading"><div class="sim-card-head"><h2><i class="h-ic" data-icon="info"></i>What the selected fit assumes</h2></div><p id="report-reading"></p></section><section class="app-card "><div class="sim-card-head"><h2><i class="h-ic" data-icon="target"></i>What remains unknown</h2></div><p>No collocated vertical profile validates the retrieval above the street. The upper layer is sensitive to the building-motion fit.</p><p>P and T are prescribed from surface information; derived vapour is conditional on them.</p></section><section class="app-card "><div class="sim-card-head"><h2><i class="h-ic" data-icon="table"></i>Source</h2></div><p id="report-source" class="site-small"></p><a href="simulator.html?atm=real">Inspect individual passes →</a></section></div></section>
+</main></div>
+<script defer src="js/nav.js?v=20261101b"></script>
+<script defer src="js/icons.js?v=20261101b"></script>
+<script defer src="js/site-layout.js?v=20261101b"></script>
+<script defer src="js/report.js?v=20261101b"></script>
+<script defer src="js/results.js?v=20261101b"></script>
 </body></html>

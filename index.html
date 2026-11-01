@@ -1,189 +1,54 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Virtual Radiosonde</title>
-<meta name="description" content="Reading the lowest hundred metres of the air above Rotterdam from satellite radar, using the buildings as the measuring stick. A TU Delft student team project, 2026.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261101">
-</head>
-<body>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Virtual Radiosonde · Virtual Radiosonde</title>
+<meta content="Can satellite observations of buildings reveal the air above a city?" name="description"/>
+<link href="favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="favicon.ico" rel="icon" sizes="any"/>
+<link href="apple-touch-icon.png" rel="apple-touch-icon"/>
+<link href="style.css?v=20261101b" rel="stylesheet"/>
+<link href="css/workspace.css?v=20261101b" rel="stylesheet"/></head>
+<body class="app-page site-page" data-workspace="index">
 <header class="top"><div class="top-inner">
-  <a class="brand" href="index.html">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="8" width="7" height="13" rx="1" stroke="currentColor" stroke-width="1.6"/>
-      <rect x="13.5" y="15" width="7.5" height="6" rx="1" stroke="currentColor" stroke-width="1.6" opacity=".45"/>
-      <path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2.6 2.6"/>
-      <circle cx="10" cy="11" r="1.9" fill="#a8433b"/>
-    </svg>
+<a class="brand" href="index.html">
+<svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
+<rect height="13" rx="1" stroke="currentColor" stroke-width="1.6" width="7" x="3" y="8"></rect>
+<rect height="6" opacity=".45" rx="1" stroke="currentColor" stroke-width="1.6" width="7.5" x="13.5" y="15"></rect>
+<path d="M21.5 2.8 11.6 9.4" stroke="#15688f" stroke-dasharray="2.6 2.6" stroke-linecap="round" stroke-width="1.6"></path>
+<circle cx="10" cy="11" fill="#a8433b" r="1.9"></circle>
+</svg>
     Virtual Radiosonde
   </a>
-  <noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
+<noscript><nav><a href="index.html">Home</a> <a href="theory.html">Theory</a> <a href="overview.html">Method</a> <a href="results.html">Results</a> <a href="data.html">Data</a></nav></noscript>
 </div></header>
-
-<div class="shell"><nav class="side" aria-label="On this page"></nav><main>
-<h1>A weather balloon that never launches</h1>
-<p class="lead">We are trying to read the lowest hundred metres of the air above a city from satellite radar, using the buildings themselves as the measuring stick.</p>
-<p class="asof">Status on 12 October 2026. The project runs until 22 October 2026.</p>
-
-<section class="app-card" data-report-summary aria-live="polite"><p>Loading the report run...</p></section>
-<!-- Source: virtual-radiosonde 03_notebooks/07_estimation/estimation.ipynb (12 October 2026). -->
-
-<h2 id="idea" data-short="The idea">The idea</h2>
-<p>A <span class="t" data-tip="The instrument on a weather balloon: pressure, temperature, humidity and position, sent back on the way up.">radiosonde</span> measures pressure, temperature and humidity on its way up through the air. The Netherlands launches them from De Bilt, never over a city, and the archived records say little about the lowest few hundred metres. Cities are where that layer matters most: heat, air quality and weather models all depend on it.</p>
-<p>Radar satellites see thousands of fixed points on building facades and measure changes in their distance to about a millimetre. The air slows the radar signal down a little. A point high on a tower looks through less of the lowest air than a point near the street. Compare the two, and compare one pass of the satellite with an earlier one, and what is left is mostly the change in the layer of air between the two heights, plus whatever the buildings themselves did.</p>
-
-<figure class="diagram">
-<svg data-svg="d7" viewBox="0 0 760 420" width="100%" role="img" aria-labelledby="d7t d7d" xmlns="http://www.w3.org/2000/svg">
-  <title id="d7t">Two radar points at different heights, and the layer of air between them</title>
-  <desc id="d7d">A tall building carries radar point A about 50 m up; a low building carries point B near the street. The satellite, to the upper right, sends parallel rays to both. The ray to the low point crosses extra air between the two heights, and that layer is shaded. The difference of the two delays measures that layer, plus whatever the buildings did.</desc>
-  <defs><marker id="d7arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/></marker></defs>
-
-  <!-- the heights of A and B -->
-  <line x1="60" y1="150" x2="648" y2="150" class="svg-line" stroke-dasharray="4 4"/>
-  <line x1="60" y1="300" x2="648" y2="300" class="svg-line" stroke-dasharray="4 4"/>
-  <rect x="176" y="150" width="248" height="150" class="svg-layer"/>
-
-  <!-- the extra path of the lower ray, inside the layer -->
-  <line x1="604" y1="150" x2="520" y2="300" stroke="var(--accent)" stroke-width="5" opacity=".45"/>
-
-  <!-- buildings and ground -->
-  <rect x="90" y="100" width="80" height="230" class="svg-building"/>
-  <line x1="90" y1="140" x2="170" y2="140" class="svg-line"/><line x1="90" y1="180" x2="170" y2="180" class="svg-line"/>
-  <line x1="90" y1="220" x2="170" y2="220" class="svg-line"/><line x1="90" y1="260" x2="170" y2="260" class="svg-line"/>
-  <rect x="430" y="280" width="90" height="50" class="svg-building"/>
-  <rect x="30" y="330" width="610" height="12" class="svg-ground"/>
-  <text x="34" y="360" class="svg-small">quay, about 3 m above sea level</text>
-
-  <!-- satellite -->
-  <g transform="translate(660,50)">
-    <rect x="-14" y="-8" width="28" height="16" class="svg-box"/>
-    <rect x="-46" y="-4" width="28" height="8" class="svg-box-fill"/><rect x="18" y="-4" width="28" height="8" class="svg-box-fill"/>
-  </g>
-  <text x="744" y="84" class="svg-small" text-anchor="end">TerraSAR-X, every 11 days,</text>
-  <text x="744" y="98" class="svg-small" text-anchor="end">from the east, 23° from vertical</text>
-
-  <!-- the two rays, parallel -->
-  <line x1="254" y1="4" x2="173" y2="148" class="svg-ray" marker-end="url(#d7arr)"/>
-  <line x1="646" y1="60" x2="523" y2="297" class="svg-ray" marker-end="url(#d7arr)"/>
-
-  <!-- the two points -->
-  <circle cx="170" cy="150" r="5" class="svg-dot"/>
-  <text x="178" y="141" class="svg-text" font-weight="600">A</text>
-  <text x="192" y="141" class="svg-small">radar point, 50 m up</text>
-  <circle cx="520" cy="300" r="5" class="svg-dot"/>
-  <text x="530" y="321" class="svg-text" font-weight="600">B</text>
-  <text x="544" y="321" class="svg-small">radar point, 5 m up</text>
-
-  <!-- labels inside the layer -->
-  <text x="300" y="206" class="svg-text" text-anchor="middle" font-weight="600">the layer of air we measure</text>
-  <text x="300" y="226" class="svg-small" text-anchor="middle">45 m apart here;</text>
-  <text x="300" y="240" class="svg-small" text-anchor="middle">at most 83 m in this data set</text>
-  <text x="612" y="202" class="svg-small">the extra air</text>
-  <text x="612" y="216" class="svg-small">ray B crosses</text>
-
-  <!-- the sum -->
-  <text x="380" y="390" class="svg-eq" text-anchor="middle">delay(B) − delay(A)  =  the air in the shaded layer  +  what the buildings did</text>
-  <text x="380" y="408" class="svg-small" text-anchor="middle">everything above both points, and everything common to the whole scene, cancels in the difference</text>
-</svg>
-<figcaption>The idea in one drawing. Two radar points, one high and one low; the difference of their delays measures the layer of air between them, plus whatever the buildings did in the meantime.</figcaption>
-</figure>
-
-<p>That last part is the hard part. Buildings settle, and they grow a little when warm and shrink when cold. A tall building grows more, so its expansion looks like a height-dependent air signal. Most of the current work is about telling the two apart honestly, and about knowing where the zero of the measurement is.</p>
-
-<div class="tech">
-<p>TerraSAR-X persistent scatterers over Kop van Zuid, Rotterdam, descending track, 11-day repeat. For two scatterers at different heights the interferometric double difference (point minus point, pass minus reference pass) cancels everything the two share, including the air above both of them. What remains is the change of the integrated delay <code>d = 10<sup>-6</sup> &int; N ds</code> through the layer between the two heights, plus differential deformation and noise. The target product is the refractivity <i>N</i> of near-surface layers; pressure, temperature and humidity separately are a stretch goal. Every result is relative in space and in time: an absolute profile needs an external reference.</p>
-</div>
-<!-- Sources: ASG Project 01_reference/checked-numbers.md (method, N success criterion, P/T/e stretch, 11-day revisit); 01_reference/notes/2026-09-30-reference-aware-estimation-pilot.md (absolute profile needs an external reference). -->
-
-<h2 id="status" data-short="The story">The story, chapter by chapter</h2>
-<p>The site follows the paper, chapter by chapter, in the same order as the menu above.</p>
-<ol class="steps">
-  <li><a class="name" href="theory.html">1. Theory</a><span class="badge done">paper ch. 2</span>
-    <p>Why a radar delay measures the air: refractivity, how it depends on pressure, temperature and above all humidity, and why two points at different heights on one building see the air between them.</p></li>
-  <li><a class="name" href="overview.html">2. Method</a><span class="badge done">paper ch. 3 and 4</span>
-    <p>Four steps, each a tab under Method. <a href="overview.html">Overview</a>: the three parts on one map. <a href="simulator.html">Simulator</a>: a synthetic city under a known atmosphere, with building movement and noise you switch on and off. <a href="estimation.html">Estimation</a>: from the radar's double differences to the refractivity in 40 m layers, one profile per pass. <a href="buildings.html">Buildings</a>: they sink, shrink and expand with temperature by ten to a few hundred times the air signal; the model that removes it, the animations and the 3D city.</p></li>
-  <li><a class="name" href="results.html">3. Results</a><span class="badge pending">first look</span>
-    <p>The end goal: the estimation on six years of real TerraSAR-X data of Rotterdam, checked against the weather station, and what is not validated yet.</p></li>
-  <li><a class="name" href="data.html">4. Data</a><span class="badge done">in hand</span>
-    <p>The radar processings, the reference, building heights, soundings, weather stations, towers and the reconstructed air near the ground, with the rule for what may be published.</p></li>
-  <li><a class="name" href="#paper">Paper</a><span class="badge pending">due 22 Oct</span>
-    <p>One manuscript by the whole team. The draft is not on this site.</p></li>
-</ol>
-
-<h2 id="claims" data-short="What holds">What the report supports</h2>
-<p>The radar has modest agreement with the ground station. The report compares motion fitted per building or per scatterer, different layer choices, and an optional station-based air prior. An air prior uses station information, so its agreement with that station is not an independent validation.</p>
-<p>No collocated vertical air profile validates the real-data retrieval. The reported RMS differences use the station's refractivity carried upward as a comparison, not measured urban truth. Explore the <a href="results.html">report results</a> and the <a href="simulator.html?atm=real">real-data simulator</a>.</p>
-
-<h2 id="paper" data-short="Paper and team">Paper and team</h2>
-<p>The whole team writes one manuscript. Its draft is not on this site until it is submitted; this section says what it is about and how it is organised.</p>
-
-<h3 id="paper-paper">The paper</h3>
-<p><b>Reconstruction of the near-surface atmospheric refractivity profile from satellite InSAR: potential and limitations.</b> Submission and final presentation: 22 October 2026.</p>
-<p>The success criterion is the refractivity of the near-surface air, one number that combines pressure, temperature and humidity. Separating pressure, temperature and humidity is the stretch goal.</p>
-<!-- Sources: vrs-paper main.tex (title, chapter inputs), commit 2b4a7eb of 02-10-2026; ASG Project README.md (22 October 2026); 01_reference/checked-numbers.md (N success criterion, P/T/e stretch goal). The abstract in main.tex is a placeholder from the skeleton and is NOT used here. -->
-
-<h3 id="paper-outline">How it is organised</h3>
-<div class="tbl"><table>
-<thead><tr><th>Chapter</th><th>What it covers</th></tr></thead>
-<tbody>
-<tr><td>1 Introduction</td><td>Why cities need repeated profiles of the lowest air; what radiosondes observe today; the urban heat island; weather forecasting</td></tr>
-<tr><td>2 Theory</td><td>Radar phase and propagation delay; refractivity of moist air and its sensitivity to humidity and temperature; surface delay models; the temperature effect; from an integrated delay to a profile</td></tr>
-<tr><td>3 Methodology</td><td>The end-to-end simulation; refractivity and delay; making residuals; temporal double differences; reference choices for the radar time series (draft); separating refractivity from building movement</td></tr>
-<tr><td>4 Results</td><td>Radiosonde reference results; joint atmospheric estimation; comparison with GNSS</td></tr>
-<tr><td>5 to 7</td><td>Discussion and future research questions; impact and limitations; conclusions</td></tr>
-<tr><td>Appendix</td><td>Background on radio-wave propagation</td></tr>
-</tbody></table></div>
-<p class="small">Chapter structure as of 2 October 2026; it may still change.</p>
-<!-- Source: vrs-paper sections/ file names and headings (110 to 810), commit 2b4a7eb; 331_reference_choices.tex added in local commit 2401b55 (not pushed). -->
-
-<h3 id="paper-team">Team</h3>
-<!-- DECISION NEEDED: confirm the student list (all twelve still active?) before publishing. Source: vrs-paper sections/010_authors.tex, commit 2b4a7eb. -->
-<p>Twelve MSc students of Delft University of Technology, from Civil Engineering and Geosciences, Aerospace Engineering, Mechanical Engineering, Geomatics and Computer Science:</p>
-<ul class="cols">
-  <li>Sander da Costa</li>
-  <li>Jaap de Ruiter</li>
-  <li>Dirk van Dale</li>
-  <li>Alejandro Giner Gil</li>
-  <li>Phoebe Smirk</li>
-  <li>Quinten Uivel</li>
-  <li>Lars van Dijk</li>
-  <li>Rosalyn van Hemert</li>
-  <li>Shaquille Huiswoud</li>
-  <li>Akhil Veeranki</li>
-  <li>Jihun Yoo</li>
-  <li>Oula Zhu</li>
-</ul>
-<p>Supervision: Ramon Hanssen and Freek van Leijen (TU Delft), with Hanno Maljaars (SkyGeo).</p>
-
-<h3 id="paper-course">The course</h3>
-<p>Applied Space Geodesy (AESM5240C), TU Delft, 31 August to 22 October 2026: a coached team project that goes from an idea through research to a scientific paper and a working prototype in about eight weeks.</p>
-<p>Repositories: <a href="https://github.com/vrs-tudelft">github.com/vrs-tudelft</a>. The analysis repository and the paper repository are private to the team; this site is the public part.</p>
-<!-- Source: ASG Project README.md (course, dates); repository visibility on 5 October 2026 (virtual-radiosonde, vrs-paper, vrs-data private; site public). -->
-
-<h2 id="about" data-short="About">About</h2>
-<p>A student team project of the course Applied Space Geodesy (AESM5240C) at Delft University of Technology, 31 August to 22 October 2026, supervised by Ramon Hanssen with Freek van Leijen (TU Delft) and Hanno Maljaars (SkyGeo). The team is listed on <a href="#paper-team">Paper and team</a>.</p>
-<details>
-  <summary>Who made what is on this site</summary>
-  <!-- DECISION NEEDED: confirm this credit paragraph with the people named before publishing. -->
-  <p>Each page names the analysis it summarises and when it was done. The site, its figures from the radar data and the reference and estimation analyses were prepared by Quinten Uivel, with an AI coding assistant (Claude Code) for code, plotting and drafting text from the numbers the scripts produced. The low-level reconstruction and tower validation are Sander da Costa's. The data set, the idea and the questions that shaped the work are Ramon Hanssen's. No number on this site is invented: each one comes from a dated note in the team repository.</p>
-</details>
-<details>
-  <summary>What is on this site, and what is not</summary>
-  <p>The TerraSAR-X point sets were provided for the course and may not be passed on. No radar point, position or single time series is here. Everything drawn from the radar data is a mean over at least 20 points, shown with the spread of the points behind it, or comes from fully synthetic tests. A script checks every published data file against that rule. The draft text of the paper is not here either. The full rule is on the <a href="data.html#rule">data page</a>.</p>
-</details>
-<details>
-  <summary>Sources and licences</summary>
-  <p>Weather: KNMI station 344 Rotterdam and KNMI Cabauw tower data (CC BY 4.0), the NOAA IGRA2 archive of De Bilt and Beauvechain soundings, ICOS Brasschaat tower data (ICOS CC BY 4.0 licence), ICON-D2 weather model values through Open-Meteo. Buildings: the BAG register via PDOK (CC0) and the 3DBAG (CC BY 4.0). Aerial imagery: PDOK (CC BY 4.0) in the 3D view. Viewer: three.js (MIT). The text, drawings and figures of this site: CC BY 4.0, Virtual Radiosonde team, TU Delft, 2026.</p>
-</details>
-<!-- Sources: ASG Project README.md (course, dates); 03_notebooks/05_annual_low_level_reconstruction/docs/DATA_SOURCES.md (ICOS, Cabauw, ICON-D2, IGRA, licences). -->
-
-<footer data-shared></footer>
+<div class="app site-app">
+<aside class="app-panel sim-panel site-panel">
+<div class="sim-head"><span class="sim-head-ic" data-icon="radar"></span><div><h1>Virtual Radiosonde</h1><p class="app-intro">Can satellite observations of buildings reveal the air above a city?</p></div></div>
+<p class="site-status">Research prototype</p><a class="site-primary" href="simulator.html"><i data-icon="play"></i>Open the simulator</a><a class="site-secondary" href="results.html">Inspect the real run <span>↗</span></a>
+<div class="site-context"><h2>At a glance</h2><dl><div><dt>Place</dt><dd>Kop van Zuid, Rotterdam</dd></div><div><dt>Radar passes</dt><dd><span data-report-value="passes">…</span></dd></div><div><dt>Period</dt><dd>2020–2026</dd></div></dl></div>
+<p class="site-small">Hover, focus or tap an <span aria-hidden="true">ⓘ</span> for definitions and data context.</p>
+<footer class="site-foot"><a href="index.html#about">Sources &amp; team</a><span>·</span><a href="https://github.com/vrs-tudelft">GitHub</a></footer>
+</aside>
+<main class="app-main site-main">
+<div aria-label="Virtual Radiosonde views" class="sim-tabs site-tabs" role="tablist"><button aria-controls="overview" data-site-tab="overview" id="tab-overview" role="tab" type="button"><i data-icon="radar"></i>Overview</button><button aria-controls="report" data-site-tab="report" id="tab-report" role="tab" type="button"><i data-icon="chart"></i>Report run</button><button aria-controls="about" data-site-tab="about" id="tab-about" role="tab" type="button"><i data-icon="info"></i>About &amp; sources</button></div>
+<section aria-labelledby="tab-overview" class="site-view" data-site-view="overview" id="overview" role="tabpanel"><span class="section-anchor" id="status"></span><span class="section-anchor" id="idea"></span><div class="site-kpis"><div class="stat"><span class="v"><span data-report-value="points">…</span></span><span class="k">points used</span></div><div class="stat"><span class="v"><span data-report-value="buildings">…</span></span><span class="k">buildings</span></div><div class="stat"><span class="v"><span data-report-value="r">…</span></span><span class="k">lower-layer station r</span></div></div><div class="site-grid site-grid-home"><section class="app-card site-feature"><div class="sim-card-head"><h2><i class="h-ic" data-icon="radar"></i>A profile from building points<button aria-label="About A profile from building points" class="t i tip-trigger" data-tip="A higher radar point looks through more near-surface air. The height contrast contains both the atmosphere and building movement, which the fit tries to separate." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><div class="site-scene-frame"><svg aria-label="Satellite observations of tall buildings contain both building movement and atmospheric delay. Model the building movement to estimate air refractivity in layers." class="site-scene" role="img" viewbox="0 0 760 315" xmlns="http://www.w3.org/2000/svg">
+<defs><lineargradient id="air-fill" x2="0" y2="1"><stop stop-color="#e2eff6"></stop><stop offset="1" stop-color="#fbfaf7"></stop></lineargradient></defs>
+<rect fill="url(#air-fill)" height="250" rx="12" width="724" x="18" y="14"></rect>
+<path d="M580 40L180 242M580 40L350 242" opacity=".5" stroke="#15688f" stroke-dasharray="5 5"></path>
+<path d="M561 33l24 14 14-20-24-14zM551 17l15 9-11 15-15-9M598 45l15 9 11-15-15-9" fill="#15688f"></path>
+<path d="M44 247H716" stroke="#b7b9ba" stroke-width="2"></path>
+<path d="M130 247V169h60v78M230 247V72h66v175M340 247V129h66v118M445 247V186h68v61" fill="#fefefe" stroke="#3c4249" stroke-width="2"></path>
+<path d="M18 169H742M18 72H742" stroke="#c58a2c" stroke-dasharray="4 5"></path>
+<g fill="#15688f"><circle cx="242" cy="86" r="4"></circle><circle cx="256" cy="108" r="4"></circle><circle cx="273" cy="135" r="4"></circle><circle cx="284" cy="162" r="4"></circle><circle cx="354" cy="146" r="4"></circle><circle cx="380" cy="174" r="4"></circle><circle cx="158" cy="193" r="4"></circle></g>
+<g fill="#3c4249" font-family="system-ui,sans-serif" font-size="15"><text x="545" y="109">More air above</text><text x="545" y="130">the higher point</text><text x="545" y="207">Layers of</text><text x="545" y="228">refractivity N</text><text x="45" y="291">Radar observations</text><text x="287" y="291">Building-motion fit</text><text x="540" y="291">Air-layer estimate</text></g>
+<path d="M215 286h48m-7-5 7 5-7 5M465 286h48m-7-5 7 5-7 5" fill="none" stroke="#15688f" stroke-width="2"></path>
+</svg></div></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="chart"></i>What the evidence says<button aria-label="About What the evidence says" class="t i tip-trigger" data-tip="The report compares the radar with KNMI 344 ground refractivity carried upward. That is a proxy, not a measured vertical truth." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p class="site-takeaway">Seasonal agreement.<br/>Vertical accuracy unverified.</p><p>The lowest layer has modest agreement with the ground station.</p><a href="results.html">Explore the comparison →</a></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="play"></i>Three ways to explore</h2></div><div class="site-link-list"><a href="theory.html"><i data-icon="thermo"></i><span>Change the air<small>Pressure, temperature and humidity</small></span></a><a href="buildings.html"><i data-icon="building"></i><span>Move a building<small>Sinking, shrinking and thermal dilation</small></span></a><a href="overview.html"><i data-icon="fork"></i><span>Follow the method<small>From observations to the estimate</small></span></a></div></section></div></section><section aria-labelledby="tab-report" class="site-view" data-site-view="report" id="report" role="tabpanel"><span class="section-anchor" id="claims"></span><div class="site-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="chart"></i>The report run</h2></div><div data-report-summary=""></div></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="target"></i>What the comparison means<button aria-label="About What the comparison means" class="t i tip-trigger" data-tip="A station-based prior reuses station information during the fit. Its agreement with that station is partly circular." type="button"><span aria-hidden="true" class="info">i</span></button></h2></div><p>The default uses motion per building, two layers and no station-based air prior.</p><p class="site-boundary">Ground-station agreement does not establish vertical accuracy over the city.</p><p>The air prior and per-scatterer fit are comparisons in <a href="results.html">Results</a>.</p></section></div></section><section aria-labelledby="tab-about" class="site-view" data-site-view="about" id="about" role="tabpanel"><span class="section-anchor" id="paper-course"></span><span class="section-anchor" id="paper-team"></span><span class="section-anchor" id="paper-outline"></span><span class="section-anchor" id="paper-paper"></span><span class="section-anchor" id="paper"></span><div class="site-grid"><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="info"></i>The project</h2></div><p><b>Virtual Radiosonde</b><br/>Applied Space Geodesy, TU Delft, 2026.</p><p>Reconstruction of near-surface atmospheric refractivity from satellite InSAR: potential and limitations.</p><p>The report is written in Overleaf; the public site explains its method and aggregate results.</p><details><summary>Project contributors</summary><p>Sander da Costa, Jaap de Ruiter, Dirk van Dale, Alejandro Giner Gil, Phoebe Smirk, Quinten Uivel, Lars van Dijk, Rosalyn van Hemert, Shaquille Huiswoud, Akhil Veeranki, Jihun Yoo, Oula Zhu.</p><p>Supervision: Ramon Hanssen, Freek van Leijen and Hanno Maljaars.</p></details></section><section class="app-card"><div class="sim-card-head"><h2><i class="h-ic" data-icon="table"></i>Sources and licences</h2></div><dl class="site-list"><div><dt>Radar</dt><dd>TerraSAR-X, supplied for the course by R. F. Hanssen. Raw points remain private.</dd></div><div><dt>Weather</dt><dd>KNMI, NOAA IGRA2 and ICOS. KNMI and ICOS data: CC BY 4.0.</dd></div><div><dt>Buildings</dt><dd>BAG via PDOK, CC0; 3DBAG, CC BY 4.0.</dd></div><div><dt>Site</dt><dd>Text and figures: CC BY 4.0, Virtual Radiosonde team.</dd></div></dl></section></div></section>
 </main></div>
-<script defer src="js/nav.js?v=20261013g"></script>
-<script defer src="js/report.js?v=20261101"></script>
-</body>
-</html>
+<script defer="" src="js/nav.js?v=20261101b"></script>
+<script defer="" src="js/icons.js?v=20261101b"></script>
+<script defer="" src="js/site-layout.js?v=20261101b"></script>
+<script defer="" src="js/report.js?v=20261101b"></script>
+</body></html>

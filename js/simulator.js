@@ -249,6 +249,7 @@
   function render() { renderView(); }
   function renderView() {
     out.hidden = false;
+    if(isReal()&&(view==='dist'||view==='decide'))view='steps';
     showTabs();
     realMode(isReal());
     if (isReal()) { renderReal(); return; }
@@ -1422,8 +1423,9 @@
   function realMode(on) {
     var sub = document.querySelector('[data-atm-sub="real"]');
     if (sub && realDoc) sub.textContent = realDoc.passes + " passes";
-    form.querySelectorAll(".sim-only").forEach(function (f) { f.disabled = on; });
+    form.querySelectorAll(".sim-only").forEach(function (f) { f.disabled = on; f.hidden=on; });
     form.querySelectorAll(".real-only").forEach(function (f) { f.hidden = !on; });
+    document.querySelectorAll('[data-tab="dist"],[data-tab="decide"]').forEach(function(b){b.hidden=on;});
     var rb = document.getElementById("sim-reset"), asof = document.getElementById("sim-asof");
     if (rb) rb.style.display = on ? "none" : "";
     if (asof) asof.textContent = on && realDoc ? "Real TerraSAR-X passes " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + ", shown only as means over each layer's points; KNMI 344 weather (CC BY 4.0). Generated on " + fmtDate(realDoc.generated) +
@@ -1492,7 +1494,7 @@
     if (isReal()) {
       var rp = pass;
       return "Real TerraSAR-X data" + (realDoc ? ", " + fmtDate(realDoc.first) + " to " + fmtDate(realDoc.last) + " (" + realDoc.passes + " passes)" : "") +
-        "; truth: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + MOTION_NAME[s.motion] + "; " + L + rp + ". Virtual Radiosonde.";
+        "; comparison proxy: KNMI 344 Rotterdam The Hague Airport, carried up with −55 N/km; air prior: " + (realPrior() === "none" ? "none (radar only)" : "from the ground") + "; " + MOTION_NAME[s.motion] + "; " + L + rp + ". Virtual Radiosonde.";
     }
     var on = TOGGLES.filter(function (k) { return s[k] === "1"; }).map(function (k) { return DIST[k].label.toLowerCase(); });
     return "Simulation: " + (ATM_NAME[s.atm] || s.atm).replace(/^the /, "") + "; " + (on.length ? listWords(on) : "no disturbances") + "; " + s.noise + " mm noise; " +

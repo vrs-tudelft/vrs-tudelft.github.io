@@ -751,3 +751,24 @@ main > .sim { max-width: 1060px; }
 #report-controls .sim-field { margin:0; min-width:0; }
 #report-controls select { width:100%; min-height:44px; padding:8px 10px; border:1px solid var(--line,#cdc9be); border-radius:6px; background:var(--paper,#fcfbf8); color:inherit; font:inherit; }
 @media(max-width:600px) { #report-controls { grid-template-columns:1fr; } }
+
+/* Navigation stays quiet; contextual help escapes all scrolling panels. */
+.top nav { display:flex; align-items:center; gap:2px; }
+.site-menu { position:relative; margin:0; border:0; padding:0; background:none; }
+.site-menu summary { list-style:none; padding:7px 11px; font-size:.85rem; color:var(--muted); cursor:pointer; border-radius:7px; }
+.site-menu summary::-webkit-details-marker { display:none; }
+.site-menu summary::after { content:'⌄'; margin-left:6px; font-size:.75rem; }
+.site-menu summary[aria-current] { background:color-mix(in srgb,var(--ink) 6%,transparent); color:var(--ink); }
+.site-menu-items { position:absolute; top:100%; right:0; z-index:100; min-width:180px; padding:6px; border:1px solid var(--line); border-radius:9px; background:var(--surface); box-shadow:var(--shadow); }
+.top .site-menu-items a { display:block; margin:0; padding:8px 10px; }
+.site-menu summary:focus-visible,.t:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.tip-trigger { display:inline-grid; place-items:center; vertical-align:middle; background:none; border:0; padding:3px; min-width:26px; min-height:26px; cursor:help; color:inherit; font:inherit; border-radius:5px; }
+.tip-trigger .info { margin:0; }
+.has-portal-tooltips .t::after,.has-portal-tooltips .t::before { display:none!important; }
+.site-tooltip { position:fixed; z-index:1000; width:max-content; max-width:min(340px,calc(100vw - 24px)); padding:10px 12px; color:#fff; background:var(--ink); border-radius:8px; box-shadow:var(--shadow); font-size:.81rem; line-height:1.55; overflow:auto; pointer-events:auto; }
+.site-tooltip[hidden] { display:none!important; }
+@media(max-width:600px) { .top .top-inner { gap:4px 10px; } .top nav { flex-wrap:nowrap; gap:0; } .top nav>a,.site-menu summary { padding:7px 9px; font-size:.8rem; } }
+.sim-tabs button[hidden] { display:none!important; }
+.th-detail { margin-top:12px; padding:10px 0 0; border:0; border-top:1px solid var(--line); background:none; }
+.th-detail summary { font-size:.8rem; color:var(--muted); }
+.th-detail .th-tiles { margin-top:12px; }

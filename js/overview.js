@@ -17,7 +17,7 @@
   var G = { mainW: 262, sideW: 200, gapIn: 40, laneGap: 130, rowH: 112, nodeH: 72, top: 110, left: 40, sumH: 196 };
   var LANE_COL = { air: "#4f9a5a", sim: "#8061c0", est: "#3a78a8" };
   var open = {};
-  F.lanes.forEach(function (l) { open[l.id] = true; });
+  F.lanes.forEach(function (l) { open[l.id] = false; });
   var path = null, step = -1;                 // the path being followed, and its current step
   var pinned = null, hoverId = null;
   var view = { x: 0, y: 0, k: 1 };
@@ -281,7 +281,7 @@
     h += '<div><div class="ov-card-lane lane-' + n.lane + '">' + esc(l ? l.num + " · " + l.title : "") + "</div><h3>" + esc(n.title) + "</h3></div></div>";
     if (n.tip) h += "<p>" + n.tip + "</p>";
     if (n.number) h += '<p class="ov-num">' + n.number + "</p>";
-    if (n.code) h += '<p class="ov-code"><code>' + esc(n.code) + "</code></p>";
+    if (n.code) h += '<button type="button" class="t i tip-trigger" aria-label="Source context" data-tip="'+esc(n.code)+'"><span class="info" aria-hidden="true">i</span></button>';
     if (n.type === "summary") h += '<p class="ov-hint">Click the box to unfold this part.</p>';
     if (n.link) h += '<a class="ov-go" href="' + esc(n.link) + '">' + esc(n.linkText || "Read more on the website") + " &rarr;</a>";
     if (P && si >= 0 && isPinned && si === step) {
