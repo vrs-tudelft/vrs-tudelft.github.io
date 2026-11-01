@@ -36,7 +36,8 @@ Do not maintain a second live result summary. Its defaults are motion per
 building, two layers and no station-based air prior. The private
 `vrs-data@report-2026-10-31` release preserves exact inputs and provenance.
 
-The precomputed synthetic grid under `data/simulator/` is unchanged. The report
+This layout revision preserves the current synthetic grid under `data/simulator/`,
+including the newly added sensor-centred Cabauw setups. The report
 uses 213 radar-date epochs, 361 selected sounding epochs and 116 Cabauw mornings;
 those are distinct from whole-archive source counts. The full expanded weather
 contribution has 1,279 reports, with one duplicated alias excluded from canonical
