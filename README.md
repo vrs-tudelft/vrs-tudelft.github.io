@@ -18,8 +18,11 @@ Pages publishes `main`.
    BAG identities belong beside the spatial evidence; exact layer numbers remain
    available without a second results page.
 
-Every main view uses the compact left rail and full-width dashboard. Help explains
-definitions and assumptions; the scientific conclusion and limits stay visible.
+Every main view uses the compact left rail and full-width dashboard. Put explanations,
+assumptions and result interpretation in contextual info or warning icons beside the
+relevant chart, metric or control. Support hover, keyboard focus, Escape and tap. Do
+not add explanatory banners, summary strips or repeated caption paragraphs. Chart values,
+units, selected dates, legends and operational loading/error messages stay visible.
 Desktop rails and main views must have **zero scroll range**, including short
 browser content areas. Do not hide overflow to make a layout check pass.
 

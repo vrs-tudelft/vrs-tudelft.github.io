@@ -46,7 +46,7 @@
 .site-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
 .site-kpis .stat { border-radius:9px; padding:10px 14px; min-height:0; }
 .site-kpis .stat .v { font-size:1.2rem; line-height:1.35; }.site-kpis .stat .k { font-size:.74rem; margin-top:1px; }
-.site-main .site-boundary { padding:8px 12px; border-radius:7px; border-left:3px solid var(--accent); background:var(--accent-soft); font-size:.8rem; line-height:1.5; margin:0 0 12px; color:var(--ink-2); }
+
 .site-list { margin:0; font-size:.85rem; }.site-list>div { margin:0 0 14px; }.site-list dt { font-weight:650; }.site-list dd { margin:2px 0 0; color:var(--ink-2); line-height:1.55; }
 .site-view .tbl { margin:0; }.site-view table { font-size:.8rem; }.site-view th,.site-view td { padding:9px 8px; }
 .site-panel #report-controls { display:flex; flex-direction:column; gap:16px; padding:0; }

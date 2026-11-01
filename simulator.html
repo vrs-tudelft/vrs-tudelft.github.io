@@ -10,7 +10,7 @@
 <link href="favicon.ico" rel="icon" sizes="any"/>
 <link href="apple-touch-icon.png" rel="apple-touch-icon"/>
 <link href="style.css?v=20261101-story" rel="stylesheet"/>
-<link href="css/workspace.css?v=20261101-story" rel="stylesheet"/><link href="css/story.css?v=20261101-story" rel="stylesheet"/></head>
+<link href="css/workspace.css?v=20261101-help-sweep" rel="stylesheet"/><link href="css/story.css?v=20261101-help-sweep" rel="stylesheet"/></head>
 <body class="app-page">
 <header class="top"><div class="top-inner"><a class="brand" href="index.html">
 <svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
@@ -32,7 +32,7 @@
 </div><div class="story-step">2 · A controlled test</div>
 <form aria-label="Simulation and estimation settings" class="sim-controls" id="sim-controls" onsubmit="return false">
 <fieldset class="sim-field">
-<legend><span class="lg-ic" data-icon="cloud"></span>Known air input <span class="t i" data-tip="These profiles supply known air to simulated radar. Station-built air uses weather assumptions; balloon and Cabauw inputs come from other places, not a measured Rotterdam column."><span class="info">i</span></span></legend>
+<legend><span class="lg-ic" data-icon="cloud"></span>Known air input <button id="experiment-context" aria-label="About selected experiment" class="t i tip-trigger" data-tip="These profiles supply known air to simulated radar. The simulation and estimator share model assumptions; this is not urban field validation." type="button"><span aria-hidden="true" class="info">i</span></button></legend>
 <div class="tiles tiles-4 atmosphere-choices" data-control="atm">
 <label class="tile"><input name="atm" type="radio" value="simulated"/><span><i data-icon="cloud"></i><b>Station-built air</b><small data-atm-sub="simulated">KNMI-built</small></span></label>
 <label class="tile"><input name="atm" type="radio" value="radiosonde"/><span><i data-icon="balloon"></i><b>Balloon-based air</b><small data-atm-sub="radiosonde">balloons 2025</small></span></label>
@@ -92,9 +92,9 @@
 <button aria-controls="view-pte" data-tab="pte" id="tab-pte" role="tab" type="button">What weather is inferred?</button>
 </div>
 <div class="sim-top">
-<p class="verdict" id="sim-verdict"></p>
+
 <div class="stats sim-stats" id="sim-stats"></div>
-</div><p class="experiment-context" id="experiment-context">Simulated radar · known air input · matched-model test</p>
+</div>
 <div aria-labelledby="tab-steps" class="sim-view sim-dash" id="view-steps" role="tabpanel"><span class="section-anchor" id="steps"></span>
 <section class="app-card sim-pass-card">
 <div class="sim-card-head">
@@ -141,11 +141,11 @@
 <div class="sim-chart sim-fill" data-pick="" id="sim-abs-pass"></div>
 </div>
 <ul class="sim-legend sim-mini-legend" id="sim-abs-legend"></ul>
-<p class="sim-sub sim-abs-note" id="sim-abs-note"></p>
+
 </section></dialog></div>
-<div aria-labelledby="tab-pte" class="sim-view sim-dash inference-dash" hidden="" id="view-pte" role="tabpanel"><span class="section-anchor" id="pte"></span><p class="inference-boundary">N is the radar estimate. P and T use surface data and assumptions; vapour pressure e is derived from all three.</p>
+<div aria-labelledby="tab-pte" class="sim-view sim-dash inference-dash" hidden="" id="view-pte" role="tabpanel"><span class="section-anchor" id="pte"></span>
 <div class="pte-bar">
-<button class="story-secondary" data-open-dialog="conversion-settings" type="button">P &amp; T assumptions…</button><div aria-label="What to show" class="seg pte-seg" role="radiogroup">
+<button class="story-secondary" data-open-dialog="conversion-settings" type="button">P &amp; T assumptions…</button><button id="pte-note" aria-label="About selected weather profile" class="t i tip-trigger" data-tip="P and T use surface information and profile assumptions. Vapour pressure is derived from N, P and T." type="button"><span aria-hidden="true" class="info">i</span></button><output id="pte-pass-label" hidden></output><div aria-label="What to show" class="seg pte-seg" role="radiogroup">
 <label><input checked="" name="pte-show" type="radio" value="errors"/><span>Error per layer</span></label>
 <label><input name="pte-show" type="radio" value="coldest"/><span>Coldest pass</span></label>
 <label><input name="pte-show" type="radio" value="median"/><span>Median pass</span></label>
@@ -153,7 +153,7 @@
 </div>
 <button aria-pressed="false" class="pte-rand" id="pte-random" title="Show a pass picked at random; every click picks another one" type="button"><i data-icon="reset"></i>Random pass</button>
 <label class="sim-pick" id="pte-date-pick" style="display:none">Pass <select aria-label="Pass to show" id="pte-date"></select></label>
-<p class="pte-note" id="pte-note"></p>
+
 </div>
 <section class="app-card">
 <div class="sim-card-head"><h3 id="pte-N-h"><i class="h-ic" data-icon="wave"></i><span>Refractivity N</span> <span class="t i left" data-tip="" id="pte-N-sub" tabindex="0"><span class="info">i</span></span></h3></div>
@@ -165,7 +165,7 @@
 <div aria-labelledby="pte-e-h" class="sim-chart sim-fill" id="pte-e" role="img"></div>
 <ul class="sim-legend sim-mini-legend" id="pte-e-legend"></ul>
 </section>
-<dialog aria-labelledby="conversion-title" class="site-dialog conversion-dialog" id="conversion-settings"><div class="dialog-head"><h2 id="conversion-title">Surface and temperature assumptions</h2><button aria-label="Close conversion assumptions" data-close-dialog="" type="button">Close</button></div><p class="dialog-note">P uses a surface pressure boundary and hydrostatic balance. T follows the selected profile assumption. Neither is an independent radar measurement.</p><div class="conversion-controls"><label class="pte-check"><input name="pte-mother" type="checkbox"/><span>Show mother</span></label><div aria-label="Estimated profile" class="seg pte-seg" role="radiogroup" title="The estimate (and the station alone) as a profile through the layer centres, carried on to the bottom and the top like the true profile. Linear: straight lines between the centres. Smooth: a monotone cubic curve through the same points, without corners and without overshoot, since a real refractivity profile has no sharp corners.">
+<dialog aria-labelledby="conversion-title" class="site-dialog conversion-dialog" id="conversion-settings"><div class="dialog-head"><h2 id="conversion-title">Surface and temperature assumptions<button id="conversion-help" aria-label="About conversion assumptions" class="t i tip-trigger" data-tip="P uses a surface pressure boundary and hydrostatic balance. T follows the selected profile assumption. Neither is an independent radar measurement." type="button"><span aria-hidden="true" class="info">i</span></button></h2><button autofocus aria-label="Close conversion assumptions" data-close-dialog="" type="button">Close</button></div><div class="conversion-controls"><label class="pte-check"><input name="pte-mother" type="checkbox"/><span>Show mother</span></label><div aria-label="Estimated profile" class="seg pte-seg" role="radiogroup" title="The estimate (and the station alone) as a profile through the layer centres, carried on to the bottom and the top like the true profile. Linear: straight lines between the centres. Smooth: a monotone cubic curve through the same points, without corners and without overshoot, since a real refractivity profile has no sharp corners.">
 <label><input name="pte-interp" type="radio" value="lin"/><span>Profile: linear</span></label>
 <label><input name="pte-interp" type="radio" value="smooth"/><span>Smooth</span></label>
 </div><div aria-label="Temperature profile" class="seg pte-seg" id="pte-tprof" role="radiogroup" style="display:none" title="T(z) for the P, T, e conversion: the ground station falling 6.5 K/km, or a two-point profile through the ground and a station 27.5 m higher (the Sanders roof in Rotterdam), its shape learned from the Cabauw mast, a logarithmic departure from the 6.5 K/km line">
@@ -187,6 +187,6 @@
 </div>
 <script defer="" src="js/nav.js?v=20261101-story"></script>
 <script defer="" src="js/icons.js?v=20261101-story"></script>
-<script defer="" src="js/simulator.js?v=20261101-story"></script>
+<script defer="" src="js/simulator.js?v=20261101-help-sweep"></script>
 <script defer="True" src="js/dialogs.js?v=20261101-story"></script></body>
 </html>

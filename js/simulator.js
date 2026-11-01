@@ -122,13 +122,14 @@
     'sim-sc-sub':'One dot per layer and pass: recovered air change against the known input. The dashed line is exact agreement. These are simulated radar data, not measured city validation.',
     'sim-attr-sub':'Each source switched on separately, compared with air only. Bars show column RMS error; they are not additive error budgets.',
     'sim-cum-sub':'Selected sources added in the displayed order. Each step changes the column RMS error. Changing their order can change the apparent contribution.',
-    'sim-abs-sub':'A diagnostic fit of the known air alone shows how much the motion model absorbs. The prior protects the station-predicted part; it does not independently validate the urban air.',
-    'pte-N-sub':'N is the quantity estimated from the simulated radar. Error is scored against the known layer input; station extrapolation is the baseline. Joined layer means do not add vertical observations.',
+    'sim-abs-sub':'Compare the known air spread with the fitted components. Air absorbed by motion is missing from the radar-only estimate. This diagnostic uses known air alone; the prior protects the station-predicted part, without independently validating urban air.',
+    'pte-N-sub':'N is the radar estimate. P and T use surface information and profile assumptions; vapour pressure is derived from N, P and T. Errors compare with the known input. Joined layer means do not add vertical observations.',
     'pte-P-sub':'Pressure is propagated from the surface boundary with hydrostatic balance. The radar does not independently measure it. This plot scores that assumption against the known input.',
     'pte-T-sub':'Temperature follows the selected profile assumption or fitted profile constraint. It is not independently recovered from N. Errors propagate into the derived vapour pressure.',
     'pte-e-sub':'Vapour pressure is derived from N with the selected P and T assumptions. Its reported uncertainty is conditional and does not include all P/T uncertainty. It is not an independent humidity measurement.'
   };
-  function setTip(id, html) { var t=document.getElementById(id),help=shortHelp[id]||plain(html);if(t){t.setAttribute('data-tip',help);t.setAttribute('aria-label','About '+(id.includes('pte-')?'weather inference':'this comparison'));} }
+  function setTip(id, html) { var t=document.getElementById(id),help=shortHelp[id]||plain(html);if(t){t.setAttribute('data-tip',help);if(!t.hasAttribute('aria-label'))t.setAttribute('aria-label','About '+(id.includes('pte-')?'weather inference':'this comparison'));} }
+  function helpButton(id,label,help) { return '<button id="'+id+'" class="t i tip-trigger" type="button" aria-label="About '+esc(label)+'" data-tip="'+esc(help)+'"><span class="info" aria-hidden="true">i</span></button>'; }
 
   function ft(html) { return ' data-ftip="' + esc(html) + '"'; }
 
@@ -275,7 +276,6 @@
     if (!last || simMsg) return;
     var e = last.entry, s = last.state;
     var sm = summ(s) || { rmse: e.rmse, station_rmse: e.station_rmse, skill: e.skill, column_rmse: ok(e.column_rmse) ? e.column_rmse : NaN, column_station_rmse: ok(e.column_station_rmse) ? e.column_station_rmse : NaN, edges: e.edges };
-    document.getElementById("sim-verdict").textContent = verdict(e, s, sm);
     renderStats(e, s, sm);
     if (view === "steps") {
       scLayer = fillLayerPick(e, scSel, scLayer);
@@ -341,11 +341,11 @@
   function renderStats(e, s, sm) {
     var worst=Math.max.apply(null,e.rmse);
     document.getElementById('sim-stats').innerHTML=
-      stat(num(sm.column_rmse,2),'N','column RMS error','radar','s-radar')+
+      stat(num(sm.column_rmse,2),'N','column RMS error '+helpButton('sim-outcome-help','experiment performance',verdict(e,s,sm)+' Errors are against the known air input. Success under these matched assumptions is not field validation.'),'radar','s-radar')+
       stat(num(worst,2),'N','worst layer RMS error','layers','s-worst')+
       stat(num(sm.column_station_rmse,2),'N','station-only column baseline','thermo','s-station');
-    document.getElementById('experiment-context').textContent='Simulated radar · '+ATM_NAME[s.atm]+' · ground-air prior · '+
-      (MOTION_NAME[s.motion]||s.motion)+' · '+thousands(e.points_used)+' used points · matched-model test';
+    setTip('experiment-context','Simulated radar · '+ATM_NAME[s.atm]+' · ground-air prior · '+
+      (MOTION_NAME[s.motion]||s.motion)+' · '+thousands(e.points_used)+' used points. Simulation and estimation share model assumptions; this is not urban field validation.');
   }
 
   /* ---- 1. estimate against the truth over time: one panel per layer, highest on top, shared time axis */
@@ -1064,10 +1064,11 @@
   }
   /* real: the entry of real.json (no truth above the street: N and e against KNMI 344 carried up) */
   function renderPte(e, real) {
-    var pt = e.pte, note = document.getElementById("pte-note");
+    var pt = e.pte, dateLabel = document.getElementById('pte-pass-label');
+    dateLabel.hidden=true;
     pteCur = null;
     curCounts = layerN(e, real);
-    if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); note.textContent = ""; return; }
+    if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); setTip('pte-note','No weather profile is available for this combination.'); return; }
     var epochs = real ? realDoc.epochs : last.run.epochs, ps = null;
     document.getElementById("pte-random").setAttribute("aria-pressed", pteShow === "random");
     /* the two-point profile: fetched once per air, then drawn again; the switch shows when it exists */
@@ -1098,7 +1099,8 @@
     var tProfTxt = mode === "lin" ? "6.5 K per km" : mode === "log" ? "a logarithmic departure from 6.5 K per km through the ground and the 29 m station"
       : "6.5 K per km in blue, the two-point log (ground + 29 m station) in orange";
     var nUp = tpd ? tpd.T_upper.filter(ok).length : 0;
-    note.textContent=(ps?fmtDate(ps.date)+' · ':'')+'P: surface boundary + hydrostatics. T: '+tProfTxt+'. Vapour pressure uses N, P and T.';
+    setTip('pte-note','P: surface boundary + hydrostatics. T: '+tProfTxt+'. Vapour pressure uses N, P and T; it is conditional on those assumptions.');
+    dateLabel.textContent=ps?fmtDate(ps.date):'';dateLabel.hidden=!ps;
     var nl = e.edges.length - 1;
     /* T and e lumped: the T card shows the wet refractivity, the e card is hidden */
     document.getElementById("pte-e").closest("section").hidden = pteLump;
@@ -1270,7 +1272,8 @@
     return { trend: a, temp: ok(a) && ok(b) ? Math.max(0, b - a) : NaN };
   }
   function renderAbsorbed(s) {
-    var card = document.getElementById("sim-abs-card"), key = runKey(s), note = document.getElementById("sim-abs-note");
+    var card = document.getElementById("sim-abs-card"), key = runKey(s);
+    setTip('sim-abs-sub',shortHelp['sim-abs-sub']);
     if (isReal()) { card.hidden = true; return; }
     if (!(key in absDoc)) {
       if (!absP[key]) {
@@ -1287,7 +1290,7 @@
     var lay = document.getElementById("sim-abs-lay"), pas = document.getElementById("sim-abs-pass"), leg = document.getElementById("sim-abs-legend");
     if (!st || st.error) {
       lay.innerHTML = '<p class="sim-sub" style="padding:14px">Not available for this layer setup' + (st && st.error ? " (" + esc(st.error) + ")" : "") + ".</p>";
-      pas.innerHTML = ""; pas._pick = null; leg.innerHTML = ""; note.textContent = ""; return;
+      pas.innerHTML = ""; pas._pick = null; leg.innerHTML = ""; return;
     }
     var edges = st.edges, T = st.terms, terms = ABS_TERMS[s.motion] || ABS_TERMS.building;
     var allName = terms.length === 2 ? "both" : "all three";
@@ -1352,7 +1355,6 @@
           : "; per pass " + pct(w.trend) + " slow trend and " + pct(w.temp) + " building temperature beyond it";
       return "<b>" + esc(t.name.charAt(0).toUpperCase() + t.name.slice(1)) + "</b> takes " + num(r, 2) + " N rms per layer, " + pct(sh) + " of the true swings" + what + ".";
     });
-    note.textContent='Compare the known air spread with the fitted components. Air absorbed by the motion fit is missing from the radar-only estimate.';
 
   }
 
@@ -1487,7 +1489,6 @@
     if (!e || e.error) { failed("The estimation on the real data could not run with " + (LAYERS_NAME[L] || L) + (e && e.error ? ": " + e.error : "") + ". Try other layers."); return; }
     failed("");
     realMode(true);
-    document.getElementById("sim-verdict").textContent = realVerdict(e, prior);
     renderRealStats(e);
     if (view === "steps") {
       realScLayer = fillLayerPick(e, realSel, realScLayer);
@@ -1709,5 +1710,5 @@
   document.getElementById("sim").addEventListener("focusin", function (ev) { var t = ev.target.closest && ev.target.closest(".t"); if (t) fitTip(t); });
 
   /* screen readers do not read the tooltip text from CSS: give the info marks a name */
-  form.querySelectorAll(".t.i").forEach(function (t) { t.setAttribute("aria-label", t.getAttribute("data-tip")); t.setAttribute("role", "note"); });
+  form.querySelectorAll(".t.i").forEach(function (t) { if(!t.hasAttribute('aria-label'))t.setAttribute("aria-label", t.getAttribute("data-tip")); if(!t.matches('button'))t.setAttribute("role", "note"); });
 })();

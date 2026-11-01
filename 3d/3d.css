@@ -15,7 +15,7 @@
 #presets { display:flex; gap:6px; margin-top:5px; }#presets .on { background:var(--ink); color:var(--surface); }
 .city-selection-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; padding:8px 0; border-block:1px solid var(--line); }.city-selection-stats b { display:block; font-size:.92rem; }.city-selection-stats span { display:block; font-size:.65rem; color:var(--muted); }
 .height-profile { display:flex; flex:1; align-items:center; min-height:150px; position:relative; }.height-profile svg { position:absolute; inset:0; width:100%; height:100%; max-height:280px; margin:auto; }
-.city-inspector p.city-profile-note { font-size:.68rem; line-height:1.4; margin:0; color:var(--muted); }
+
 .height-slice { margin:12px 0; }.height-slice input { display:block; width:100%; height:26px; accent-color:var(--accent); margin:0; }.height-slice output { margin-left:auto; color:var(--accent); }.height-slice p { font-size:.72rem; margin:4px 0 0; color:var(--muted); }
 .legend { margin:12px 0; }.legend canvas { width:100%; height:40px; display:block; }.legend .lt { font-size:.7rem; line-height:1.4; color:var(--muted); }
 .coverage-legend-notes { display:flex; align-items:flex-start; gap:4px; }.coverage-legend-notes .lt { flex:1; min-width:0; }

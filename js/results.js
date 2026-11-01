@@ -6,6 +6,10 @@
   var fmt = window.VRSReport.fmt;
   function id(name) { return document.getElementById("report-" + name); }
   function esc(s) { return String(s).replace(/[&<>\"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function metricHelp(name,label,text,warning) {
+    var icon=warning?'<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg>':'<span aria-hidden="true" class="info">i</span>';
+    return '<button id="'+name+'" class="t tip-trigger '+(warning?'metric-warning':'i')+'" type="button" aria-label="'+esc(label)+'" data-tip="'+esc(text)+'">'+icon+'</button>';
+  }
   function selected() { return doc.results[form.elements.motion.value][form.elements.prior.value][form.elements.layers.value]; }
   function renderMetrics(e) {
     var size=6,total=e.layer_points.length;
@@ -55,24 +59,20 @@
       form.elements.layer.innerHTML = e.layer_points.map(function (l, k) { return '<option value="' + k + '">' + fmt(e.edges[k], 1) + ' to ' + fmt(e.edges[k + 1], 1) + ' m NAP</option>'; }).join("");
     }
     var k = +form.elements.layer.value || 0, circular=form.elements.prior.value==='ground';
+    var outcome=(e.skill[k]>0?'This fit beats constant air against the station proxy.':e.skill[k]<0?'Constant air has the lower error against the station proxy in this layer.':'This fit matches constant air against the station proxy at the published precision.')+
+      ' Positive skill means a smaller RMS difference; negative skill means a larger one. Vertical accuracy remains unverified.';
     id("content").hidden = false;
     if(id('kpis'))id('kpis').innerHTML=[
       [fmt(e.station_r[k].r),'station agreement (r)'],[fmt(e.rmse[k])+' N','RMS difference to proxy'],[fmt(e.skill[k]),'skill vs constant air']
-    ].map(function(s,i){return '<div class="stat"><span class="v">'+s[0]+'</span><span class="k">'+s[1]+(i===0&&circular?'<button id="station-prior-warning" class="t tip-trigger metric-warning" type="button" aria-label="Station agreement reuses station data" data-tip="Station information is inside this fit: its agreement is partly circular. The station-based prior uses the same station that this metric compares against."><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/></svg></button>':'')+'</span></div>';}).join('');
+    ].map(function(s,i){return '<div class="stat"><span class="v">'+s[0]+'</span><span class="k">'+s[1]+(i===0&&circular?metricHelp('station-prior-warning','Station agreement reuses station data','Station information is inside this fit: its agreement is partly circular. The station-based prior uses the same station that this metric compares against.',true):'')+(i===2?metricHelp('report-outcome-help','About skill against constant air',outcome,false):'')+'</span></div>';}).join('');
     if(id('layer-summary'))id('layer-summary').innerHTML='<b>'+fmt(e.edges[k],1)+'–'+fmt(e.edges[k+1],1)+' m NAP</b> · '+fmt(e.layer_points[k].n,0)+' points · r without annual cycle '+fmt(e.station_r[k].r_no_annual);
     renderMetrics(e);
     id("time").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], false);
     id("scatter").innerHTML = plot(doc.epochs, e.steps.est_anomaly[k], e.steps.truth_anomaly[k], true);
-    id("reading").textContent = (form.elements.prior.value === "ground" ? "This variant uses the station-based air prior: station agreement is partly built into the fit. " : "This fit has no station-based air prior. ") +
+    id("reading").dataset.tip = (form.elements.prior.value === "ground" ? "This variant uses the station-based air prior: station agreement is partly built into the fit. " : "This fit has no station-based air prior. ") +
       "Skill compares RMS difference against predicting constant air using the same station-based proxy; negative skill means that constant prediction has a smaller RMS difference. It does not measure independently validated urban retrieval skill.";
     id("source").innerHTML = 'Report export · '+doc.generated+' '+window.VRSReport.help('reproducibility','All sixteen real-run variants reproduced from committed source '+doc.code.virtual_radiosonde+'. Canonical export: data/simulator/real.json.');
     id("status").textContent = doc.passes+' passes · '+e.buildings+' buildings · '+fmt(e.points_used,0)+' points';
-    var verdict=document.getElementById('finding-verdict');
-    verdict.hidden=circular;
-    verdict.className='finding-verdict'+(e.skill[k]>0?' positive':'');
-    verdict.textContent=circular?'':
-      e.skill[k]>0?'This fit beats constant air against the station proxy. Vertical accuracy remains unverified.':
-      'Constant air has the lower error against the station proxy in this layer. Vertical accuracy remains unverified.';
     id("content").hidden = false;
   }
   function saveChoice(){
@@ -91,7 +91,7 @@
   }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
   var coverage;
   function loadCoverage(){
-    if(!coverage)coverage=import('../3d/viewer.js?v=20261101-coverage-tip').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
+    if(!coverage)coverage=import('../3d/viewer.js?v=20261101-help-sweep').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
     return coverage;
   }
   document.addEventListener('site:viewchange',function(e){if(e.detail.view==='coverage')loadCoverage().catch(function(){});});
