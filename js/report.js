@@ -21,9 +21,17 @@
       e.station_r.map(function (r, k) { return '<tr><td>' + fmt(e.edges[k], 1) + ' to ' + fmt(e.edges[k + 1], 1) + '</td><td>' + fmt(r.r) + '</td><td>' + fmt(r.r_no_annual) + '</td><td>' + fmt(e.rmse[k]) + '</td></tr>'; }).join("") +
       '</tbody></table></div><p class="asof">The comparison is with ground-station N carried upward, not a measured urban air profile. Agreement is not independent vertical accuracy. <a href="results.html">Inspect the run</a>.</p>';
   }
-  window.VRSReport = { load: load, fmt: fmt, summary: summary };
+  function labelTables(root) {
+    root.querySelectorAll("table").forEach(function (table) {
+      var labels = Array.from(table.querySelectorAll("thead th")).map(function (th) { return th.textContent; });
+      table.querySelectorAll("tbody tr").forEach(function (row) {
+        Array.from(row.children).forEach(function (cell, i) { cell.setAttribute("data-label", labels[i]); });
+      });
+    });
+  }
+  window.VRSReport = { load: load, fmt: fmt, summary: summary, labelTables: labelTables };
   var targets = document.querySelectorAll("[data-report-summary]");
-  if (targets.length) load().then(function (d) { targets.forEach(function (el) { el.innerHTML = summary(d); }); }).catch(function (err) {
+  if (targets.length) load().then(function (d) { targets.forEach(function (el) { el.innerHTML = summary(d); labelTables(el); }); }).catch(function (err) {
     targets.forEach(function (el) { el.textContent = "Report results could not be loaded: " + err.message; });
   });
 }());
