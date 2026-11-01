@@ -160,8 +160,8 @@ window.VRS_FLOW = {
       number: "3 atmospheres × 16 disturbance mixes × 4 noise levels × 2 point counts = 384 simulations, each with 4 layer setups, each estimated 3 ways step by step", code: "site_simulator.py → data/simulator/",
       link: "simulator.html", linkText: "Open the simulator" },
     { id: "e_real", lane: "est", icon: "chart", row: 9, type: "result", title: "Real profiles 2020–2026", sub: "first results, Kop van Zuid",
-      tip: "The first profiles from the real radar data. The lowest layer follows the ground station (r = 0.45; 0.35 without the seasons).",
-      number: "r = 0.45 with the station, lowest layer", code: "05_results/24_estimation_refractivity_profile/",
+      tip: "The report's full-height real-data run. Ground-station agreement is a boundary check, not a measured validation of the urban vertical profile.",
+      number: "Inspect the report run on Results", code: "04_python/estimation/site_real_sim.py",
       link: "results.html", linkText: "Results on the real data" }
   ],
 
