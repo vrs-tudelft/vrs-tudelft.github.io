@@ -97,14 +97,14 @@
     id("status").textContent = doc.passes+' passes · '+e.buildings+' buildings · '+fmt(e.points_used,0)+' points';
     id("content").hidden = false;
   }
-  /* the small map: the 3D map of Air over the city at its standard settings and angle, on the chosen pass
-     (3d/viewer.js draws it); only while this tab is on show, so playing the map does not redraw it all the time */
+  /* the preview map: the same selected fit, from the overview angle, on the chosen pass
+     (3d/viewer.js draws it); only while its dialog is open, so hidden previews do not redraw while the map plays */
   function drawMini() {
     var cv = id("mini"); if (!cv || !doc || !cv.getClientRects().length) return;
     id("mini-date").textContent = doc.epochs[pass()];
-    loadCoverage().then(function (api) { api.miniView(cv, pass()); }).catch(function () {});
+    loadCoverage().then(function (api) { api.miniView(cv, pass(), window.VRSFit); }).catch(function () {});
   }
-  id("mini-go").addEventListener("click", function () { document.querySelector("[data-site-tab=coverage]").click(); });
+  id("mini-go").addEventListener("click", function () { id("mini-go").closest("dialog").close(); document.querySelector("[data-site-tab=coverage]").click(); });
   function drawPlots(e, kv) {
     var S = seriesOf(e, kv);
     id("time").innerHTML = plot(doc.epochs, S.est, S.tru, false);
@@ -123,24 +123,29 @@
     choose(best);
   });
   document.addEventListener("vrs:pass", function () { if (doc && !selected().error) drawPlots(selected(), form.elements.layer.value || "col"); });
+  function publishFit(){
+    window.VRSFit={motion:form.elements.motion.value,prior:form.elements.prior.value,layers:form.elements.layers.value};
+    document.dispatchEvent(new CustomEvent('vrs:fit',{detail:window.VRSFit}));
+  }
   function saveChoice(){
     var url=new URL(location.href);
     ['motion','prior','layers','layer'].forEach(function(key){var value=form.elements[key].value,def=key==='layer'?'col':String(doc.defaults[key]);if(value===def)url.searchParams.delete(key);else url.searchParams.set(key,value);});
     history.replaceState(history.state,'',url);
   }
-  form.addEventListener("change", function (event) { if (doc) {if(event.target.name==='layer'&&form.elements.layer.value!=='col')metricPage=Math.floor(+form.elements.layer.value/6);render(event.target.name !== "layer");saveChoice();} });
+  form.addEventListener("change", function (event) { if (doc) {if(event.target.name==='layer'&&form.elements.layer.value!=='col')metricPage=Math.floor(+form.elements.layer.value/6);render(event.target.name !== "layer");saveChoice();publishFit();} });
   id('metrics').addEventListener('click',function(event){var button=event.target.closest('[data-metric-page]');if(button&&doc){metricPage+=+button.dataset.metricPage;renderMetrics(selected());}});
   window.addEventListener("resize", function () { if (doc) render(false); });
   window.VRSReport.load().then(function (data) {
     doc=data;doc.defaults=Object.assign({},doc.defaults,{prior:'ground'});   /* from the ground, as the map and the simulator */
     var query=new URLSearchParams(location.search);
     ['motion','prior','layers'].forEach(function(key){if(doc.controls[key].includes(query.get(key)))form.elements[key].value=query.get(key);});
+    publishFit();
     render(true);
     var layer=query.get('layer'),li=Number(layer);if(layer!==null&&Number.isInteger(li)&&li>=0&&li<selected().layer_points.length){form.elements.layer.value=String(li);render(false);}
   }).catch(function (err) { id("status").textContent = 'Report results could not be loaded: ' + err.message; });
   var coverage;
   function loadCoverage(){
-    if(!coverage)coverage=import('../3d/viewer.js?v=20261103h').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
+    if(!coverage)coverage=import('../3d/viewer.js?v=20261102-ui-fixes').catch(function(err){var loading=document.getElementById('loading');if(loading)loading.textContent='Coverage could not load: '+err.message+'. Reload to try again.';throw err;});
     return coverage;
   }
   document.addEventListener('site:viewchange',function(e){if(e.detail.view==='coverage')loadCoverage().catch(function(){});});

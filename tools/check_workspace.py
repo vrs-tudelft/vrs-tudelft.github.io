@@ -62,4 +62,4 @@ assert temperature['memory_h']==72 and temperature['window_tau']==6 and temperat
 assert temperature['dates']==doc['epochs']
 assert len(temperature['temperature_c'])==len(doc['epochs']) and all(math.isfinite(x) for x in temperature['temperature_c'])
 assert all(len(h)==64 for h in temperature['inputs_sha256'].values())
-print('3 destinations, 7 main screens, 7 legacy redirects, public 72 h weather intact')
+print('3 destinations, 8 main screens, 7 legacy redirects, public 72 h weather intact')
