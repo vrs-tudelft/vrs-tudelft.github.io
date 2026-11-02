@@ -9,10 +9,14 @@ The public interface follows one research story:
 | Stage | Screens |
 | --- | --- |
 | [Idea](https://vrs-tudelft.github.io/index.html#height) | Differential radar path and the building-motion confound |
-| [Experiment](https://vrs-tudelft.github.io/simulator.html#steps) | Known-air recovery, error sources and conditional weather inference |
-| [Findings](https://vrs-tudelft.github.io/results.html#signal) | Canonical Rotterdam comparison and BAG-linked radar height coverage |
+| [Experiment](https://vrs-tudelft.github.io/simulator.html#steps) | Known-air recovery, error sources, conditional weather and the simulated 3D city |
+| [Findings](https://vrs-tudelft.github.io/results.html#signal) | Rotterdam comparison, selected-fit air map and BAG-linked radar height coverage |
 
-There are seven main views and six supporting dialogs. Explanations belong in
+There are eight main views and seven supporting dialogs. The desktop rail is
+260 px wide, with compact controls and secondary fit/display settings in dialogs.
+Both Findings tabs and the 3D preview share the same motion, prior and layer choices;
+map quantities and display choices survive copying a link or refreshing.
+Explanations belong in
 contextual info/warning icons beside their chart, metric or control, with hover,
 keyboard, Escape and tap support. Keep chart values, units, dates, legends and
 operational messages visible. Do not add explanatory banners or repeated captions.
@@ -30,12 +34,16 @@ python tools/check_data.py
 python tools/check_report.py
 python tools/check_workspace.py
 node --test tools/city-research.test.mjs
+node tools/check_ui.mjs
 ```
 
-CI uses Python and Node 24. Review all seven views and supporting dialogs in Google
+CI uses Python and Node 24. Review all eight views and supporting dialogs in Google
 Chrome, including short laptop content areas down to 1280×600, keyboard/touch help
 and phone layouts. GitHub Pages publishes `main` after merging reviewed changes.
 Use a `codex/` branch for agent work and preserve the experimental branches.
+The UI check uses installed Google Chrome and writes screenshots and assertions to
+a temporary folder, or to the directory passed as its first argument. Set
+`CHROME_PATH` when Chrome is outside the default Windows installation path.
 
 ## Evidence and data boundaries
 
@@ -45,7 +53,7 @@ Use a `codex/` branch for agent work and preserve the experimental branches.
   default is motion per building, two layers and no air prior. Its station series
   is a proxy, not measured vertical urban truth. A station-based prior reuses that information.
 - N is the radar estimate; P/T assumptions and derived vapour pressure are conditional.
-- Coverage uses an earlier height-limited processing and the existing 3DBAG geometry.
+- Coverage uses the full-height processing and the existing 3DBAG geometry.
   Published 10 m groups indicate support, not continuous facade coverage or retrieved air.
   The archived `2014-2023-processor` selection remains explicitly labelled.
 - Public radar products aggregate at least 20 points. Never publish raw point
@@ -59,9 +67,10 @@ names and 16-digit BAG IDs come from the retained export; unknown names remain u
 
 `index.html`, `simulator.html` and `results.html` are the active destinations.
 `js/site-layout.js`, `js/nav.js` and `js/dialogs.js` provide views, tooltips and details.
-`3d/viewer.js` renders height support; `3d/research.js` derives readouts from aggregates.
+`3d/viewer.js` renders height support and the selected-fit air map;
+`3d/research.js` derives readouts from aggregates.
 Old method/data/building/movie URLs redirect to the corresponding stage and retain
-useful fit/building query choices. Old simulator real-mode links go to Findings.
+useful fit/building query choices. Real-data profiles remain available in Experiment.
 
 `data/building-temperature.json` is public KNMI weather: the report's 72 h hourly
 station-344 temperature memory at the public pass dates, not a private radar product.

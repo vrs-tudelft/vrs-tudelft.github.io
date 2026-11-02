@@ -11,7 +11,7 @@
 <link href="favicon.ico" rel="icon" sizes="any"/>
 <link href="apple-touch-icon.png" rel="apple-touch-icon"/>
 <link href="style.css?v=20261101-story" rel="stylesheet"/>
-<link href="css/workspace.css?v=20261101-help-sweep" rel="stylesheet"/><link href="css/story.css?v=20261103k" rel="stylesheet"/></head>
+<link href="css/workspace.css?v=20261101-help-sweep" rel="stylesheet"/><link href="css/story.css?v=20261102-ui-fixes" rel="stylesheet"/></head>
 <body class="app-page">
 <header class="top"><div class="top-inner"><a class="brand" href="index.html">
 <svg aria-hidden="true" fill="none" viewbox="0 0 24 24">
@@ -34,7 +34,7 @@
 <form aria-label="Simulation and estimation settings" class="sim-controls" id="sim-controls" onsubmit="return false">
 <fieldset class="sim-field">
 <legend><span class="lg-ic" data-icon="cloud"></span>Known air input <button id="experiment-context" aria-label="About selected experiment" class="t i tip-trigger" data-tip="The true air the simulation puts over the city, or the real TerraSAR-X passes. Real data: the real 2020-2026 passes over the real city (the full-height export, points up to about 150 m NAP, grouped into buildings by their 3DBAG outlines); there is no measured air above the street, so KNMI 344 (Rotterdam The Hague Airport) is taken as the truth." type="button"><span aria-hidden="true" class="info">i</span></button></legend>
-<div class="tiles tiles-4" data-control="atm">
+<div class="tiles tiles-4 atmosphere-choices" data-control="atm">
 <label class="tile"><input name="atm" type="radio" value="simulated"/><span><i data-icon="cloud"></i><b>Station-built air</b><small data-atm-sub="simulated">KNMI-built</small></span></label>
 <label class="tile"><input name="atm" type="radio" value="radiosonde"/><span><i data-icon="balloon"></i><b>Balloon-based air</b><small data-atm-sub="radiosonde">balloons 2025</small></span></label>
 <label class="tile"><input name="atm" type="radio" value="cabauw"/><span><i data-icon="tower"></i><b>Cabauw tower</b><small data-atm-sub="cabauw">tower 2025</small></span></label>
@@ -43,7 +43,7 @@
 </fieldset>
 <fieldset class="sim-field sim-only">
 <legend><span class="lg-ic" data-icon="building"></span>Disturbances <span class="t i" data-tip="These effects are added to simulated radar and fitted by the estimator. Test them separately or together."><span class="info">i</span></span></legend>
-<div class="tiles tiles-4" data-control="dist">
+<div class="tiles tiles-4 disturbance-choices" data-control="dist">
 <label class="tile tog" data-dist="sinking"><input name="sinking" type="checkbox"/><span><i data-icon="sink"></i><b>Sinking</b></span></label>
 <label class="tile tog" data-dist="shrinking"><input name="shrinking" type="checkbox"/><span><i data-icon="shrink"></i><b>Shrinking</b></span></label>
 <label class="tile tog" data-dist="thermal"><input name="thermal" type="checkbox"/><span><i data-icon="sun"></i><b>Thermal</b></span></label>
@@ -59,13 +59,6 @@
 <label><input name="noise" type="radio" value="4"/><span>4 mm</span></label>
 </div>
 </fieldset>
-<fieldset class="sim-field sim-only">
-<legend><span class="lg-ic" data-icon="grid"></span>Sample size <span class="t i" data-tip="Nominal synthetic point count. The used facade points can be fewer after selection; the chart context reports the actual count."><span class="info">i</span></span></legend>
-<div class="seg" data-control="points">
-<label><input name="points" type="radio" value="3000"/><span>3000</span></label>
-<label><input name="points" type="radio" value="12000"/><span>12 000</span></label>
-</div>
-</fieldset>
 <fieldset class="sim-field real-only" hidden="">
 <legend><span class="lg-ic" data-icon="thermo"></span>Air prior <span class="t i" data-tip="Radar only: the estimation on the radar alone, the independent check against the station. From the ground: the estimation's default, as in the simulation: the station's anomaly is taken out before the building fit and put back into every layer afterwards, so comparing with the same station is partly circular."><span class="info">i</span></span></legend>
 <div class="seg" data-control="prior">
@@ -75,13 +68,6 @@
 </fieldset>
 <p class="sim-real-note real-only" hidden="">Real data: the air, the disturbances, the noise and the points are what they are. Only the motion model, the layers and the air prior can be chosen.</p>
 <fieldset class="sim-field">
-<legend><span class="lg-ic" data-icon="building"></span>Motion fit <span class="t i" data-tip="Per building shares a motion model. Per scatterer gives each point its own time terms, which can also absorb atmospheric changes."><span class="info">i</span></span></legend>
-<div class="seg" data-control="motion">
-<label><input name="motion" type="radio" value="building"/><span>Per building</span></label>
-<label><input name="motion" type="radio" value="scatterer"/><span>Per scatterer</span></label>
-</div>
-</fieldset>
-<fieldset class="sim-field">
 <legend><span class="lg-ic" data-icon="layers"></span>Height layers <span class="t i" data-tip="Thinner layers add vertical detail but amplify noise. Cabauw sensor-centred layers match its measurement heights."><span class="info">i</span></span></legend>
 <div class="seg" data-control="layers">
 <label><input name="layers" type="radio" value="2"/><span>Two</span></label>
@@ -90,6 +76,23 @@
 <label><input name="layers" type="radio" value="n1000"/><span>≥1000 pts</span></label>
 <label><input name="layers" type="radio" value="cab"/><span>Cabauw</span></label></div>
 </fieldset>
+<button class="story-secondary" data-open-dialog="sim-fit-settings" type="button">Fit &amp; sample settings…</button>
+<dialog class="site-dialog sim-advanced" id="sim-fit-settings" aria-labelledby="sim-fit-title"><div class="dialog-head"><h2 id="sim-fit-title">Fit &amp; sample settings</h2><button type="button" data-close-dialog="" aria-label="Close fit settings">Close</button></div>
+<fieldset class="sim-field sim-only">
+<legend><span class="lg-ic" data-icon="grid"></span>Sample size <span class="t i" data-tip="Nominal synthetic point count. The used facade points can be fewer after selection; the chart context reports the actual count."><span class="info">i</span></span></legend>
+<div class="seg" data-control="points">
+<label><input name="points" type="radio" value="3000"/><span>3000</span></label>
+<label><input name="points" type="radio" value="12000"/><span>12 000</span></label>
+</div>
+</fieldset>
+<fieldset class="sim-field">
+<legend><span class="lg-ic" data-icon="building"></span>Motion fit <span class="t i" data-tip="Per building shares a motion model. Per scatterer gives each point its own time terms, which can also absorb atmospheric changes."><span class="info">i</span></span></legend>
+<div class="seg" data-control="motion">
+<label><input name="motion" type="radio" value="building"/><span>Per building</span></label>
+<label><input name="motion" type="radio" value="scatterer"/><span>Per scatterer</span></label>
+</div>
+</fieldset>
+</dialog>
 <button class="sim-reset" id="sim-reset" type="button">Reset experiment</button>
 </form>
 <p class="asof" hidden="" id="sim-asof">Synthetic data only. No real radar point is used here. Every combination was computed beforehand with the team's code.</p>
@@ -138,7 +141,7 @@
 <div class="sim-card-head"><h3><i class="h-ic" data-icon="waterfall"></i><span id="sim-cum-h">Cumulative: adding them one by one</span> <span class="t i left" data-tip="" id="sim-cum-sub" tabindex="0"><span class="info">i</span></span></h3></div>
 <div aria-labelledby="sim-cum-h" class="sim-chart sim-fill" id="sim-cum" role="img"></div>
 </section>
-<section class="app-card sim-abs-card" hidden="" id="sim-abs-card">
+<button class="story-secondary dist-diagnostic" data-open-dialog="motion-absorption" type="button">Air taken by the motion fit…</button><dialog class="site-dialog absorption-dialog" id="motion-absorption" aria-labelledby="absorption-title"><div class="dialog-head"><h2 id="absorption-title">Air taken by the motion fit</h2><button type="button" data-close-dialog="" aria-label="Close air absorption">Close</button></div><section class="app-card sim-abs-card" hidden="" id="sim-abs-card">
 <div class="sim-card-head">
 <h3><i class="h-ic" data-icon="bars"></i><span id="sim-abs-h">Air taken by the motion fit</span> <span class="t i left" data-tip="" id="sim-abs-sub" tabindex="0"><span class="info">i</span></span></h3>
 <div aria-label="Air prior" class="seg pte-seg" role="radiogroup">
@@ -152,7 +155,7 @@
 </div>
 <ul class="sim-legend sim-mini-legend" id="sim-abs-legend"></ul>
 <p class="sim-sub sim-abs-note" id="sim-abs-note"></p>
-</section></div>
+</section></dialog></div>
 <div aria-labelledby="tab-pte" class="sim-view sim-dash sim-dash-4" hidden="" id="view-pte" role="tabpanel"><span class="section-anchor" id="pte"></span>
 <div class="pte-bar">
 <div aria-label="What to show" class="seg pte-seg" role="radiogroup">
@@ -234,6 +237,6 @@
 </div>
 <script defer="" src="js/nav.js?v=20261101-story"></script>
 <script defer="" src="js/icons.js?v=20261101-story"></script>
-<script defer="" src="js/simulator.js?v=20261103f"></script>
-<script defer="True" src="js/dialogs.js?v=20261101-story"></script></body>
+<script defer="" src="js/simulator.js?v=20261102-ui-fixes"></script>
+<script defer="True" src="js/dialogs.js?v=20261102-ui-fixes"></script></body>
 </html>

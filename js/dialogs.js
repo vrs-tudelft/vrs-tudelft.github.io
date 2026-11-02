@@ -14,7 +14,7 @@
     '<div class="sources-grid"><section><h3>What the figures use</h3><dl>'+
     '<dt>Rotterdam findings</dt><dd>The full-height TerraSAR-X report fit, 2020–2026. Its selection and all numeric variants live in the <a href="data/simulator/real.json">canonical result export</a>.</dd>'+
     '<dt>Controlled experiments</dt><dd>Simulated radar with station-built air, reconstructed soundings or Cabauw tower profiles. Input dates and samples are in the <a href="data/simulator/manifest.json">experiment manifest</a>.</dd>'+
-    '<dt>Coverage explorer</dt><dd>An earlier height-limited processing, not the report’s full-height input. <a href="data/2020-2026-ground/MANIFEST.json">Aggregate manifest</a>.</dd></dl></section>'+
+    '<dt>Coverage explorer</dt><dd>The full-height 2020–2026 processing; published groups show radar support, not retrieved air. <a href="data/2020-2026-ground/MANIFEST.json">Aggregate manifest</a>.</dd></dl></section>'+
     '<section><h3>Attribution & reuse</h3><dl><dt>Radar</dt><dd>Supplied for the course by R. F. Hanssen. Raw points stay private; published radar groups contain at least 20 points.</dd>'+
     '<dt>Weather</dt><dd>KNMI, NOAA IGRA2 and ICOS. KNMI and ICOS data: CC BY 4.0. Balloon/tower source locations differ from Rotterdam.</dd>'+
     '<dt>Buildings & map</dt><dd>BAG via PDOK: CC0. 3DBAG and the PDOK aerial image: CC BY 4.0. Viewer: three.js.</dd>'+
