@@ -76,7 +76,6 @@
  #sim .app-panel.sim-panel { overflow:visible; padding:14px 16px; }
  #sim .app-intro { font-size:.77rem; line-height:1.4; }
  #sim .tiles-4 { grid-template-columns:repeat(2,minmax(0,1fr)); }
- #sim .atmosphere-choices { grid-template-columns:repeat(3,minmax(0,1fr)); }
  #sim .atmosphere-choices .tile>span { min-height:65px; }#sim .tiles-4 .tile b { white-space:normal; font-size:.76rem; }
  #sim .disturbance-choices .tile>span { min-height:34px; }
  #sim .sim-field { margin-bottom:12px; }.sim-panel .sim-field legend { margin-bottom:5px; }
@@ -86,10 +85,6 @@
  #sim .sim-top .sim-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
 
  #sim .sim-top { margin-bottom:5px; }
- #sim #view-pte { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:auto minmax(0,1fr); }
- #sim #view-dist { grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:minmax(0,1fr) auto; }
- #view-dist .dist-diagnostic { grid-column:1/-1; width:auto; justify-self:start; }
- #view-pte
  #view-pte .pte-bar { gap:7px 10px; }
 
  #view-pte .story-secondary { width:auto; font-size:.75rem; min-height:31px; }
@@ -156,3 +151,72 @@
 #sim .sim-top { display:block; margin-bottom:10px; }
 #sim .sim-top .stat .k { display:flex; align-items:center; gap:2px; }
 #pte-pass-label { font-size:.75rem; color:var(--muted); }
+
+/* the air over the city: the strip under the map holds every pass and layer at once */
+#coverage.air-mode .strip { height:130px; }
+
+#airOptions { display:grid; gap:6px; margin-top:6px; }
+#airOptions[hidden] { display:none; }
+.city-map-toggle .seg { flex:1; }
+#airOpacityBox[hidden],#airLayersPick[hidden],#pointsToggle[hidden] { display:none; }
+
+/* the simulated city in 3D (Experiment, tab 3D city) */
+#view-city:not([hidden]) { display:flex; flex-direction:column; gap:10px; min-height:0; flex:1; }
+#view-city .city-card { display:flex; flex-direction:column; gap:8px; flex:1; min-height:0; }
+#view-city .city3d { position:relative; flex:1; min-height:380px; border-radius:8px; overflow:hidden; background:var(--canvas,#fff); }
+#view-city .city3d canvas#cityGl { position:absolute; inset:0; width:100%; height:100%; display:block; }
+#view-city .city-legend { position:absolute; left:10px; bottom:10px; width:230px; padding:7px 9px; border-radius:7px; background:rgba(255,255,255,.88); font-size:.7rem; color:var(--muted); }
+#view-city .city-legend canvas { width:100%; height:14px; display:block; }
+#view-city .city-legend-scale { display:flex; justify-content:space-between; margin-top:2px; }
+#view-city .city-time { display:flex; align-items:center; gap:10px; font-size:.75rem; color:var(--muted); }
+#view-city .city-time input { flex:1; }
+#view-city .city-time button { font:inherit; border:0; border-radius:6px; background:var(--ink,#17191c); color:#fff; width:30px; height:28px; cursor:pointer; }
+#view-city .city-strip { width:100%; height:120px; display:block; cursor:pointer; }
+#view-city #cityOpacityBox[hidden] { display:none; }
+#view-city .city-bar { display:flex; flex-wrap:wrap; gap:7px 10px; align-items:center; }
+#view-city #cityOpacity { width:110px; }
+
+/* the KNMI 344 ground value on the 3D map */
+#heightSummary.knmi-mark { display:flex !important; align-items:center; gap:8px; max-width:360px; font-size:.75rem; line-height:1.35; }
+#heightSummary .knmi-dot { flex:none; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); }
+
+/* the profile of the pass on show next to the 3D city */
+#view-city .city-row { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:10px; flex:1; min-height:380px; }
+#view-city .city-row .city3d { min-height:0; }
+#view-city .city-profile { border:1px solid var(--line,#e5e3db); border-radius:8px; background:#fcfbf8; min-height:0; overflow:hidden; }
+#view-city .city-profile svg { display:block; width:100%; height:100%; }
+@media (max-width: 999px) { #view-city .city-row { grid-template-columns:1fr; } #view-city .city-profile { height:320px; } }
+
+/* Findings map: the profile in the right panel, the building card as a window over the map */
+.city-inspector .city-profile { height:100%; min-height:320px; border-radius:8px; overflow:hidden; }
+.city-inspector .city-profile svg { display:block; width:100%; height:100%; }
+.building-pop { position:absolute; right:12px; top:12px; width:min(340px,calc(100% - 24px)); max-height:calc(100% - 24px); overflow:auto; z-index:5;
+  background:var(--surface,#fff); border:1px solid var(--line,#e5e3db); border-radius:10px; box-shadow:0 8px 24px rgba(23,25,28,.16); padding:12px 14px; }
+.building-pop[hidden] { display:none; }
+.building-pop .pop-close { position:absolute; right:8px; top:6px; border:0; background:none; font-size:1.3rem; line-height:1; cursor:pointer; color:var(--muted); }
+#airLayersPick[hidden] { display:none; }
+
+/* Radar vs weather station: three cards (time, scatter, the small map of the city's air), the layer buttons wrap */
+.seg.seg-wrap { flex-wrap:wrap; }
+.seg.seg-wrap label { flex:1 0 auto; }
+#report-mini svg { display:block; width:100%; height:100%; }
+.building-pop .city-selection-head { padding-right:24px; }
+#airLayersPick .seg { margin-bottom:9px; }
+
+/* the small map: a picture of the 3D map, and the way to it */
+#citymini { display:flex; flex-direction:column; }
+#citymini .mini3d { flex:none; aspect-ratio:4/3; width:100%; margin:auto 0; border-radius:8px; overflow:hidden; background:var(--canvas,#fff); }
+#citymini .mini3d canvas { display:block; width:100%; height:100%; }
+#citymini .mini-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font-size:.78rem; color:#b5541f; font-weight:600; }
+#citymini .mini-foot button { width:auto; font-weight:500; }
+
+/* the small map in the panel, under the buttons */
+.citymini-panel { margin-top:10px; padding:8px 10px; }
+.citymini-panel .sim-card-head { margin-bottom:5px; }
+.citymini-panel .sim-card-head h2 { font-size:.76rem; margin:0; display:flex; align-items:center; gap:4px; text-transform:none; letter-spacing:0; }
+.citymini-panel .sim-card-head .h-ic { display:none; }
+#citymini.citymini-panel .mini3d { aspect-ratio:16/10; margin:0; }
+.citymini-panel .mini-foot { margin-top:6px; font-size:.72rem; }
+.citymini-panel .mini-foot button { font-size:.72rem; min-height:0; padding:5px 8px; }
+#view-city .city-strip { cursor:ew-resize; touch-action:none; }
+#view-city .city-time { justify-content:flex-end; }

@@ -4,17 +4,12 @@
    26_long_term_temperature/cabauw_ideal.py): (a) the error per pass with parts of the chain switched
    off and the predicted drift, (b) the error per layer step by step against the station alone, (c) the
    standard estimate against the truth; then which disturbance costs what, and the cumulative trend
-   when the disturbances are added one by one. Observed-data links route to Findings, where KNMI 344
-   is explicitly a proxy rather than vertical truth. Plain script, no libraries. Nothing is computed here beyond picking entries, means,
+   when the disturbances are added one by one. The "Real data" tab draws (a)-(c) from real.json: the same
+   breakdown on the real 2020-2026 passes, with KNMI 344 as the truth and the constant air as the reference
+   (team repo 04_python/estimation/site_real_sim.py). Plain script, no libraries. Nothing is computed here beyond picking entries, means,
    departures and the station's correlation, and formatting them. */
 (function () {
   "use strict";
-  // Observed evidence has one home; old real-mode links retain their fit choices.
-  if(new URLSearchParams(location.search).get('atm')==='real'){
-    var legacyQuery=new URLSearchParams(location.search);legacyQuery.delete('atm');
-    location.replace('results.html?'+legacyQuery.toString()+'#signal');return;
-  }
-
 
   var BASE = "data/simulator/";
   var C = {
@@ -169,15 +164,19 @@
     return (by[atm] || by.simulated || manifest.controls.layers).map(String);
   }
   /* disable the setups the chosen air does not have; fall back to the default when the choice is one */
+  function defaultLayers(atm) { return atm === "cabauw" && layersFor(atm).indexOf("cab") >= 0 ? "cab" : String(manifest.defaults.layers); }
   function syncLayers() {
     var atm = (form.querySelector('input[name="atm"]:checked') || {}).value || String(manifest.defaults.atm), ok = layersFor(atm);
+    if (state.atm && atm !== state.atm) {      /* another air: its standard layers */
+      form.querySelectorAll('input[name="layers"]').forEach(function (r) { r.checked = r.value === defaultLayers(atm); });
+    }
     form.querySelectorAll('input[name="layers"]').forEach(function (r) {
       if (!valid("layers", r.value)) return;
       var on = ok.indexOf(r.value) >= 0;
       r.disabled = !on; r.closest("label").hidden = !on;
       if (!on && r.checked) {
         r.checked = false;
-        var d = form.querySelector('input[name="layers"][value="' + manifest.defaults.layers + '"]');
+        var d = form.querySelector('input[name="layers"][value="' + defaultLayers(atm) + '"]');
         if (d) d.checked = true;
       }
     });
@@ -185,6 +184,7 @@
   function initialState() {
     var q = new URLSearchParams(location.search), s = {};
     KEYS.forEach(function (k) { var v = q.get(k); s[k] = v !== null && valid(k, v) ? v : String(manifest.defaults[k]); });
+    if (q.get("layers") === null) s.layers = defaultLayers(s.atm);
     if (location.hash === "#real") {                                        /* links to the former Real data tab */
       if (q.get("atm") === null) s.atm = "real";
       try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* file:// */ }
@@ -194,9 +194,9 @@
   function writeUrl(s) {
     try {
       var q = new URLSearchParams(location.search), def = true;
-      KEYS.forEach(function (k) { if (String(s[k]) !== String(manifest.defaults[k])) def = false; });
+      KEYS.forEach(function (k) { if (String(s[k]) !== String(k === "layers" ? defaultLayers(s.atm) : manifest.defaults[k])) def = false; });
       KEYS.forEach(function (k) { if (def) q.delete(k); else q.set(k, s[k]); });
-      if (realPrior() === "none") q.delete("prior"); else q.set("prior", realPrior());
+      if (realPrior() === "ground") q.delete("prior"); else q.set("prior", realPrior());
       var qs = q.toString();
       history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + location.hash);
     } catch (e) { /* file:// or sandboxed: not important */ }
@@ -252,16 +252,49 @@
     });
   }
 
+  /* the simulated city in 3D: js/sim-city.js, loaded when its tab first opens; it reads the run on show here */
+  var cityMod = null;
+  window.VRSSim = {
+    now: function () {
+      if (isReal()) {                              /* the real data: the run picked by motion fit, air prior and layers */
+        var e = realDoc && ((realDoc.results[state.motion] || {})[realPrior()] || {})[state.layers];
+        return e && !e.error ? { real: true, state: state, doc: realDoc, prior: realPrior(), entry: e } : null;
+      }
+      return last && !simMsg ? { state: last.state, run: last.run, entry: last.entry } : null;
+    },
+    atm: function (s) { return getAtm(s); },
+    /* the temperature profile chosen under N, P, T, e, and the two-point profile of the air on show (null without) */
+    tmode: function () { return pteT; },
+    /* the pass shown under N, P, T, e (coldest, median, warmest, random or a date); null for the error per layer */
+    pass: function () {
+      if (pteShow === "errors") return null;
+      var e = isReal() ? realDoc && ((realDoc.results[state.motion] || {})[realPrior()] || {})[state.layers] : last && last.entry;
+      var epochs = isReal() ? realDoc && realDoc.epochs : last && last.run.epochs;
+      if (!e || !e.pte || !epochs) return null;
+      var j = passIndex(e.pte, epochs);
+      return j >= 0 ? j : null;
+    },
+    tp: function () {
+      var key = tpKey();
+      if (!(key in tpDoc) && !tpP[key]) tpP[key] = getJson(BASE + "two_point/" + key + ".json").then(function (d) { tpDoc[key] = d; }, function () { tpDoc[key] = null; });
+      return Promise.resolve(tpP[key]).then(function () { return tpDoc[key] || null; });
+    }
+  };
+  function cityView() {
+    if (!cityMod) cityMod = import("./sim-city.js?v=20261103f");
+    cityMod.then(function (m) { m.render(); }, function (err) { document.getElementById("cityStatus").textContent = "The 3D view could not load (" + err.message + ")."; });
+  }
+
   /* ------------------------------------------------------------ rendering */
   /* the views behind the tabs: only the visible one is drawn (a hidden chart has no size) */
-  var VIEWS = ["steps", "dist", "pte"], view = "steps";
+  var VIEWS = ["steps", "dist", "pte", "city"], view = "steps";
   try { var v0 = localStorage.getItem("vrs-sim-view"); if (VIEWS.indexOf(v0) >= 0) view = v0; } catch (err) { /* storage blocked */ }
   if (VIEWS.indexOf(location.hash.slice(1)) >= 0) view = location.hash.slice(1);
   function showTabs() {
     document.querySelectorAll(".sim-tabs [data-tab]").forEach(function (b) { var on = b.getAttribute("data-tab") === view; b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1; });
     /* with the real data, "Step by step" shows the real data's own cards */
     VIEWS.forEach(function (k) { document.getElementById("view-" + k).hidden = k !== view || (k === "steps" && isReal()); });
-
+    document.getElementById("view-real").hidden = !(view === "steps" && isReal());
   }
   /* a message instead of the numbers and the charts; the tabs stay, so another view can be picked */
   function failed(msg) { out.classList.toggle("failed", !!msg); setStatus(msg, msg ? "error" : ""); }
@@ -274,6 +307,7 @@
     if (isReal()) { renderReal(); return; }
     failed(simMsg);
     if (!last || simMsg) return;
+    if (view === "city") { cityView(); return; }
     var e = last.entry, s = last.state;
     var sm = summ(s) || { rmse: e.rmse, station_rmse: e.station_rmse, skill: e.skill, column_rmse: ok(e.column_rmse) ? e.column_rmse : NaN, column_station_rmse: ok(e.column_station_rmse) ? e.column_station_rmse : NaN, edges: e.edges };
     renderStats(e, s, sm);
@@ -344,8 +378,6 @@
       stat(num(sm.column_rmse,2),'N','column RMS error '+helpButton('sim-outcome-help','experiment performance',verdict(e,s,sm)+' Errors are against the known air input. Success under these matched assumptions is not field validation.'),'radar','s-radar')+
       stat(num(worst,2),'N','worst layer RMS error','layers','s-worst')+
       stat(num(sm.column_station_rmse,2),'N','station-only column baseline','thermo','s-station');
-    setTip('experiment-context','Simulated radar · '+ATM_NAME[s.atm]+' · ground-air prior · '+
-      (MOTION_NAME[s.motion]||s.motion)+' · '+thousands(e.points_used)+' used points. Simulation and estimation share model assumptions; this is not urban field validation.');
   }
 
   /* ---- 1. estimate against the truth over time: one panel per layer, highest on top, shared time axis */
@@ -817,14 +849,14 @@
     var sh = shapesOf(mode);
     if (mode === "log") {                       /* it replaces the 6.5 K/km values */
       var t2 = tpPass(e, j, real, sh[0]);
-      ps.est.T = t2.T; ps.est.P = t2.P; ps.est.e = { level: t2.e }; ps.station.e = t2.station_e;
+      ps.est.T = t2.T; ps.est.e = { level: t2.e }; ps.station.e = t2.station_e;
       if (real) delete ps.model.T;              /* the 6.5 K/km line is not the model any more */
       ps.lines = [{ q: "T", z: tpData().z_fine, v: t2.fineT, color: SHAPE[sh[0]].color, label: "T(z), " + SHAPE[sh[0]].name }];
     } else if (mode === "compare") {            /* 6.5 K/km in blue, two-point log in orange */
       ps.alts = []; ps.lines = [];
       sh.forEach(function (k) {
         var t = tpPass(e, j, real, k);
-        ps.alts.push({ name: SHAPE[k].name, color: SHAPE[k].color, est: { T: t.T, P: t.P, e: t.e }, station: { e: t.station_e } });
+        ps.alts.push({ name: SHAPE[k].name, color: SHAPE[k].color, est: { T: t.T, e: t.e }, station: { e: t.station_e } });
         ps.lines.push({ q: "T", z: tpData().z_fine, v: t.fineT, color: SHAPE[k].color, label: "T(z), " + SHAPE[k].name });
       });
       /* real: the grey line is already KNMI 344 at 6.5 K/km; simulation: draw that line too */
@@ -957,7 +989,7 @@
     pts.push([x[n - 1] + m[n - 1] * (e[nl] - z[n - 1]), e[nl]]);
     return pts;
   }
-  var pteInterp = "lin", pteEdges = [];
+  var pteInterp = "smooth", pteEdges = [];
   function pteProfile(el, q, ps, edges, err, real) {
     pteEdges = edges;
     var ref = q === "P" ? ps.ground.P : 0, nl = edges.length - 1, top = edges[nl];
@@ -1064,11 +1096,10 @@
   }
   /* real: the entry of real.json (no truth above the street: N and e against KNMI 344 carried up) */
   function renderPte(e, real) {
-    var pt = e.pte, dateLabel = document.getElementById('pte-pass-label');
-    dateLabel.hidden=true;
+    var pt = e.pte, note = document.getElementById("pte-note");
     pteCur = null;
     curCounts = layerN(e, real);
-    if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); setTip('pte-note','No weather profile is available for this combination.'); return; }
+    if (!pt) { pteMessage("N, P, T and e are not in the published results for this combination yet."); note.textContent = ""; return; }
     var epochs = real ? realDoc.epochs : last.run.epochs, ps = null;
     document.getElementById("pte-random").setAttribute("aria-pressed", pteShow === "random");
     /* the two-point profile: fetched once per air, then drawn again; the switch shows when it exists */
@@ -1099,8 +1130,10 @@
     var tProfTxt = mode === "lin" ? "6.5 K per km" : mode === "log" ? "a logarithmic departure from 6.5 K per km through the ground and the 29 m station"
       : "6.5 K per km in blue, the two-point log (ground + 29 m station) in orange";
     var nUp = tpd ? tpd.T_upper.filter(ok).length : 0;
-    setTip('pte-note','P: surface boundary + hydrostatics. T: '+tProfTxt+'. Vapour pressure uses N, P and T; it is conditional on those assumptions.');
-    dateLabel.textContent=ps?fmtDate(ps.date):'';dateLabel.hidden=!ps;
+    note.textContent = (ps ? (ps.label === "random" ? "Random pass: " : "") + fmtDate(ps.date) + ", ground " + num(ps.ground.T - 273.15, 1) + " °C. " : "") +
+      (real ? "P comes from KNMI 344 alone (hydrostatic, 6.5 K per km) and T from KNMI 344 alone (" + tProfTxt + "); nothing measures them above the street. N and e come from the radar, set against KNMI 344 carried up."
+        : "P comes from the station alone (hydrostatic, 6.5 K per km) and T from the station alone (" + tProfTxt + "); N and e come from the radar.") +
+      (real && mode !== "lin" ? " The Sanders roof has data on " + nUp + " of the " + epochs.length + " passes (marked ★ in the pass list); on the others the two-point profile is the 6.5 K/km line." : "");
     var nl = e.edges.length - 1;
     /* T and e lumped: the T card shows the wet refractivity, the e card is hidden */
     document.getElementById("pte-e").closest("section").hidden = pteLump;
@@ -1181,7 +1214,7 @@
           return;
         }
         /* log: its bars in place of the 6.5 K/km ones; compare: both (station alone: 6.5 K/km only) */
-        var s2 = pteScore(pt, q), shB = shapesOf(mode), cmp = mode === "compare";
+        var s2 = pteScore(pt, q), shB = q === "P" ? [] : shapesOf(mode), cmp = mode === "compare" && q !== "P";
         var sc3 = shB.map(function (k) { return { k: k, s: tpScores(e, false, k)[q] }; });
         groups = [{ label: "true spread over the passes", vals: s2.spread, color: PTE_C.spread }];
         if (!shB.length || cmp) groups.push({ label: cmp ? "6.5 K/km, rms error" : "estimate, rms error", vals: s2.rmse, color: PTE_C.est });
@@ -1190,7 +1223,7 @@
           if (!shB.length || cmp) groups.push({ label: cmp ? "station alone (6.5 K/km), rms error" : "station alone, rms error", vals: s2.station_rmse, color: PTE_C.station });
           else groups.push({ label: "station alone (" + SHAPE[shB[0]].name + "), rms error", vals: sc3[0].s.station_rmse, color: PTE_C.station });
         }
-        groups.bias = mode === "log" ? sc3[0].s.bias : s2.bias;
+        groups.bias = sc3.length && !cmp ? sc3[0].s.bias : s2.bias;
         if (cmp) {
           groups.biasLabel = "bias, 6.5 K/km";
           groups.moreBias = sc3.map(function (x) { return { label: "bias, " + SHAPE[x.k].name, vals: x.s.bias }; });
@@ -1206,7 +1239,7 @@
         leg.innerHTML = li(PTE_C.truth, "truth", "line") + li(PTE_C.est, "estimate ± rms error", "line") +
           (q === "e" || q === "N" || q === "Nte" ? li(null, "station alone", "dash") : "") + extraLegend(ps, q);
         /* the lumped quantity's error is N's (P is known to about 0.1 hPa, 0.03 N) */
-        pteProfile(el, q, ps, e.edges, q === "N" || q === "Nte" ? e.rmse : mode === "log" ? tpScores(e, false, "log")[q].rmse : pteScore(pt, q).rmse, false);
+        pteProfile(el, q, ps, e.edges, q === "N" || q === "Nte" ? e.rmse : mode === "log" && q !== "P" ? tpScores(e, false, "log")[q].rmse : pteScore(pt, q).rmse, false);
       }
     });
     if (real) {
@@ -1272,7 +1305,7 @@
     return { trend: a, temp: ok(a) && ok(b) ? Math.max(0, b - a) : NaN };
   }
   function renderAbsorbed(s) {
-    var card = document.getElementById("sim-abs-card"), key = runKey(s);
+    var card = document.getElementById("sim-abs-card"), key = runKey(s), note = document.getElementById("sim-abs-note");
     setTip('sim-abs-sub',shortHelp['sim-abs-sub']);
     if (isReal()) { card.hidden = true; return; }
     if (!(key in absDoc)) {
@@ -1290,7 +1323,7 @@
     var lay = document.getElementById("sim-abs-lay"), pas = document.getElementById("sim-abs-pass"), leg = document.getElementById("sim-abs-legend");
     if (!st || st.error) {
       lay.innerHTML = '<p class="sim-sub" style="padding:14px">Not available for this layer setup' + (st && st.error ? " (" + esc(st.error) + ")" : "") + ".</p>";
-      pas.innerHTML = ""; pas._pick = null; leg.innerHTML = ""; return;
+      pas.innerHTML = ""; pas._pick = null; leg.innerHTML = ""; note.textContent = ""; return;
     }
     var edges = st.edges, T = st.terms, terms = ABS_TERMS[s.motion] || ABS_TERMS.building;
     var allName = terms.length === 2 ? "both" : "all three";
@@ -1355,7 +1388,8 @@
           : "; per pass " + pct(w.trend) + " slow trend and " + pct(w.temp) + " building temperature beyond it";
       return "<b>" + esc(t.name.charAt(0).toUpperCase() + t.name.slice(1)) + "</b> takes " + num(r, 2) + " N rms per layer, " + pct(sh) + " of the true swings" + what + ".";
     });
-
+    note.innerHTML = words.join(" ") + (s.motion === "building" ? " Sinking takes nothing (one value per building and pass, which the layer fit removes anyway)." : "") +
+      (st.truth_r_T ? " The true air itself follows the building temperature with r " + num(mean(st.truth_r_T), 2) + ", which is why a free thermal fit can take it." : "");
   }
 
   /* ---- 5. what this means: plain-language reading of the numbers above */
@@ -1434,7 +1468,7 @@
 
   /* ------------------------------------------------------------ the real data */
   var realSel = document.getElementById("real-sc-layer");
-  function realPrior() { var r = form.querySelector('input[name="prior"]:checked'); return r ? r.value : "none"; }
+  function realPrior() { var r = form.querySelector('input[name="prior"]:checked'); return r ? r.value : "ground"; }
   /* with the real data only the atmosphere, the layers and the air prior can be chosen */
   function realMode(on) {
     var sub = document.querySelector('[data-atm-sub="real"]');
@@ -1490,6 +1524,7 @@
     failed("");
     realMode(true);
     renderRealStats(e);
+    if (view === "city") { cityView(); return; }
     if (view === "steps") {
       realScLayer = fillLayerPick(e, realSel, realScLayer);
       renderPass(document.getElementById("real-pass"), e, realDoc.epochs, 75, W_REAL);
@@ -1626,6 +1661,7 @@
   getJson(BASE + "manifest.json").then(function (m) {
     if (!m || !m.controls || !m.defaults || !m.runs || !m.summary) throw new Error("manifest.json is incomplete or still the old version");
     manifest = m;
+    manifest.defaults.layers = "n1000";         /* the standard layers: at least 1000 points each */
     /* only offer values the manifest has */
     form.querySelectorAll('input[type="radio"]').forEach(function (r) {
       if (r.name !== "prior" && !valid(r.name, r.value)) { r.disabled = true; r.closest("label").hidden = true; }
@@ -1663,7 +1699,7 @@
       document.querySelectorAll('input[name="pte-show"]').forEach(function (r) { r.checked = false; });
       renderView();
     });
-
+    realSel.addEventListener("change", function () { realScLayer = +realSel.value; if (isReal()) renderReal(); });
     var tabs = document.querySelector(".sim-tabs");
     tabs.addEventListener("click", function (ev) { var b = ev.target.closest("[data-tab]"); if (b) setView(b.getAttribute("data-tab")); });
     tabs.addEventListener("keydown", function (ev) {
@@ -1679,12 +1715,15 @@
       shown[k] = !shown[k];
       renderView();
     }
-    ["sim-pass-legend"].forEach(function (id) {
+    ["sim-pass-legend", "real-pass-legend"].forEach(function (id) {
       var pl = document.getElementById(id);
       pl.addEventListener("click", flip);
       pl.addEventListener("keydown", flip);
     });
-    document.getElementById("sim-reset").addEventListener("click", function () { toForm(manifest.defaults); update(); });
+    document.getElementById("sim-reset").addEventListener("click", function () {
+      var d = Object.assign({}, manifest.defaults, { layers: defaultLayers(manifest.defaults.atm) });
+      toForm(d); state.atm = d.atm; update();
+    });
     var t = null;
     window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(render, 150); });
     update();
