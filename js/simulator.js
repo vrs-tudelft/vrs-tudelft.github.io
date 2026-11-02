@@ -320,8 +320,11 @@
       renderPte(e);
     } else if (view === "dist") {
       renderAbsorbed(s);
-      renderAttr(document.getElementById("sim-attr"), s);
-      renderCum(document.getElementById("sim-cum"), s);
+      /* cost per disturbance and the cumulative trend live in a window: drawn when it is open (a closed one has no size) */
+      if (document.getElementById("dist-more").open) {
+        renderAttr(document.getElementById("sim-attr"), s);
+        renderCum(document.getElementById("sim-cum"), s);
+      }
     } else if (view === "decide") {
       renderDecide(document.getElementById("sim-decide"), e, s, sm);
     }
@@ -1312,7 +1315,7 @@
       if (!absP[key]) {
         var p = manifest.absorbed && manifest.absorbed[key];
         absP[key] = (p ? getJson(BASE + p) : Promise.reject(new Error("none"))).then(function (d) { absDoc[key] = d; }, function () { absDoc[key] = null; });
-        absP[key].then(function () { if (view === "dist" && last && runKey(last.state) === key) renderView(); });
+        absP[key].then(function () { if (view === "dist" && last && runKey(last.state) === key) renderAbsorbed(last.state); });
       }
       card.hidden = true;
       return;
