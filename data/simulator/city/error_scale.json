@@ -1,0 +1,17 @@
+{
+ "note": "95th percentile of |estimate - truth| per layer and pass, pooled over every run, layer setup and motion model; one colour scale for the error in every run. _log: T from the two-point profile (and e from N with it). real: the real data against KNMI 344 carried up.",
+ "sim": {
+  "N": 52.6,
+  "P": 0.139,
+  "T": 3.926,
+  "T_log": 1.392,
+  "e": 10.945,
+  "e_log": 10.976
+ },
+ "real": {
+  "N": 216.625,
+  "e": 46.395,
+  "T_log": 0.005,
+  "e_log": 46.454
+ }
+}

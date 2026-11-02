@@ -25,13 +25,15 @@ class Page(HTMLParser):
         if tag=='body':self.body=a
 
 
-active={'index.html':2,'simulator.html':3,'results.html':2}
+active={'index.html':2,'simulator.html':4,'results.html':2}
 for name,count in active.items():
     page=Page(ROOT/name)
     duplicates=[k for k,v in Counter(page.ids).items() if v>1]
     assert not duplicates,(name,'duplicate IDs',duplicates)
-    assert len(page.tabs)==len(page.views)==count,(name,'only the intended main screens should be navigable')
-    assert {t['aria-controls'] for t in page.tabs}=={v['id'] for v in page.views}
+    # the real data's cards (view-real) share the first tab: the atmosphere switches them, not a tab
+    views=[v for v in page.views if v.get('id')!='view-real']
+    assert len(page.tabs)==len(views)==count,(name,'only the intended main screens should be navigable')
+    assert {t['aria-controls'] for t in page.tabs}=={v['id'] for v in views}
     for tag,a in page.tips:
         if tag=='button':assert a.get('type')=='button' and a.get('aria-label'),(name,'tooltip name')
     assert 'css/story.css' in (ROOT/name).read_text(encoding='utf-8')
@@ -48,7 +50,7 @@ for name in retired:
     assert 'js/redirect.js' in (ROOT/name).read_text()
 
 sim=Page(ROOT/'simulator.html')
-assert {i['value'] for i in sim.inputs if i.get('name')=='atm'}=={'simulated','radiosonde','cabauw'}
+assert {i['value'] for i in sim.inputs if i.get('name')=='atm'}=={'simulated','radiosonde','cabauw','real'}
 assert {'height','motion'}<={v['id'] for v in Page(ROOT/'index.html').views}
 assert {'signal','coverage'}<={v['id'] for v in Page(ROOT/'results.html').views}
 for removed in ['js/animations.js','js/overview.js','js/theory.js','3d/flight.js']:

@@ -7,8 +7,8 @@
       "path": "2020-2026-ground/",
       "button": "2020-2026, ground",
       "name": "2020-2026, ground reference",
-      "about": "TerraSAR-X, the newer processing. Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.",
-      "h_top_m": 89,
+      "about": "TerraSAR-X, the newer processing, full-height export (25 667 points, coherent points up to 144 m above ground). Every movement is measured against the ground points the two processings share, the reference the team adopted on 5 October 2026, so a rate here means relative to the street, not an absolute movement.",
+      "h_top_m": 144,
       "rate_lim_mm_yr": 2,
       "archived": false,
       "unavailable": {}
