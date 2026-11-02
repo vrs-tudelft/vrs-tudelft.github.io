@@ -12,10 +12,10 @@ import {smoothAt,profileSVG} from './profile.js?v=20261103a';
 
 const $=id=>document.getElementById(id),root=document.documentElement.dataset.root||'';
 const geo=root+'data/3d/', stage=$('stage'), css=name=>getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-export const state={height:40,epoch:0,selected:null,playing:false,speed:8,needsRender:true,mode:'air',motion:'building',prior:'ground',layers:'2',qty:'N',view:'blocks',interp:'smooth',opacity:.2,showPoints:false,showBuildings:true};
+export const state={height:40,epoch:0,selected:null,playing:false,speed:8,needsRender:true,mode:'air',motion:'building',prior:'ground',layers:'n500',qty:'N',view:'blocks',interp:'smooth',opacity:.2,showPoints:false,showBuildings:true};
 let D,ds,renderer,scene,camera,persp,ortho,controls,buildings,ground,uniforms,texture,selectionBox,contrast;
 const boundsCache=new Map();
-let maxCount=100,ready=false;
+let maxCount=100;
 /* the air: real.json, its layers per setup, and one sequential colour scale (light: low, dark blue: high) */
 const LAYER_NAME={n1000:'≥1000 points',n500:'≥500 points','2':'two','1':'one'};
 const QTY={N:{name:'Refractivity N',unit:'N',d:0},P:{name:'Pressure P',unit:'hPa',d:1},T:{name:'Temperature T',unit:'°C',d:1},e:{name:'Water-vapour pressure e',unit:'hPa',d:1}};
@@ -106,15 +106,15 @@ function updateAir(){
   knmiMark();drawProfile();
   state.needsRender=true;
 }
-/* The selected fit, from the overview angle, on pass j, drawn into a 2D canvas (the preview map
+/* The map at its standard settings, from the overview angle, on pass j, drawn into a 2D canvas (the small map
    under Radar vs weather station). The settings on show are put back afterwards; the view itself is not touched. */
-const MINI_STYLE={mode:'air',qty:'N',view:'blocks',interp:'smooth',opacity:.35,showBuildings:true,showPoints:false};
+const STANDARD={layers:'n500',qty:'N',view:'blocks',interp:'smooth',opacity:.2,motion:'building',prior:'ground',showBuildings:true,showPoints:false};
 let miniRT=null,miniCam=null;
-export function miniView(canvas,j,fit){
+export function miniView(canvas,j){
   if(!renderer||!buildings||!real)return false;
   const pr=Math.min(devicePixelRatio||1,2),W=Math.max(2,Math.round((canvas.clientWidth||320)*pr)),H=Math.max(2,Math.round((canvas.clientHeight||240)*pr));
-  const keep={epoch:state.epoch,motion:state.motion,prior:state.prior,layers:state.layers};Object.keys(MINI_STYLE).forEach(k=>keep[k]=state[k]);const sel=selectionBox?selectionBox.visible:null;
-  Object.assign(state,MINI_STYLE,fit,{epoch:Math.max(0,Math.min(D.epochs.n_epochs-1,j))});   /* a little denser in the small picture */buildAir();updateAir();showPoints();if(selectionBox)selectionBox.visible=false;
+  const keep={epoch:state.epoch};Object.keys(STANDARD).forEach(k=>keep[k]=state[k]);const sel=selectionBox?selectionBox.visible:null;
+  Object.assign(state,STANDARD,{opacity:.35,epoch:Math.max(0,Math.min(D.epochs.n_epochs-1,j))});   /* a little denser in the small picture */buildAir();updateAir();showPoints();if(selectionBox)selectionBox.visible=false;
   if(!miniRT||miniRT.width!==W||miniRT.height!==H){miniRT?.dispose();miniRT=new THREE.WebGLRenderTarget(W,H,{samples:4});miniRT.texture.colorSpace=THREE.SRGBColorSpace;}
   if(!miniCam)miniCam=new THREE.PerspectiveCamera(42,1,1,6000);
   /* the overview angle, closer in; a narrower picture steps back a little */
@@ -128,7 +128,7 @@ export function miniView(canvas,j,fit){
   ctx.putImageData(img,0,0);return true;
 }
 /* KNMI 344's ground value shows as the bottom row of the strip only (no dot on the map) */
-function knmiMark(){$('heightSummary').style.display=state.mode==='points'?'':'none';}
+function knmiMark(){$('heightSummary').style.display='none';}
 async function json(url){const r=await fetch(url);if(!r.ok)throw Error(url+': '+r.status);return r.json();}
 function colour(n){
   const stops=window.VRS_COLORMAPS.cividis,t=THREE.MathUtils.clamp((n-20)/(maxCount-20),0,1)*(stops.length-1),k=Math.min(Math.floor(t),stops.length-2),f=t-k;
@@ -259,7 +259,7 @@ function drawLegend(){
     const Q=QTY[state.qty];
     for(let x=0;x<w;x++){ctx.fillStyle='rgb('+airColour(air.lo+x/(w-1)*(air.hi-air.lo),air.lo,air.hi).join(',')+')';ctx.fillRect(x,2,1.5,12);}
     ctx.font='10px system-ui';ctx.fillStyle=css('--muted');ctx.textBaseline='top';ctx.fillText(air.lo.toFixed(Q.d),0,18);ctx.textAlign='center';ctx.fillText(((air.lo+air.hi)/2).toFixed(Q.d),w/2,18);ctx.textAlign='right';ctx.fillText(air.hi.toFixed(Q.d)+' '+Q.unit,w,18);
-    $('legendText').textContent=(state.mode==='knmi'?'KNMI 344 carried up':'Radar estimate')+' · '+Q.name+' ('+Q.unit+') · grey: outside fitted heights';
+    $('legendText').textContent=(state.mode==='knmi'?'KNMI 344 carried up':'Radar estimate')+' · '+Q.name+' per layer on the pass shown · beyond the scale saturated · grey: outside the layers';
     return;
   }
   for(let x=0;x<w;x++){ctx.fillStyle=rgb(20+x/(w-1)*(maxCount-20));ctx.fillRect(x,2,1.5,12);}
@@ -326,40 +326,27 @@ let coverageTip='';
 function setMode(mode){
   state.mode=air||mode==='points'?mode:'points';
   document.querySelectorAll('input[name="colourBy"]').forEach(r=>r.checked=r.value===state.mode);
-  $('heightSliceBox').hidden=state.mode!=='points';$('airOptions').hidden=state.mode==='points';
-  document.body.dataset.cityMode=state.mode;
-  $('airProfile').closest('.city-inspector').hidden=state.mode==='points';
-  if(state.mode==='points')heightSlice();
+  $('airLayersPick').hidden=state.mode==='points';$('heightSliceBox').hidden=state.mode!=='points';$('airOptions').hidden=state.mode==='points';
   $('coverage').classList.toggle('air-mode',state.mode!=='points');resize();
   $('timelineTitle').textContent=state.mode==='points'?'Selected building · upper minus lower radar displacement [mm LOS]':'The air over the city, every pass and layer · click or play to move through the passes';
   $('coverage-context').dataset.tip=state.mode==='points'?coverageTip:AIR_TIP;
   updateAir();drawLegend();drawTimeline();
   const u=new URL(location.href);if(state.mode==='air')u.searchParams.delete('colour');else u.searchParams.set('colour',state.mode);history.replaceState(history.state,'',u);
 }
-function saveMapChoices(){
-  if(!D)return;
-  const u=new URL(location.href),values={colour:state.mode,qty:state.qty,view:state.view,interp:state.interp,opacity:Math.round(state.opacity*100),buildings:state.showBuildings?'1':'0',points:state.showPoints?'1':'0',height:state.height,camera:state.camera||'overview'},
-    defaults={colour:'air',qty:'N',view:'blocks',interp:'smooth',opacity:20,buildings:'1',points:'0',height:40,camera:'overview'};
-  if(state.mode!=='points')values.height=defaults.height;
-  Object.keys(values).forEach(k=>{if(String(values[k])===String(defaults[k]))u.searchParams.delete(k);else u.searchParams.set(k,values[k]);});
-  history.replaceState(history.state,'',u);
-}
-export function setFit(fit){
-  if(!fit)return;
-  state.motion=fit.motion;state.prior=fit.prior;state.layers=fit.layers;
-  if(ready){buildAir();setMode(state.mode);}
-}
-document.addEventListener('vrs:fit',e=>setFit(e.detail));
 function wire(){
   coverageTip=$('coverage-context').dataset.tip;
-  document.querySelectorAll('input[name="colourBy"]').forEach(r=>r.addEventListener('change',()=>{setMode(r.value);saveMapChoices();}));
-  document.querySelectorAll('input[name="airInterp"]').forEach(r=>r.addEventListener('change',()=>{state.interp=r.value;updateAir();drawTimeline();saveMapChoices();}));
-  document.querySelectorAll('input[name="airQty"]').forEach(r=>r.addEventListener('change',()=>{state.qty=r.value;buildAir();setMode(state.mode);saveMapChoices();}));
-  document.querySelectorAll('input[name="airView"]').forEach(r=>r.addEventListener('change',()=>{state.view=r.value;$('airOpacityBox').hidden=state.view!=='blocks';updateAir();saveMapChoices();}));
-  $('airOpacity').addEventListener('input',e=>{state.opacity=Number(e.target.value)/100;updateAir();saveMapChoices();});
-  $('showPoints').addEventListener('change',e=>{state.showPoints=e.target.checked;showPoints();saveMapChoices();});
-  $('showBuildings').addEventListener('change',e=>{state.showBuildings=e.target.checked;updateAir();if(selectionBox)selectionBox.visible=state.showBuildings;saveMapChoices();});
-  document.querySelectorAll('#presets button').forEach(b=>b.addEventListener('click',()=>{setPreset(b.dataset.p);state.camera=b.dataset.p;saveMapChoices();}));
+  document.querySelectorAll('input[name="colourBy"]').forEach(r=>r.addEventListener('change',()=>setMode(r.value)));
+  document.querySelectorAll('input[name="airLayers"]').forEach(r=>r.addEventListener('change',()=>{state.layers=r.value;buildAir();setMode(state.mode);}));
+  document.querySelectorAll('input[name="airPrior"]').forEach(r=>r.addEventListener('change',()=>{state.prior=r.value;buildAir();setMode(state.mode);
+    const u=new URL(location.href);if(state.prior==='ground')u.searchParams.delete('prior');else u.searchParams.set('prior',state.prior);history.replaceState(history.state,'',u);}));
+  document.querySelectorAll('input[name="airMotion"]').forEach(r=>r.addEventListener('change',()=>{state.motion=r.value;buildAir();setMode(state.mode);
+    const u=new URL(location.href);if(state.motion==='building')u.searchParams.delete('motion');else u.searchParams.set('motion',state.motion);history.replaceState(history.state,'',u);}));
+  document.querySelectorAll('input[name="airInterp"]').forEach(r=>r.addEventListener('change',()=>{state.interp=r.value;updateAir();drawTimeline();}));
+  document.querySelectorAll('input[name="airQty"]').forEach(r=>r.addEventListener('change',()=>{state.qty=r.value;buildAir();setMode(state.mode);}));
+  document.querySelectorAll('input[name="airView"]').forEach(r=>r.addEventListener('change',()=>{state.view=r.value;$('airOpacityBox').hidden=state.view!=='blocks';updateAir();}));
+  $('airOpacity').addEventListener('input',e=>{state.opacity=Number(e.target.value)/100;updateAir();});
+  $('showPoints').addEventListener('change',e=>{state.showPoints=e.target.checked;showPoints();});
+  $('showBuildings').addEventListener('change',e=>{state.showBuildings=e.target.checked;updateAir();if(selectionBox)selectionBox.visible=state.showBuildings;});
   $('heightSlice').addEventListener('input',e=>{state.height=Number(e.target.value);heightSlice();const u=new URL(location.href);u.searchParams.set('height',state.height);history.replaceState(history.state,'',u);});
   $('tSlider').max=D.epochs.n_epochs-1;
   $('tSlider').addEventListener('input',e=>{state.playing=false;$('tPlay').textContent='▶';setEpoch(Number(e.target.value));});
@@ -376,7 +363,7 @@ function wire(){
     const file=(innerWidth<768?'ground-512':'ground-2048')+(kind==='colour'?'-colour':'')+'.jpg';
     new THREE.TextureLoader().load(geo+file,t=>{t.colorSpace=THREE.SRGBColorSpace;maps[kind]=t;if(document.querySelector('input[name="cityMap"]:checked')?.value===kind)show(t);});
   };
-  document.querySelectorAll('input[name="cityMap"]').forEach(r=>r.addEventListener('change',()=>{setMap(r.value);const u=new URL(location.href);if(r.value==='off')u.searchParams.delete('map');else u.searchParams.set('map',r.value);history.replaceState(history.state,'',u);}));
+  document.querySelectorAll('input[name="cityMap"]').forEach(r=>r.addEventListener('change',()=>setMap(r.value)));
   let down;
   $('gl').addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
   $('gl').addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<6)pick(e);down=null;});
@@ -422,14 +409,15 @@ async function main(){
   if(q.get('buildings')==='0'){state.showBuildings=false;$('showBuildings').checked=false;}
   $('airOpacityBox').hidden=state.view!=='blocks';
   document.querySelectorAll('input[name="airInterp"]').forEach(r=>r.checked=r.value===state.interp);
-  if(q.has('opacity')&&Number.isFinite(Number(q.get('opacity'))))state.opacity=Math.max(.05,Math.min(1,Number(q.get('opacity'))/100));
-  $('airOpacity').value=Math.round(state.opacity*100);
+  if(LAYER_NAME[q.get('layers')])state.layers=q.get('layers');
   document.querySelectorAll('input[name="airQty"]').forEach(r=>r.checked=r.value===state.qty);
   document.querySelectorAll('input[name="airView"]').forEach(r=>r.checked=r.value===state.view);
-  Object.assign(state,window.VRSFit||{});buildAir();
-  state.camera=['side','top'].includes(q.get('camera'))?q.get('camera'):'overview';
-  ready=true;
-  setMode(q.get('colour')==='points'||(!q.has('colour')&&q.has('height'))?'points':'air');showPoints();
+  if(['building','scatterer'].includes(q.get('motion')))state.motion=q.get('motion');
+  document.querySelectorAll('input[name="airMotion"]').forEach(r=>r.checked=r.value===state.motion);
+  if(['ground','none'].includes(q.get('prior')))state.prior=q.get('prior');
+  document.querySelectorAll('input[name="airPrior"]').forEach(r=>r.checked=r.value===state.prior);
+  document.querySelectorAll('input[name="airLayers"]').forEach(r=>r.checked=r.value===state.layers);buildAir();
+  setMode('air');showPoints();
   if(Number.isInteger(window.VRSPass))setEpoch(window.VRSPass,true);   /* a pass chosen in the comparison before the map loaded */
   if(q.has('debug'))window.__vrs={THREE,state,S:state,D,renderer,scene,buildings,uniforms,get camera(){return camera;},setEpoch,selectBuilding,pick,setPreset};
   requestAnimationFrame(loop);
